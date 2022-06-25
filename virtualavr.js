@@ -1,7 +1,3 @@
-// https://codesandbox.io/s/arduino-simulator-js-9z159?file=/src/App.js
-
-// npm install --save intel-hex node-fetch@v2 avr8js
-
 const fetch = require('node-fetch');
 const avr8js = require('avr8js');
 
