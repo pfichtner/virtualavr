@@ -1,22 +1,11 @@
+const fs = require("fs");
 const fetch = require('node-fetch');
 const avr8js = require('avr8js');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
-const arduinoCode = `
-void setup() {
-  pinMode(7, OUTPUT); 
-  Serial.begin(115200);
-}
+const arduinoCode = fs.readFileSync("code.ino").toString();
 
-void loop() {
-  Serial.println("loop");
-  digitalWrite(7, HIGH);
-  delay(1000);
-  digitalWrite(7, LOW);
-  delay(1000);
-}
-`
 const runCode = async () => {
         // Compile the arduino source code
         const result = await fetch('https://hexi.wokwi.com/build', {
@@ -45,8 +34,9 @@ const runCode = async () => {
         usart.onByteTransmit = (value) => process.stdout.write(String.fromCharCode(value));
 
         process.stdin.setRawMode(true);
-        process.stdin.on('readable', () => {
-                usart.writeByte(process.stdin.read());
+        process.stdin.on('data', data => {
+		const bytes = data.toString();
+		for (var i = 0; i < bytes.length; i++) usart.writeByte(bytes.charCodeAt(i));
         });
 
         const timer = new avr8js.AVRTimer(cpu, avr8js.timer0Config);
