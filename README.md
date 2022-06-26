@@ -17,4 +17,5 @@ TODOS
 - Possibility to define component layout, e.g. add a DHT22
 - JS Callbacks for pin states/Components, e.g. DHT22
 - Java-Bindings for pin states/Components, e.g. DHT22
+- Could we implement upload? So that you can upload the compiled firmware to runniner container / /dev/virtualdevice?
 
