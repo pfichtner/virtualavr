@@ -1,41 +1,16 @@
-const yargs = require('yargs');
-
 const fs = require("fs");
 const fetch = require('node-fetch');
 const avr8js = require('avr8js');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
-const argv = yargs
-	.command('lyr', 'Tells whether an year is leap year or not', {}
-	)
-	.option('inputfile', {
-		alias: 'i',
-		description: 'The path of the sketch file (can be hex) to read',
-		type: 'String', 
-		// TODO when passed, this will become an array!?
-		default: "code.ino"
-	})
-	.option('ishex', {
-		alias: 'b',
-		description: 'Do not compile the input file since it is hex',
-		type: 'boolean'
-	})
-// .option('type', {
-// 	alias: 't',
-// 	description: 'Type of the input file',
-// 	type: 'boolean'
-// })
-	.help()
-	.alias('help', 'h').argv;
-
+const args = process.argv.slice(2);
 
 const runCode = async () => {
-	const fileContent = fs.readFileSync(argv.inputfile).toString();
-	var hex;
-	if (argv.ishex) {
-		hex = fileContent;
-	} else {
+	const inputFilename = args.length == 0 ? 'code.ino' : args[0]
+	var fileContent = fs.readFileSync(inputFilename).toString();
+
+	if (!inputFilename.endsWith('.hex')) {
 		const result = await fetch('https://hexi.wokwi.com/build', {
 			method: 'post',
 			body: JSON.stringify({ sketch: fileContent }),
@@ -46,9 +21,10 @@ const runCode = async () => {
 			console.log(stderr);
 			return;
 		}
+		fileContent = hex;
 	}
 
-	const { data } = require('intel-hex').parse(hex);
+	const { data } = require('intel-hex').parse(fileContent);
 	const progData = new Uint8Array(data);
 
 	// Set up the simulation
