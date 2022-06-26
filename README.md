@@ -18,4 +18,5 @@ TODOS
 - JS Callbacks for pin states/Components, e.g. DHT22
 - Java-Bindings for pin states/Components, e.g. DHT22
 - Could we implement upload? So that you can upload the compiled firmware to runniner container / /dev/virtualdevice?
+  Could we use arduino firmware? https://github.com/arduino/ArduinoCore-avr/tree/master/bootloaders/atmega
 
