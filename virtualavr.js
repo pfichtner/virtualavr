@@ -36,11 +36,13 @@ const runCode = async () => {
 	// Attach the virtual hardware
 	const portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
 	portB.addListener(() => {
-	     // TODO PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
-             for (var pin = 18; pin <= 19; pin++) {
+	     // TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
+             const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
+             for (var pin = 0; pin <= 7; pin++) {
                  // TODO store all port states and only write those which changed their value
                  const state = portB.pinState(pin) === avr8js.PinState.High;
-                 fs.writeFileSync(sysFsBase + pin, state ? '1' : '0');
+                 // TODO should be 13/value but therefore we would have to create the pin directory first
+                 fs.writeFileSync(sysFsBase + arduinoPinOnPortB[pin], state ? '1' : '0');
              }
 	});
 
