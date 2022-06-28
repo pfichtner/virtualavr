@@ -7,6 +7,10 @@ const avr8js = require('avr8js');
 const args = process.argv.slice(2);
 
 const runCode = async () => {
+       // TODO write to /sys
+       const sysFsBase = './sys/foo/gpio/';
+       if (!fs.existsSync(sysFsBase)) fs.mkdirSync(sysFsBase, { recursive: true });
+
 	const inputFilename = args.length == 0 ? 'code.ino' : args[0]
 	var fileContent = fs.readFileSync(inputFilename).toString();
 
@@ -30,11 +34,15 @@ const runCode = async () => {
 	// Set up the simulation
 	const cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
 	// Attach the virtual hardware
-	// const port = new avr8js.AVRIOPort(cpu, avr8js.portDConfig);
-	// port.addListener(() => {
-	//      const state = port.pinState(7) === avr8js.PinState.High;
-	//      console.log('LED', state);
-	// });
+	const portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
+	portB.addListener(() => {
+	     // TODO PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
+             for (var pin = 18; pin <= 19; pin++) {
+                 // TODO store all port states and only write those which changed their value
+                 const state = portB.pinState(pin) === avr8js.PinState.High;
+                 fs.writeFileSync(sysFsBase + pin, state ? '1' : '0');
+             }
+	});
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
 	usart.onByteTransmit = (value) => process.stdout.write(String.fromCharCode(value));
