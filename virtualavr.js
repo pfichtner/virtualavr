@@ -6,12 +6,10 @@ const avr8js = require('avr8js');
 
 const args = process.argv.slice(2);
 
-const runCode = async () => {
-       // TODO write to /sys
-       const sysFsBase = './sys/foo/gpio/';
-       if (!fs.existsSync(sysFsBase)) fs.mkdirSync(sysFsBase, { recursive: true });
+const runCode = async (inputFilename, portCallback) => {
+	// const sysFsBase = './sys/foo/gpio/';
+	// if (!fs.existsSync(sysFsBase)) fs.mkdirSync(sysFsBase, { recursive: true });
 
-	const inputFilename = args.length == 0 ? 'code.ino' : args[0]
 	var fileContent = fs.readFileSync(inputFilename).toString();
 
 	if (!inputFilename.endsWith('.hex')) {
@@ -36,14 +34,15 @@ const runCode = async () => {
 	// Attach the virtual hardware
 	const portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
 	portB.addListener(() => {
-	     // TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
-             const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
-             for (var pin = 0; pin <= 7; pin++) {
-                 // TODO store all port states and only write those which changed their value
-                 const state = portB.pinState(pin) === avr8js.PinState.High;
-                 // TODO should be 13/value but therefore we would have to create the pin directory first
-                 fs.writeFileSync(sysFsBase + arduinoPinOnPortB[pin], state ? '1' : '0');
-             }
+		// TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
+		const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
+		for (var pin = 0; pin <= 7; pin++) {
+			// TODO store all port states and only write those which changed their value
+			const state = portB.pinState(pin) === avr8js.PinState.High;
+			// TODO should be 13/value but therefore we would have to create the pin directory first
+			// fs.writeFileSync(sysFsBase + arduinoPinOnPortB[pin], state ? '1' : '0');
+			portCallback(arduinoPinOnPortB[pin], state ? '1' : '0');
+		}
 	});
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
@@ -66,5 +65,15 @@ const runCode = async () => {
 
 }
 
-runCode();
+function main() {
+	const callback = (pin, state) => {};
+	runCode(args.length == 0 ? 'code.ino' : args[0], callback);
+}
 
+if (require.main === module) {
+	main();
+}
+
+module.exports = {
+	runCode
+}
