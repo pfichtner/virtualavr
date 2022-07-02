@@ -80,11 +80,19 @@ function main() {
 	const callback = (pin, state) => {
 		wss.clients.forEach(function each(client) {
 			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-				client.send(`pinState(${pin},${state})`);
+				// client.send(`pinState(${pin},${state})`);
+				client.send(JSON.stringify({ type: 'pinState', pin: pin, state: state}));
 			}
 		});
 
 	};
+
+// 	ws.on('message', function message(data) {
+// 			console.log('received: %s', data);
+// 			});
+
+
+
 	runCode(args.length == 0 ? 'code.ino' : args[0], callback);
 }
 
