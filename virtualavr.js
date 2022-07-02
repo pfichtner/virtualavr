@@ -79,7 +79,7 @@ function main() {
 	});
 	const callback = (pin, state) => {
 		wss.clients.forEach(function each(client) {
-			if (client.readyState === ws.WebSocket.OPEN) {
+			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
 				client.send(`pinState(${pin},${state})`);
 			}
 		});
