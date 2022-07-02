@@ -33,6 +33,7 @@ const runCode = async (inputFilename, portCallback) => {
 	const cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
 	// Attach the virtual hardware
 	const portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
+	const portStates = {};
 	portB.addListener(() => {
 		// TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
 		const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
@@ -41,7 +42,11 @@ const runCode = async (inputFilename, portCallback) => {
 			const state = portB.pinState(pin) === avr8js.PinState.High;
 			// TODO should be 13/value but therefore we would have to create the pin directory first
 			// fs.writeFileSync(sysFsBase + arduinoPinOnPortB[pin], state ? '1' : '0');
-			portCallback(arduinoPinOnPortB[pin], state ? '1' : '0');
+			const oldState = portStates[arduinoPinOnPortB[pin]];
+			if (oldState != undefined && oldState != state) {
+				portCallback(arduinoPinOnPortB[pin], state ? '1' : '0');
+			}
+			portStates[arduinoPinOnPortB[pin]] = state;
 		}
 	});
 
