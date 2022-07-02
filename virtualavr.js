@@ -10,7 +10,7 @@ const runCode = async (inputFilename, portCallback) => {
 	// const sysFsBase = './sys/foo/gpio/';
 	// if (!fs.existsSync(sysFsBase)) fs.mkdirSync(sysFsBase, { recursive: true });
 
-	var fileContent = fs.readFileSync(inputFilename).toString();
+	let fileContent = fs.readFileSync(inputFilename).toString();
 
 	if (!inputFilename.endsWith('.hex')) {
 		const result = await fetch('https://hexi.wokwi.com/build', {
@@ -36,7 +36,7 @@ const runCode = async (inputFilename, portCallback) => {
 	portB.addListener(() => {
 		// TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
 		const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
-		for (var pin = 0; pin <= 7; pin++) {
+		for (let pin = 0; pin <= 7; pin++) {
 			// TODO store all port states and only write those which changed their value
 			const state = portB.pinState(pin) === avr8js.PinState.High;
 			// TODO should be 13/value but therefore we would have to create the pin directory first
@@ -46,13 +46,12 @@ const runCode = async (inputFilename, portCallback) => {
 	});
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
-	usart.onByteTransmit = (value) => process.stdout.write(String.fromCharCode(value));
-
-	process.stdin.setRawMode(true);
-	process.stdin.on('data', data => {
-		const bytes = data.toString();
-		for (var i = 0; i < bytes.length; i++) usart.writeByte(bytes.charCodeAt(i));
-	});
+	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
+	// process.stdin.setRawMode(true);
+        process.stdin.on('data', data => {
+                const bytes = data.toString();
+                for (let i = 0; i < bytes.length; i++) usart.writeByte(bytes.charCodeAt(i));
+        });
 
 	const timer = new avr8js.AVRTimer(cpu, avr8js.timer0Config);
 	while (true) {
