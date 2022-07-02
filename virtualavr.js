@@ -48,10 +48,10 @@ const runCode = async (inputFilename, portCallback) => {
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
 	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
 	// process.stdin.setRawMode(true);
-        process.stdin.on('data', data => {
-                const bytes = data.toString();
-                for (let i = 0; i < bytes.length; i++) usart.writeByte(bytes.charCodeAt(i));
-        });
+	process.stdin.on('data', data => {
+		const bytes = data.toString();
+		for (let i = 0; i < bytes.length; i++) usart.writeByte(bytes.charCodeAt(i));
+	});
 
 	const timer = new avr8js.AVRTimer(cpu, avr8js.timer0Config);
 	while (true) {
@@ -65,7 +65,23 @@ const runCode = async (inputFilename, portCallback) => {
 }
 
 function main() {
-	const callback = (pin, state) => {};
+	// const callback = (pin, state) => {};
+	const ws = require('ws');
+	const wss = new ws.WebSocketServer({
+		port: 8080,
+		perMessageDeflate: {
+			concurrencyLimit: 2, // Limits zlib concurrency for perf.
+			threshold: 1024 // Size (in bytes) below which messages
+		}
+	});
+	const callback = (pin, state) => {
+		wss.clients.forEach(function each(client) {
+			if (client.readyState === ws.WebSocket.OPEN) {
+				client.send(`pinState(${pin},${state})`);
+			}
+		});
+
+	};
 	runCode(args.length == 0 ? 'code.ino' : args[0], callback);
 }
 
