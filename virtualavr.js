@@ -4,12 +4,11 @@ const avr8js = require('avr8js');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
+var portB;
+
 const args = process.argv.slice(2);
 
 const runCode = async (inputFilename, portCallback) => {
-	// const sysFsBase = './sys/foo/gpio/';
-	// if (!fs.existsSync(sysFsBase)) fs.mkdirSync(sysFsBase, { recursive: true });
-
 	let fileContent = fs.readFileSync(inputFilename).toString();
 
 	if (!inputFilename.endsWith('.hex')) {
@@ -32,7 +31,7 @@ const runCode = async (inputFilename, portCallback) => {
 	// Set up the simulation
 	const cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
 	// Attach the virtual hardware
-	const portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
+	portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
 	const portStates = {};
 	portB.addListener(() => {
 		// TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
@@ -87,9 +86,21 @@ function main() {
 
 	};
 
-// 	ws.on('message', function message(data) {
-// 			console.log('received: %s', data);
-// 			});
+       wss.on('connection', function connection(ws) {
+               ws.on('message', function message(data) {
+		try {
+                      const obj = JSON.parse(data);
+                      if (obj.type == 'fakePinState') {
+// TODO This is hardcoded pin 11, we have to translate backwards
+                              // portB.setPin(obj.pin, obj.state);
+                              portB.setPin(3, obj.state == 1);
+                      }
+		} catch (e) {
+			console.log(e);
+		}
+               });
+       });
+
 
 
 
