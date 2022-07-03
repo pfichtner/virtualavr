@@ -27,6 +27,7 @@ Environment variables supported
 - Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
 - Add an example (jest?): How to test some JS that interacts with firmware (e.g. firmata)
+- We could use WS to interact with the simulator: "loadFirmware", "start", "stop", ...
 - Possibility to define component layout, e.g. add a DHT22
 - JS Callbacks for pin states/Components, e.g. DHT22
 - Java-Bindings for pin states/Components, e.g. DHT22 (IPC, using websockets?)
