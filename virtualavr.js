@@ -6,6 +6,11 @@ const avr8js = require('avr8js');
 
 var portB;
 
+// TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
+const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
+
+
+
 const args = process.argv.slice(2);
 
 const runCode = async (inputFilename, portCallback) => {
@@ -34,8 +39,6 @@ const runCode = async (inputFilename, portCallback) => {
 	portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
 	const portStates = {};
 	portB.addListener(() => {
-		// TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
-		const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
 		for (let pin = 0; pin <= 7; pin++) {
 			const arduinoPin = arduinoPinOnPortB[pin];
 			const state = portB.pinState(pin) === avr8js.PinState.High;
@@ -91,9 +94,10 @@ function main() {
 		try {
                       const obj = JSON.parse(data);
                       if (obj.type == 'fakePinState') {
-// TODO This is hardcoded pin 11, we have to translate backwards
-                              // portB.setPin(obj.pin, obj.state);
-                              portB.setPin(3, obj.state == 1);
+                              const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
+                              if (avrPin >= 0)
+                              // TODO How to set analog values?
+                              portB.setPin(avrPin, obj.state == 1);
                       }
 		} catch (e) {
 			console.log(e);
