@@ -10,8 +10,8 @@ var portB;
 const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
 
 
-
 const args = process.argv.slice(2);
+const buff = [];
 
 const runCode = async (inputFilename, portCallback) => {
 	let fileContent = fs.readFileSync(inputFilename).toString();
@@ -52,10 +52,13 @@ const runCode = async (inputFilename, portCallback) => {
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
 	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
+	usart.onRxComplete = () => sendNextChar(usart);
 	// process.stdin.setRawMode(true);
+	// process.stdin.resume();
 	process.stdin.on('data', data => {
 		const bytes = data.toString();
-		for (let i = 0; i < bytes.length; i++) usart.writeByte(bytes.charCodeAt(i));
+		for (let i = 0; i < bytes.length; i++) buff.push(bytes.charCodeAt(i));
+		sendNextChar(usart);
 	});
 
 	const timer = new avr8js.AVRTimer(cpu, avr8js.timer0Config);
@@ -67,6 +70,13 @@ const runCode = async (inputFilename, portCallback) => {
 		await new Promise(resolve => setTimeout(resolve));
 	}
 
+}
+
+function sendNextChar(usart) {
+	const ch = buff.shift();
+	if (ch) {
+		usart.writeByte(ch);
+	}
 }
 
 function main() {
