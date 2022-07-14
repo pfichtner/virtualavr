@@ -1,6 +1,8 @@
 const { runCode } = require('../virtualavr');
 const waitForExpect = require("wait-for-expect");
 
+jest.setTimeout(10000);
+
 describe('My Test Suite', () => {
 	it('My Test Case', async () => {
 		const mockFunction = jest.fn()
