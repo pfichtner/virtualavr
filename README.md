@@ -23,7 +23,16 @@ Environment variables supported
 # Screencast of usage
 <a href="http://pfichtner.github.io/virtualavr-asciinema/"><img src="https://pfichtner.github.io/virtualavr-asciinema/asciinema-poster.png" /></a>
 
+
+# What's inside? How does it work? 
+- The heart is [avr8js](https://github.com/wokwi/avr8js)
+- virtualavr.js runs inside a node process, and links nodejs' stdin/stdout to avr8js' virtual serial port
+- [socat](http://www.dest-unreach.org/socat/) creates a virtual serial port on the local machine and links this virtual serial port to nodejs' stdin/stdout. That way you get a virtual serial port which is connected to the serial port of the simulator (avr8js)
+- The whole thing is packaged inside a docker image. Because so the serial port is inside the docker container only, you have to do volumne mounts (-v /dev:/dev) so that you get access to the "in-docker-device" on the local computer. 
+
 # Todos
+- Add support for running simulator withou VIRTUALDEVICE
+- Expose SerialRX/SerialTX events (and have tests for them)
 - Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
 - Add an example (jest?): How to test some JS that interacts with firmware (e.g. firmata)
