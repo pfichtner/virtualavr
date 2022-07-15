@@ -30,6 +30,8 @@ Environment variables supported
 - [socat](http://www.dest-unreach.org/socat/) creates a virtual serial port on the local machine and links this virtual serial port to nodejs' stdin/stdout. That way you get a virtual serial port which is connected to the serial port of the simulator (avr8js)
 - The whole thing is packaged inside a docker image. Because so the serial port is inside the docker container only, you have to do volumne mounts (-v /dev:/dev) so that you get access to the "in-docker-device" on the local computer. 
 
+![virtualavr.png](docs/images/virtualavr.png)
+
 # Todos
 - Add support for running simulator withou VIRTUALDEVICE
 - Expose SerialRX/SerialTX events (and have tests for them)
