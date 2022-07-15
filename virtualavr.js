@@ -1,6 +1,9 @@
 const fs = require("fs");
 const fetch = require('node-fetch');
 const avr8js = require('avr8js');
+const intelhex = require('intel-hex');
+
+const ws = require('ws');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
@@ -29,7 +32,7 @@ const runCode = async (inputFilename, portCallback) => {
 		fileContent = hex;
 	}
 
-	const { data } = require('intel-hex').parse(fileContent);
+	const { data } = intelhex.parse(fileContent);
 	const progData = new Uint8Array(data);
 
 	// Set up the simulation
@@ -79,7 +82,6 @@ function sendNextChar(buff, usart) {
 
 function main() {
 	// const callback = (pin, state) => {};
-	const ws = require('ws');
 	const wss = new ws.WebSocketServer({
 		port: 8080,
 		perMessageDeflate: {
