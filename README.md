@@ -6,6 +6,8 @@ A AVR/Arduino Simulator based on [avr8js](https://github.com/wokwi/avr8js) with 
 
 This is where virtualavr comes into play
 
+virtualavr comes as a Docker image that provides a virtual AVR including a virtual serial device which you can connect to just like to real hardware. 
+
 
 Start the container
 ```docker run -v /dev:/dev -d virtualavr```
