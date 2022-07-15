@@ -4,3 +4,8 @@
 node_modules
 dist
 *.log
+
+target
+.project
+.classpath
+.settings
