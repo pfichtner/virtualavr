@@ -7,10 +7,14 @@ const ws = require('ws');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
-var portB;
+var portB
+var adc;
 
-// TODO Is there a define in avr8js's boards? PORTB: arduino pins 8,9,10,11,12,13,20,21 ; avr pins 14,15,16,17,18,19,9,10
-const arduinoPinOnPortB = [ 8,9,10,11,12,13,20,21 ];
+// TODO Is there a define in avr8js's boards? PORTB: arduino pins D8,D9,D10,D11,D12,D13,D20,D21
+const arduinoPinOnPortB = [ 'D8','D9','D10','D11','D12','D13','D20','D21' ];
+
+// analog ports A0,A1,A2,A3,A4,A5,A6,A7 (19,20,21,22,23,24,25,26)
+const analogPorts = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
 
 
 const args = process.argv.slice(2);
@@ -51,6 +55,10 @@ const runCode = async (inputFilename, portCallback) => {
 			portStates[arduinoPin] = state;
 		}
 	});
+
+
+	adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
+	// TODO add adc listener
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
 	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
@@ -104,10 +112,18 @@ function main() {
 		try {
                       const obj = JSON.parse(data);
                       if (obj.type == 'fakePinState') {
-                              const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
-                              if (avrPin >= 0)
-                              // TODO How to set analog values?
-                              portB.setPin(avrPin, obj.state == 1);
+                              if (typeof obj.state === 'boolean') {
+				      const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
+				      if (avrPin >= 0)
+					      portB.setPin(avrPin, obj.state == 1);
+			      }
+
+                              if (typeof obj.state === 'number') {
+				      const avrPin = analogPorts.indexOf(obj.pin);
+				      if (avrPin >= 0)
+					      adc.channelValues[avrPin] = obj.state*5/1024;
+                              }
+
                       }
 		} catch (e) {
 			console.log(e);
