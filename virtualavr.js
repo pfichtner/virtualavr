@@ -7,7 +7,7 @@ const ws = require('ws');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
-var portB
+var portB;
 var adc;
 
 // TODO Is there a define in avr8js's boards? PORTB: arduino pins D8,D9,D10,D11,D12,D13,D20,D21
@@ -20,12 +20,13 @@ const analogPorts = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
 const args = process.argv.slice(2);
 
 const runCode = async (inputFilename, portCallback) => {
-	let fileContent = fs.readFileSync(inputFilename).toString();
+	let sketch = fs.readFileSync(inputFilename).toString();
+	let files = [  { name: "libraries.txt", content: "ConfigurableFirmata" } ]
 
 	if (!inputFilename.endsWith('.hex')) {
 		const result = await fetch('https://hexi.wokwi.com/build', {
 			method: 'post',
-			body: JSON.stringify({ sketch: fileContent }),
+			body: JSON.stringify({ board: "uno", sketch, files }),
 			headers: { 'Content-Type': 'application/json' }
 		});
 		const { hex, stderr } = await result.json();
@@ -33,10 +34,10 @@ const runCode = async (inputFilename, portCallback) => {
 			console.log(stderr);
 			return;
 		}
-		fileContent = hex;
+		sketch = hex;
 	}
 
-	const { data } = intelhex.parse(fileContent);
+	const { data } = intelhex.parse(sketch);
 	const progData = new Uint8Array(data);
 
 	// Set up the simulation
@@ -45,6 +46,7 @@ const runCode = async (inputFilename, portCallback) => {
 	portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
 	const portStates = {};
 	portB.addListener(() => {
+// console.log("portB");
 		for (let pin = 0; pin <= 7; pin++) {
 			const arduinoPin = arduinoPinOnPortB[pin];
 			const state = portB.pinState(pin) === avr8js.PinState.High;
@@ -56,9 +58,13 @@ const runCode = async (inputFilename, portCallback) => {
 		}
 	});
 
-
 	adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
 	// TODO add adc listener
+
+	const portC = new avr8js.AVRIOPort(cpu, avr8js.portCConfig);
+	portC.addListener(() => {
+// console.log("portC");
+	});
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
 	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
@@ -100,7 +106,6 @@ function main() {
 	const callback = (pin, state) => {
 		wss.clients.forEach(function each(client) {
 			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-				// client.send(`pinState(${pin},${state})`);
 				client.send(JSON.stringify({ type: 'pinState', pin: pin, state: state}));
 			}
 		});
