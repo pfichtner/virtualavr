@@ -3,6 +3,8 @@ const fetch = require('node-fetch');
 const avr8js = require('avr8js');
 const intelhex = require('intel-hex');
 
+const streamZip = require('node-stream-zip');
+
 const ws = require('ws');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
@@ -21,9 +23,17 @@ const args = process.argv.slice(2);
 
 const runCode = async (inputFilename, portCallback) => {
 	let sketch = fs.readFileSync(inputFilename).toString();
-	let files = [  { name: "libraries.txt", content: "ConfigurableFirmata" } ]
+	let files = [];
 
 	if (!inputFilename.endsWith('.hex')) {
+		if (inputFilename.endsWith('.zip')) {
+				const zip = new streamZip.async({ file: inputFilename });
+				const sketchBuf = await zip.entryData('sketch.ino');
+				sketch = sketchBuf.toString();
+				const libraries = await zip.entryData('libraries.txt');
+				files.push({ name: "libraries.txt", content: libraries.toString() });
+				await zip.close();
+		}
 		const result = await fetch('https://hexi.wokwi.com/build', {
 			method: 'post',
 			body: JSON.stringify({ board: "uno", sketch, files }),
