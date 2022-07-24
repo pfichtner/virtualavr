@@ -1,5 +1,7 @@
 package com.ardulink.sketch;
 
+import static org.testcontainers.containers.BindMode.READ_ONLY;
+
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -17,7 +19,7 @@ class ArdulinkFirmwareTest {
 	@Container
 	GenericContainer<?> virtualavr = new GenericContainer<>("pfichtner/virtualavr")
 			.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice).withFileSystemBind(hostDev, containerDev)
-			.withFileSystemBind(firmware, "/sketch/sketch.ino");
+			.withFileSystemBind(firmware, "/sketch/sketch.ino", READ_ONLY);
 
 	@Test
 	void canDetectArduinoThatSendInitialMessage() throws Exception {

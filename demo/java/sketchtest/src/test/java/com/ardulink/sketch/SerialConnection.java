@@ -4,7 +4,7 @@ import static jssc.SerialPort.BAUDRATE_115200;
 import static jssc.SerialPort.DATABITS_8;
 import static jssc.SerialPort.PARITY_NONE;
 import static jssc.SerialPort.STOPBITS_1;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.await;
 
 import java.util.function.Predicate;
 

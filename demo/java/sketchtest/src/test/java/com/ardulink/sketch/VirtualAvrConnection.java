@@ -2,6 +2,7 @@ package com.ardulink.sketch;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
@@ -22,19 +23,19 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
 
 	public static class PinState {
-		public int pin;
+		public String pin;
 		public int state;
 
 		public static Predicate<PinState> switchedOn(int pin) {
-			return stateOfPinIs(pin, 1);
+			return stateOfPinIs("D" + pin, 1);
 		}
 
 		public static Predicate<PinState> switchedOff(int pin) {
-			return stateOfPinIs(pin, 0);
+			return stateOfPinIs("D" + pin, 0);
 		}
 
-		public static Predicate<PinState> stateOfPinIs(int pin, int state) {
-			return p -> p.pin == pin && p.state == state;
+		public static Predicate<PinState> stateOfPinIs(String pin, int state) {
+			return p -> Objects.equals(p.pin, pin) && Objects.equals(p.state, state);
 		}
 
 	}
