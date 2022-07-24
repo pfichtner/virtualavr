@@ -116,6 +116,7 @@ function main() {
 	const callback = (pin, state) => {
 		wss.clients.forEach(function each(client) {
 			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
+				// TODO send boolean state on digital pins
 				client.send(JSON.stringify({ type: 'pinState', pin: pin, state: state}));
 			}
 		});
