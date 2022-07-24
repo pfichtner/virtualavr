@@ -4,6 +4,7 @@ import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToV
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.NumberFormat;
@@ -19,14 +20,19 @@ public class ArdulinkArduinoSimulator {
 	String containerDev = "/dev";
 	String ttyDevice = "ttyUSB0";
 
-	String firmware = "/tmp/ArdulinkProtocol.ino";
-
 	public ArdulinkArduinoSimulator(String... args) throws InterruptedException {
+		if (args.length == 0) {
+			throw new IllegalArgumentException("Pass .ino/.hex/.zip file as argument");
+		}
+		File firmware = new File(args[0]);
 		try (GenericContainer<?> virtualAvrContainer = new GenericContainer<>("pfichtner/virtualavr")) {
-			virtualAvrContainer.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice)
-					.withFileSystemBind(hostDev, containerDev)
-					.withFileSystemBind(args.length > 0 ? args[0] : firmware, "/sketch/sketch.ino", READ_ONLY)
-					.withExposedPorts(8080).start();
+			virtualAvrContainer.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice) //
+					.withEnv("FILENAME", firmware.getName()) //
+					.withFileSystemBind(hostDev, containerDev) //
+					.withFileSystemBind(firmware.getParent(), "/sketch/", READ_ONLY) //
+					.withExposedPorts(8080) //
+					.start() //
+			;
 
 			// do sysouts
 			VirtualAvrConnection connectionToVirtualAvr = connectionToVirtualAvr(virtualAvrContainer);
@@ -54,7 +60,7 @@ public class ArdulinkArduinoSimulator {
 							System.out.println("Setting " + pin + " to " + state);
 							connectionToVirtualAvr.setPinState(pin, state);
 						}
-						
+
 					}
 				}
 			} catch (IOException e) {
