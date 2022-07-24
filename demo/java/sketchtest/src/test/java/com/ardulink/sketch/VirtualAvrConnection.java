@@ -24,17 +24,17 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	public static class PinState {
 		public String pin;
-		public int state;
+		public Object state;
 
 		public static Predicate<PinState> switchedOn(int pin) {
-			return stateOfPinIs("D" + pin, 1);
+			return stateOfPinIs("D" + pin, true);
 		}
 
 		public static Predicate<PinState> switchedOff(int pin) {
-			return stateOfPinIs("D" + pin, 0);
+			return stateOfPinIs("D" + pin, false);
 		}
 
-		public static Predicate<PinState> stateOfPinIs(String pin, int state) {
+		public static Predicate<PinState> stateOfPinIs(String pin, boolean state) {
 			return p -> Objects.equals(p.pin, pin) && Objects.equals(p.state, state);
 		}
 

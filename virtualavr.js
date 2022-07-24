@@ -16,7 +16,7 @@ var adc;
 const arduinoPinOnPortB = [ 'D8','D9','D10','D11','D12','D13','D20','D21' ];
 
 // analog ports A0,A1,A2,A3,A4,A5,A6,A7 (19,20,21,22,23,24,25,26)
-const analogPorts = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
+const arduinoPinOnPortC = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
 
 
 const args = process.argv.slice(2);
@@ -62,7 +62,7 @@ const runCode = async (inputFilename, portCallback) => {
 			const state = portB.pinState(pin) === avr8js.PinState.High;
 			const oldState = portStates[arduinoPin];
 			if (oldState != undefined && oldState != state) {
-				portCallback(arduinoPin, state ? '1' : '0');
+				portCallback(arduinoPin, state);
 			}
 			portStates[arduinoPin] = state;
 		}
@@ -116,8 +116,7 @@ function main() {
 	const callback = (pin, state) => {
 		wss.clients.forEach(function each(client) {
 			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-				// TODO send boolean state on digital pins
-				client.send(JSON.stringify({ type: 'pinState', pin: pin, state: state}));
+				client.send(JSON.stringify({ type: 'pinState', pin, state}));
 			}
 		});
 
@@ -135,7 +134,7 @@ function main() {
 			      }
 
                               if (typeof obj.state === 'number') {
-				      const avrPin = analogPorts.indexOf(obj.pin);
+				      const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
 				      if (avrPin >= 0)
 					      adc.channelValues[avrPin] = obj.state*5/1024;
                               }
