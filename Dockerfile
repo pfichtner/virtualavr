@@ -1,7 +1,7 @@
 FROM node:16
 
 WORKDIR /sketch
-ADD sketch.ino /sketch/
+ADD /sketch /sketch/
 
 WORKDIR /app
 ADD virtualavr.js package-lock.json package.json /app/
