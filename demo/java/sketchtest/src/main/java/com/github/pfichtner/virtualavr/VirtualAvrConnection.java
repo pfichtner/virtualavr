@@ -88,6 +88,10 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		send(gson.toJson(new FakePinState(pin, state)));
 	}
 
+	public void setPinState(String pin, int state) {
+		send(gson.toJson(new FakePinState(pin, state)));
+	}
+
 	@Override
 	public void onError(Exception ex) {
 	}

@@ -6,6 +6,8 @@ import static org.testcontainers.containers.BindMode.READ_ONLY;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.NumberFormat;
+import java.text.ParseException;
 
 import org.testcontainers.containers.GenericContainer;
 
@@ -40,9 +42,16 @@ public class ArdulinkArduinoSimulator {
 						System.err.println("Unable to split " + input);
 					} else {
 						String pin = split[0];
-						boolean state = Boolean.parseBoolean(split[1]);
-						System.out.println("Setting " + pin + " to " + state);
-						connectionToVirtualAvr.setPinState(pin, state);
+						try {
+							Number state = NumberFormat.getNumberInstance().parse(split[1]);
+							System.out.println("Setting " + pin + " to " + state);
+							connectionToVirtualAvr.setPinState(pin, state.intValue());
+						} catch (ParseException e) {
+							boolean state = Boolean.parseBoolean(split[1]);
+							System.out.println("Setting " + pin + " to " + state);
+							connectionToVirtualAvr.setPinState(pin, state);
+						}
+						
 					}
 				}
 			} catch (IOException e) {
