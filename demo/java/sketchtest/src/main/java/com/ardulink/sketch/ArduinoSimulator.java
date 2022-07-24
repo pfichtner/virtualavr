@@ -14,23 +14,26 @@ import org.testcontainers.containers.GenericContainer;
 
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
 
-public class ArdulinkArduinoSimulator {
+public class ArduinoSimulator {
+
+	private static final int WEBSOCKET_PORT = 8080;
 
 	String hostDev = "/dev";
 	String containerDev = "/dev";
 	String ttyDevice = "ttyUSB0";
 
-	public ArdulinkArduinoSimulator(String... args) throws InterruptedException {
+	public ArduinoSimulator(String... args) throws InterruptedException {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Pass .ino/.hex/.zip file as argument");
 		}
 		File firmware = new File(args[0]);
 		try (GenericContainer<?> virtualAvrContainer = new GenericContainer<>("pfichtner/virtualavr")) {
-			virtualAvrContainer.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice) //
+			virtualAvrContainer //
+					.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice) //
 					.withEnv("FILENAME", firmware.getName()) //
 					.withFileSystemBind(hostDev, containerDev) //
 					.withFileSystemBind(firmware.getParent(), "/sketch/", READ_ONLY) //
-					.withExposedPorts(8080) //
+					.withExposedPorts(WEBSOCKET_PORT) //
 					.start() //
 			;
 
@@ -71,7 +74,7 @@ public class ArdulinkArduinoSimulator {
 	}
 
 	public static void main(String... args) throws InterruptedException {
-		new ArdulinkArduinoSimulator(args);
+		new ArduinoSimulator(args);
 	}
 
 }
