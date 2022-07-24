@@ -19,10 +19,12 @@ Connect to virtual serial device
 ```minicom -D /dev/virtualavr0```
 
 Full example, you can pass the devicename as well the code that gets compiled and the executed on the virtual AVR
-```docker run -e VIRTUALDEVICE=/dev/ttyUSB0 -v /dev:/dev -v /path/to/myArduinoCode.ino:/app/code.ino -d pfichtner/virtualavr```
+```docker run -e VIRTUALDEVICE=/dev/ttyUSB0 -v /dev:/dev -v /path/to/myArduinoCode.ino:/app/sketch.ino -d pfichtner/virtualavr```
 
 Environment variables supported
 - VIRTUALDEVICE the full path of the virtual device that socat creates
+- FILENAME the name of the ino/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt)
+- BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos
 
 # Screencast of usage
@@ -34,10 +36,12 @@ Environment variables supported
 - virtualavr.js runs inside a node process, and links nodejs' stdin/stdout to avr8js' virtual serial port
 - [socat](http://www.dest-unreach.org/socat/) creates a virtual serial port on the local machine and links this virtual serial port to nodejs' stdin/stdout. That way you get a virtual serial port which is connected to the serial port of the simulator (avr8js)
 - The whole thing is packaged inside a docker image. Because so the serial port is inside the docker container only, you have to do volumne mounts (-v /dev:/dev) so that you get access to the "in-docker-device" on the local computer. 
+- Virtualavr starts a websocket server you can connect to. Using that websocket connection you can control the states of the analog/digital pins as well cou get informed about things hapening on the virtual AVR. 
 
 ![virtualavr.png](docs/images/virtualavr.png)
 
 # Todos
+- Add support for analog pins! 
 - Add support for running simulator withou VIRTUALDEVICE
 - Expose SerialRX/SerialTX events (and have tests for them)
 - Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli

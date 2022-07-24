@@ -149,7 +149,7 @@ function main() {
 
 
 
-	runCode(args.length == 0 ? 'code.ino' : args[0], callback);
+	runCode(args.length == 0 ? 'sketch.ino' : args[0], callback);
 }
 
 if (require.main === module) {
