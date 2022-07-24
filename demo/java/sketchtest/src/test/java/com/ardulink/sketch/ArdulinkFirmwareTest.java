@@ -15,9 +15,9 @@ class ArdulinkFirmwareTest {
 	String firmware = "/tmp/ArdulinkProtocol.ino";
 
 	@Container
-	GenericContainer<?> virtualavr = new GenericContainer<>("virtualavr")
+	GenericContainer<?> virtualavr = new GenericContainer<>("pfichtner/virtualavr")
 			.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice).withFileSystemBind(hostDev, containerDev)
-			.withFileSystemBind(firmware, "/app/code.ino");
+			.withFileSystemBind(firmware, "/sketch/sketch.ino");
 
 	@Test
 	void canDetectArduinoThatSendInitialMessage() throws Exception {
