@@ -12,18 +12,18 @@ This is where virtualavr comes into play
 virtualavr comes as a Docker image that provides a virtual AVR including a virtual serial device which you can connect to just like to real hardware. 
 
 
-Start the container
+Start the container (will load the included blink sketch)
 ```docker run -v /dev:/dev -d pfichtner/virtualavr```
 
 Connect to virtual serial device
 ```minicom -D /dev/virtualavr0```
 
 Full example, you can pass the devicename as well the code that gets compiled and the executed on the virtual AVR
-```docker run -e VIRTUALDEVICE=/dev/ttyUSB0 -v /dev:/dev -v /path/to/myArduinoCode.ino:/app/sketch.ino -d pfichtner/virtualavr```
+```docker run -e VIRTUALDEVICE=/dev/ttyUSB0 -e FILENAME=myArduinoSketch.ino -v /dev:/dev -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr```
 
 Environment variables supported
 - VIRTUALDEVICE the full path of the virtual device that socat creates
-- FILENAME the name of the ino/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt)
+- FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
 - BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos
 
