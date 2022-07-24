@@ -1,4 +1,4 @@
-package com.ardulink.sketch;
+package com.github.pfichtner.virtualavr;
 
 import static jssc.SerialPort.BAUDRATE_115200;
 import static jssc.SerialPort.DATABITS_8;
@@ -51,18 +51,18 @@ public class SerialConnection implements AutoCloseable {
 		port.closePort();
 	}
 
-	SerialConnection sendAwait(String send, String awaitResponse) throws Exception {
+	public SerialConnection sendAwait(String send, String awaitResponse) throws Exception {
 		sendAwait(send, r -> r.contains(awaitResponse));
 		return this;
 	}
 
-	void sendAwait(String send, Predicate<String> callable) throws Exception {
+	public void sendAwait(String send, Predicate<String> callable) throws Exception {
 		send(send);
 		await().until(() -> callable.test(received()));
 		clearReceived();
 	}
 
-	SerialConnection waitReceivedAnything() throws Exception {
+	public SerialConnection waitReceivedAnything() throws Exception {
 		sendAwait("", r -> !r.isEmpty());
 		return this;
 	}

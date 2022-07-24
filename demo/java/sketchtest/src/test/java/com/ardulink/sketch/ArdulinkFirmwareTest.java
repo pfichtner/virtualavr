@@ -7,6 +7,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.github.pfichtner.virtualavr.SerialConnection;
+
 @Testcontainers
 class ArdulinkFirmwareTest {
 

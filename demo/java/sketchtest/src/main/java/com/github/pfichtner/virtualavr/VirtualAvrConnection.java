@@ -1,4 +1,4 @@
-package com.ardulink.sketch;
+package com.github.pfichtner.virtualavr;
 
 import java.net.URI;
 import java.util.List;

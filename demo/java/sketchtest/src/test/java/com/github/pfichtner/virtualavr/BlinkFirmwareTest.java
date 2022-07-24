@@ -1,8 +1,8 @@
-package com.ardulink.sketch;
+package com.github.pfichtner.virtualavr;
 
-import static com.ardulink.sketch.VirtualAvrConnection.connectionToVirtualAvr;
-import static com.ardulink.sketch.VirtualAvrConnection.PinState.switchedOff;
-import static com.ardulink.sketch.VirtualAvrConnection.PinState.switchedOn;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.switchedOff;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.switchedOn;
 import static org.awaitility.Awaitility.await;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
@@ -14,7 +14,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.ardulink.sketch.VirtualAvrConnection.PinState;
+import com.github.pfichtner.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
 
 @Testcontainers
 class BlinkFirmwareTest {
