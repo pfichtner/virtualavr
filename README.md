@@ -4,8 +4,8 @@
 ### virtualavr
 
 A AVR/Arduino Simulator based on [avr8js](https://github.com/wokwi/avr8js) with focus on automated tests. 
-- You want to test your program on an integration level without flashing a real microprocessor every time? 
-- You want to test some code that interacts with a microprocessor but you want to test without having real hardware connected (e.g. on a ci server)?
+- You want to test your microcontroller program on an integration level without flashing a real microprocessor every time? 
+- You want to test some code that interacts with a microprocessor but you want to test without having real hardware connected and flashed (e.g. on a ci server)?
 
 This is where virtualavr comes into play
 
@@ -22,7 +22,7 @@ Full example, you can pass the devicename as well the code that gets compiled an
 ```docker run -e VIRTUALDEVICE=/dev/ttyUSB0 -e FILENAME=myArduinoSketch.ino -v /dev:/dev -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr```
 
 Environment variables supported
-- VIRTUALDEVICE the full path of the virtual device that socat creates
+- VIRTUALDEVICE the full path of the virtual device that socat creates (defaults to /dev/virtualavr0)
 - FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
 - BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos
