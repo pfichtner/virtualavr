@@ -34,9 +34,9 @@ Environment variables supported
 # What's inside? How does it work? 
 - The heart is [avr8js](https://github.com/wokwi/avr8js)
 - virtualavr.js runs inside a node process, and links nodejs' stdin/stdout to avr8js' virtual serial port
-- [socat](http://www.dest-unreach.org/socat/) creates a virtual serial port on the local machine and links this virtual serial port to nodejs' stdin/stdout. That way you get a virtual serial port which is connected to the serial port of the simulator (avr8js)
-- The whole thing is packaged inside a docker image. Because so the serial port is inside the docker container only, you have to do volumne mounts (-v /dev:/dev) so that you get access to the "in-docker-device" on the local computer. 
-- Virtualavr starts a websocket server you can connect to. Using that websocket connection you can control the states of the analog/digital pins as well cou get informed about things hapening on the virtual AVR. 
+- [socat](http://www.dest-unreach.org/socat/) creates a virtual serial port on the local machine (better said inside the docker container) and links this virtual serial port to nodejs' stdin/stdout. That way you get a virtual serial port which is connected to the serial port of the simulator (avr8js)
+- Due to the whole thing is packaged inside a docker container the serial port is inside that docker container only. So you have to do volumne mounts (-v /dev:/dev) so that you get access to the "in-docker-device" on your local computer 
+- Virtualavr starts a websocket server you can connect to. Using that websocket connection you can control the states of the analog/digital pins as well cou get informed about things hapening on the virtual AVR e.g. state changes of the pins 
 
 ![virtualavr.png](docs/images/virtualavr.png)
 
