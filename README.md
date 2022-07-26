@@ -52,6 +52,7 @@ Environment variables supported
 - JS Callbacks for pin states/Components, e.g. DHT22
 - Java-Bindings for pin states/Components, e.g. DHT22 (IPC, using websockets?)
 - Make websockets port configurable
+- Watch support: Recompile/reload firmware when changed on filesystem
 - Could we implement upload? So that you can upload the compiled firmware to runniner container / /dev/virtualdevice?
   Could we use arduino firmware? https://github.com/arduino/ArduinoCore-avr/tree/master/bootloaders/atmega : If this works? Do we have to upload elf binaries?
 
