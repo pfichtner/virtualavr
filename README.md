@@ -25,7 +25,7 @@ Environment variables supported
 - VIRTUALDEVICE the full path of the virtual device that socat creates (defaults to /dev/virtualavr0)
 - FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
 - BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
-- VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos
+- VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
 
 # Screencast of usage
 <a href="http://pfichtner.github.io/virtualavr-asciinema/"><img src="https://pfichtner.github.io/virtualavr-asciinema/asciinema-poster.png" /></a>
