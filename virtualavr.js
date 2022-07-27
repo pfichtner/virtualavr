@@ -86,7 +86,9 @@ const runCode = async (inputFilename, portCallback) => {
 		sendNextChar(buff, usart);
 	});
 
-	const timer = new avr8js.AVRTimer(cpu, avr8js.timer0Config);
+	new avr8js.AVRTimer(cpu, avr8js.timer0Config);
+	new avr8js.AVRTimer(cpu, avr8js.timer1Config);
+	new avr8js.AVRTimer(cpu, avr8js.timer2Config);
 	while (true) {
 		for (let i = 0; i < 500000; i++) {
 			avr8js.avrInstruction(cpu);
