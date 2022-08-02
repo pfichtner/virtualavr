@@ -55,13 +55,32 @@ const runCode = async (inputFilename, portCallback) => {
 	// Attach the virtual hardware
 	portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
 	const portStates = {};
+	const portStates_ = {};
 	portB.addListener(() => {
 // console.log("portB");
 		for (let pin = 0; pin <= 7; pin++) {
 			const arduinoPin = arduinoPinOnPortB[pin];
 			const state = portB.pinState(pin) === avr8js.PinState.High;
+
+
+			let entry = portStates_[arduinoPin];
+			if (entry === undefined) {
+				entry = { lastState: -1, lastStateCycles: 0, lastUpdateCycles: 0, ledHighCycles: 0 };
+				portStates_[arduinoPin] = entry
+			}
+			if (entry.lastState !== state) {
+				const delta = cpu.cycles - entry.lastStateCycles;
+// TODO why does === do not work here?
+				if (entry.lastState == avr8js.PinState.High) {
+					entry.ledHighCycles += delta;
+				}
+				entry.lastState = state;
+				entry.lastStateCycles = cpu.cycles;
+			}
+
+
 			const oldState = portStates[arduinoPin];
-			if (oldState != undefined && oldState != state) {
+			if (oldState != undefined && oldState !== state) {
 				portCallback(arduinoPin, state);
 			}
 			portStates[arduinoPin] = state;
@@ -69,12 +88,6 @@ const runCode = async (inputFilename, portCallback) => {
 	});
 
 	adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
-	// TODO add adc listener
-
-	const portC = new avr8js.AVRIOPort(cpu, avr8js.portCConfig);
-	portC.addListener(() => {
-// console.log("portC");
-	});
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
 	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
@@ -95,6 +108,23 @@ const runCode = async (inputFilename, portCallback) => {
 			cpu.tick();
 		}
 		await new Promise(resolve => setTimeout(resolve));
+
+		for (const led in portStates_) {
+			const entry = portStates_[led];
+			const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
+                        const avrPin = arduinoPinOnPortB.indexOf(led);
+			// TODO why does === do not work here?
+			if (portB.pinState(avrPin) == avr8js.PinState.High) {
+				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
+			}
+			// console.log(led + ".value = " + entry.ledHighCycles > 0);
+			console.log(led + ".brightness = " + Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
+			entry.lastUpdateCycles = cpu.cycles;
+			entry.lastStateCycles = cpu.cycles;
+			entry.ledHighCycles = 0;
+		}
+
+
 	}
 
 }
@@ -137,8 +167,9 @@ function main() {
 
                               if (typeof obj.state === 'number') {
 				      const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
-				      if (avrPin >= 0)
-					      adc.channelValues[avrPin] = obj.state*5/1024;
+				      if (avrPin >= 0) {
+					      adc.channelValues[avrPin] = obj.state * 5 / 1024;
+				      }
                               }
 
                       }
