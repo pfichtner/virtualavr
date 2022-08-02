@@ -55,7 +55,6 @@ const runCode = async (inputFilename, portCallback) => {
 	// Attach the virtual hardware
 	portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
 	const portStates = {};
-	const portStates_ = {};
 	portB.addListener(() => {
 // console.log("portB");
 		for (let pin = 0; pin <= 7; pin++) {
@@ -63,27 +62,23 @@ const runCode = async (inputFilename, portCallback) => {
 			const state = portB.pinState(pin) === avr8js.PinState.High;
 
 
-			let entry = portStates_[arduinoPin];
+			let entry = portStates[arduinoPin];
 			if (entry === undefined) {
-				entry = { lastState: -1, lastStateCycles: 0, lastUpdateCycles: 0, ledHighCycles: 0 };
-				portStates_[arduinoPin] = entry
+				entry = { lastStateCycles: 0, lastUpdateCycles: 0, ledHighCycles: 0 };
+				portStates[arduinoPin] = entry
 			}
-			if (entry.lastState !== state) {
-				const delta = cpu.cycles - entry.lastStateCycles;
+			if (entry.lastState === undefined ? state == avr8js.PinState.High : entry.lastState !== state) {
+				portCallback(arduinoPin, state);
+			}
+			if (entry.lastState === undefined || entry.lastState !== state) {
 // TODO why does === do not work here?
 				if (entry.lastState == avr8js.PinState.High) {
+					const delta = cpu.cycles - entry.lastStateCycles;
 					entry.ledHighCycles += delta;
 				}
 				entry.lastState = state;
 				entry.lastStateCycles = cpu.cycles;
 			}
-
-
-			const oldState = portStates[arduinoPin];
-			if (oldState != undefined && oldState !== state) {
-				portCallback(arduinoPin, state);
-			}
-			portStates[arduinoPin] = state;
 		}
 	});
 
@@ -109,8 +104,8 @@ const runCode = async (inputFilename, portCallback) => {
 		}
 		await new Promise(resolve => setTimeout(resolve));
 
-		for (const led in portStates_) {
-			const entry = portStates_[led];
+		for (const led in portStates) {
+			const entry = portStates[led];
 			const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
                         const avrPin = arduinoPinOnPortB.indexOf(led);
 			// TODO why does === do not work here?
@@ -118,7 +113,7 @@ const runCode = async (inputFilename, portCallback) => {
 				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
 			}
 			// console.log(led + ".value = " + entry.ledHighCycles > 0);
-			console.log(led + ".brightness = " + Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
+			// console.log(led + ".brightness = " + Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
 			entry.lastUpdateCycles = cpu.cycles;
 			entry.lastStateCycles = cpu.cycles;
 			entry.ledHighCycles = 0;
