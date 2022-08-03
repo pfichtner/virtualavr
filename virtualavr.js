@@ -11,6 +11,7 @@ const ws = require('ws');
 
 var portB;
 var adc;
+const listeningModes = {};
 
 // TODO Is there a define in avr8js's boards? PORTB: arduino pins D8,D9,D10,D11,D12,D13,D20,D21
 const arduinoPinOnPortB = [ 'D8','D9','D10','D11','D12','D13','D20','D21' ];
@@ -31,12 +32,12 @@ const runCode = async (inputFilename, portCallback) => {
 				const sketchBuf = await zip.entryData('sketch.ino');
 				sketch = sketchBuf.toString();
 				const libraries = await zip.entryData('libraries.txt');
-				files.push({ name: "libraries.txt", content: libraries.toString() });
+				files.push({ name: 'libraries.txt', content: libraries.toString() });
 				await zip.close();
 		}
 		const result = await fetch('https://hexi.wokwi.com/build', {
 			method: 'post',
-			body: JSON.stringify({ board: "uno", sketch, files }),
+			body: JSON.stringify({ board: 'uno', sketch, files }),
 			headers: { 'Content-Type': 'application/json' }
 		});
 		const { hex, stderr } = await result.json();
@@ -61,23 +62,22 @@ const runCode = async (inputFilename, portCallback) => {
 			const arduinoPin = arduinoPinOnPortB[pin];
 			const state = portB.pinState(pin) === avr8js.PinState.High;
 
-
 			let entry = portStates[arduinoPin];
 			if (entry === undefined) {
 				entry = { lastStateCycles: 0, lastUpdateCycles: 0, ledHighCycles: 0 };
 				portStates[arduinoPin] = entry
 			}
-			if (entry.lastState === undefined ? state == avr8js.PinState.High : entry.lastState !== state) {
-				portCallback(arduinoPin, state);
-			}
-			if (entry.lastState === undefined || entry.lastState !== state) {
-// TODO why does === do not work here?
-				if (entry.lastState == avr8js.PinState.High) {
+			if (entry.lastState === undefined ? state : entry.lastState !== state) {
+				if (entry.lastState) {
 					const delta = cpu.cycles - entry.lastStateCycles;
 					entry.ledHighCycles += delta;
 				}
 				entry.lastState = state;
 				entry.lastStateCycles = cpu.cycles;
+				if (listeningModes[arduinoPinOnPortB[pin]] !== 'analog') {
+					// TODO throttle if there are to much messages (see lastStateCycles)
+					portCallback(arduinoPin, state);
+				}
 			}
 		}
 	});
@@ -112,8 +112,9 @@ const runCode = async (inputFilename, portCallback) => {
 			if (portB.pinState(avrPin) == avr8js.PinState.High) {
 				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
 			}
-			// console.log(led + ".value = " + entry.ledHighCycles > 0);
-			// console.log(led + ".brightness = " + Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
+			if (listeningModes[led] === 'analog') {
+				portCallback(avrPin, Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
+			}
 			entry.lastUpdateCycles = cpu.cycles;
 			entry.lastStateCycles = cpu.cycles;
 			entry.ledHighCycles = 0;
@@ -153,13 +154,18 @@ function main() {
                ws.on('message', function message(data) {
 		try {
                       const obj = JSON.parse(data);
-                      if (obj.type == 'fakePinState') {
+                      // { "type": "pinMode", "pin": "D12", "mode": "analog" }
+                      if (obj.type == 'pinMode') {
+                         listeningModes[obj.pin] = obj.mode;
+                      } else if (obj.type == 'fakePinState' || obj.type == 'pinState') {
+                              // { "type": "pinState", "pin": "D12", "state": true }
                               if (typeof obj.state === 'boolean') {
 				      const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
 				      if (avrPin >= 0)
 					      portB.setPin(avrPin, obj.state == 1);
 			      }
 
+                              // { "type": "pinState", "pin": "D12", "state": 42 }
                               if (typeof obj.state === 'number') {
 				      const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
 				      if (avrPin >= 0) {
