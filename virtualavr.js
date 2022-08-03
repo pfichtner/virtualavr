@@ -112,7 +112,7 @@ const runCode = async (inputFilename, portCallback) => {
 			if (portB.pinState(avrPin) == avr8js.PinState.High) {
 				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
 			}
-			if (listeningModes[led] === 'analog') {
+			if (listeningModes[led] === 'analog') || listeningModes[led] === 'pwm') {
 				portCallback(avrPin, Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
 			}
 			entry.lastUpdateCycles = cpu.cycles;
