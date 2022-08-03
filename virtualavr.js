@@ -112,7 +112,7 @@ const runCode = async (inputFilename, portCallback) => {
 			if (portB.pinState(avrPin) == avr8js.PinState.High) {
 				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
 			}
-			if (listeningModes[led] === 'analog') || listeningModes[led] === 'pwm') {
+			if (listeningModes[led] === 'analog' || listeningModes[led] === 'pwm') {
 				portCallback(avrPin, Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
 			}
 			entry.lastUpdateCycles = cpu.cycles;
@@ -138,11 +138,11 @@ function main() {
 		port: 8080,
 		perMessageDeflate: {
 			concurrencyLimit: 2, // Limits zlib concurrency for perf.
-			threshold: 1024 // Size (in bytes) below which messages
+			threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
 		}
 	});
 	const callback = (pin, state) => {
-		wss.clients.forEach(function each(client) {
+		wss.clients.forEach(client => {
 			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
 				client.send(JSON.stringify({ type: 'pinState', pin, state}));
 			}
