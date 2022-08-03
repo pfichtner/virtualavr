@@ -12,6 +12,7 @@ jest.setTimeout(10000);
 // - WS messages read 
 // - Does run loop/demo sketch without params?
 // - Support for running without serial device? -> Add test for it
+// - Switch of pinMode (analog/digital)
 
 
 describe('My Test Suite', () => {
