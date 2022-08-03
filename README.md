@@ -41,7 +41,6 @@ Environment variables supported
 ![virtualavr.png](docs/images/virtualavr.png)
 
 # Todos
-- Add write support for digital PWM pins! 
 - Add support for running simulator without VIRTUALDEVICE
 - Expose SerialRX/SerialTX events (and have tests for them)
 - Can we connect other handles than stdin/stdout so that we still ca write to stdout from within nodejs/virtualavr.js?
