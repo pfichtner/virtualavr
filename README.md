@@ -44,6 +44,7 @@ Environment variables supported
 - Add write support for digital PWM pins! 
 - Add support for running simulator without VIRTUALDEVICE
 - Expose SerialRX/SerialTX events (and have tests for them)
+- Can we connect other handles than stdin/stdout so that we still ca write to stdout from within nodejs/virtualavr.js?
 - Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
 - Add an example (jest?): How to test some JS that interacts with firmware (e.g. firmata)
