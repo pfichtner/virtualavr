@@ -75,8 +75,10 @@ const runCode = async (inputFilename, portCallback) => {
 				entry.lastState = state;
 				entry.lastStateCycles = cpu.cycles;
 				if (listeningModes[arduinoPinOnPortB[pin]] !== 'analog') {
+					// TODO should we move all publishs out of the callback (also the digitals)?
 					// TODO throttle if there are to much messages (see lastStateCycles)
 					portCallback(arduinoPin, state);
+					entry.lastStatePublished = state;
 				}
 			}
 		}
@@ -113,7 +115,11 @@ const runCode = async (inputFilename, portCallback) => {
 				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
 			}
 			if (listeningModes[led] === 'analog' || listeningModes[led] === 'pwm') {
-				portCallback(avrPin, Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255));
+				const state = Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255);
+				if (state !== entry.lastStatePublished) {
+					portCallback(avrPin, state);
+				}
+				entry.lastStatePublished = state;
 			}
 			entry.lastUpdateCycles = cpu.cycles;
 			entry.lastStateCycles = cpu.cycles;
