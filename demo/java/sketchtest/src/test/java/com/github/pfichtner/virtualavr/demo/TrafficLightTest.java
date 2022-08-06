@@ -28,6 +28,7 @@ class TrafficLightTest {
 	@Container
 	static VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>()
 			.withSketchFile(loadClasspath("/trafficlight.ino"));
+	private static VirtualAvrConnection avr;
 
 	private static File loadClasspath(String name) {
 		try {
@@ -36,8 +37,6 @@ class TrafficLightTest {
 			throw new IllegalStateException(e);
 		}
 	}
-
-	static VirtualAvrConnection avr = virtualavr.getAvr();
 
 	@BeforeAll
 	static void beforeAll() {

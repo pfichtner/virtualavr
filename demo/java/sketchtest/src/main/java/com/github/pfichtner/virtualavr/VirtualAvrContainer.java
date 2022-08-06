@@ -42,7 +42,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
-	public VirtualAvrConnection getAvr() {
+	public synchronized VirtualAvrConnection getAvr() {
+		if (avr == null) {
+			avr = connectionToVirtualAvr(this);
+		}
 		return avr;
 	}
 
@@ -51,12 +54,6 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 			serialConnection = new SerialConnection(hostDev + "/" + ttyDevice);
 		}
 		return serialConnection;
-	}
-
-	@Override
-	public void start() {
-		super.start();
-		avr = connectionToVirtualAvr(this);
 	}
 
 }
