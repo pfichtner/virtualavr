@@ -41,7 +41,8 @@ Environment variables supported
 ![virtualavr.png](docs/images/virtualavr.png)
 
 # Todos
-- Add support for running simulator without VIRTUALDEVICE
+- Add support for running simulator without VIRTUALDEVICE (VIRTUALDEVICE="")
+- Add time/cpu-cycles to ws messages
 - Expose SerialRX/SerialTX events (and have tests for them)
 - Can we connect other handles than stdin/stdout so that we still ca write to stdout from within nodejs/virtualavr.js?
 - Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli
