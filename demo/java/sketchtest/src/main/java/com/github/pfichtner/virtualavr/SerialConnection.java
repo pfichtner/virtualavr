@@ -4,9 +4,6 @@ import static jssc.SerialPort.BAUDRATE_115200;
 import static jssc.SerialPort.DATABITS_8;
 import static jssc.SerialPort.PARITY_NONE;
 import static jssc.SerialPort.STOPBITS_1;
-import static org.awaitility.Awaitility.await;
-
-import java.util.function.Predicate;
 
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
@@ -51,20 +48,5 @@ public class SerialConnection implements AutoCloseable {
 		port.closePort();
 	}
 
-	public SerialConnection sendAwait(String send, String awaitResponse) throws Exception {
-		sendAwait(send, r -> r.contains(awaitResponse));
-		return this;
-	}
-
-	public void sendAwait(String send, Predicate<String> callable) throws Exception {
-		send(send);
-		await().until(() -> callable.test(received()));
-		clearReceived();
-	}
-
-	public SerialConnection waitReceivedAnything() throws Exception {
-		sendAwait("", r -> !r.isEmpty());
-		return this;
-	}
 
 }

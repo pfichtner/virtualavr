@@ -1,18 +1,19 @@
-package com.ardulink.sketch;
+package com.github.pfichtner.virtualavr.demo;
 
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
 import static java.lang.Boolean.TRUE;
 import static org.awaitility.Awaitility.await;
-import static org.testcontainers.containers.BindMode.READ_ONLY;
+
+import java.io.File;
+import java.net.URISyntaxException;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class TrafficLightTest {
@@ -24,24 +25,23 @@ class TrafficLightTest {
 	private static final String YELLOW_LED = "D11";
 	private static final String GREEN_LED = "D10";
 
-	private static final int WEBSOCKET_PORT = 8080;
-
-	static String hostDev = "/dev";
-	static String containerDev = "/dev";
-	static String ttyDevice = "ttyUSB0";
-
 	@Container
-	static GenericContainer<?> virtualavr = new GenericContainer<>("pfichtner/virtualavr")
-			.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice) //
-			.withFileSystemBind(hostDev, containerDev) //
-			.withClasspathResourceMapping("trafficlight.ino", "/sketch/sketch.ino", READ_ONLY) //
-			.withExposedPorts(WEBSOCKET_PORT) //
-	;
-	static VirtualAvrConnection avr;
+	static VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>()
+			.withSketchFile(loadClasspath("/trafficlight.ino"));
+
+	private static File loadClasspath(String name) {
+		try {
+			return new File(TrafficLightTest.class.getResource(name).toURI());
+		} catch (URISyntaxException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	static VirtualAvrConnection avr = virtualavr.getAvr();
 
 	@BeforeAll
 	static void beforeAll() {
-		avr = connectionToVirtualAvr(virtualavr);
+		avr = virtualavr.getAvr();
 	}
 
 	@BeforeEach

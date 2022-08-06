@@ -1,8 +1,5 @@
 package com.ardulink.sketch;
 
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
-import static org.testcontainers.containers.BindMode.READ_ONLY;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -10,35 +7,26 @@ import java.io.InputStreamReader;
 import java.text.NumberFormat;
 import java.text.ParseException;
 
-import org.testcontainers.containers.GenericContainer;
-
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
+/**
+ * Creates a virtual arduino that exposes a serial device whose port states can
+ * be controlled via stdin.
+ */
 public class ArduinoSimulator {
-
-	private static final int WEBSOCKET_PORT = 8080;
-
-	String hostDev = "/dev";
-	String containerDev = "/dev";
-	String ttyDevice = "ttyUSB0";
 
 	public ArduinoSimulator(String... args) throws InterruptedException {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Pass .ino/.hex/.zip file as argument");
 		}
 		File firmware = new File(args[0]);
-		try (GenericContainer<?> virtualAvrContainer = new GenericContainer<>("pfichtner/virtualavr")) {
-			virtualAvrContainer //
-					.withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice) //
-					.withEnv("FILENAME", firmware.getName()) //
-					.withFileSystemBind(hostDev, containerDev) //
-					.withFileSystemBind(firmware.getParent(), "/sketch/", READ_ONLY) //
-					.withExposedPorts(WEBSOCKET_PORT) //
-					.start() //
-			;
+
+		try (VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()) {
+			virtualAvrContainer.withSketchFile(firmware).start();
 
 			// do sysouts
-			VirtualAvrConnection connectionToVirtualAvr = connectionToVirtualAvr(virtualAvrContainer);
+			VirtualAvrConnection connectionToVirtualAvr = virtualAvrContainer.getAvr();
 
 			try {
 				BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
