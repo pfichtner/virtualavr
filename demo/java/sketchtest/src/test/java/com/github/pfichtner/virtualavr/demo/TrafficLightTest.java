@@ -8,7 +8,6 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -40,13 +39,9 @@ class TrafficLightTest {
 		}
 	}
 
-	@BeforeAll
-	static void beforeAll() {
-		avr = virtualavr.avr();
-	}
-
 	@BeforeEach
 	void beforeEach() {
+		avr = virtualavr.avr();
 		avr.clearStates();
 	}
 
