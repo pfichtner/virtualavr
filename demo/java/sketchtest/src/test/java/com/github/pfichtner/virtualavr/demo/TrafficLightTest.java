@@ -1,6 +1,7 @@
 package com.github.pfichtner.virtualavr.demo;
 
-import static com.github.pfichtner.virtualavr.demo.TrafficLightTest.State.state;
+import static com.github.pfichtner.virtualavr.demo.TrafficLightTest.State.off;
+import static com.github.pfichtner.virtualavr.demo.TrafficLightTest.State.on;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.awaitility.Awaitility.await;
@@ -26,18 +27,22 @@ class TrafficLightTest {
 		private final String led;
 		private final Boolean state;
 
-		public State(String led, Boolean state) {
+		private State(String led, Boolean state) {
 			this.led = led;
 			this.state = state;
 		}
 
-		public static State state(String led, Boolean state) {
-			return new State(led, state);
+		public static State on(String led) {
+			return new State(led, TRUE);
+		}
+
+		public static State off(String led) {
+			return new State(led, FALSE);
 		}
 	}
 
-	private static final String VALUE_PIN = "A1";
 	private static final String REF_PIN = "A0";
+	private static final String VALUE_PIN = "A1";
 
 	private static final String GREEN_LED = "D10";
 	private static final String YELLOW_LED = "D11";
@@ -66,21 +71,25 @@ class TrafficLightTest {
 	void valueEqualsRef_GreenLedIsIOn() {
 		int someValue = 1022;
 		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue);
-		await().until(() -> statesAre(state(GREEN_LED, TRUE), state(YELLOW_LED, FALSE), state(RED_LED, FALSE)));
+		awaitUntil(on(GREEN_LED), off(YELLOW_LED), off(RED_LED));
 	}
 
 	@Test
 	void valueGreaterThenRef_RedLedIsIOn() {
 		int someValue = 1022;
 		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue + 1);
-		await().until(() -> statesAre(state(GREEN_LED, FALSE), state(YELLOW_LED, FALSE), state(RED_LED, TRUE)));
+		awaitUntil(off(GREEN_LED), off(YELLOW_LED), on(RED_LED));
 	}
 
 	@Test
 	void valueGreaterWithin90Percent_YellowLedIsIOn() {
 		int ref = 100;
 		avr.pinState(REF_PIN, ref).pinState(VALUE_PIN, ref * 90 / 100 + 1);
-		await().until(() -> statesAre(state(GREEN_LED, FALSE), state(YELLOW_LED, TRUE), state(RED_LED, FALSE)));
+		awaitUntil(off(GREEN_LED), on(YELLOW_LED), off(RED_LED));
+	}
+
+	private void awaitUntil(State... states) {
+		await().until(() -> statesAre(states));
 	}
 
 	private boolean statesAre(State... states) {
