@@ -77,8 +77,9 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		return (e0, e1) -> e1;
 	}
 
-	public void clearStates() {
+	public VirtualAvrConnection clearStates() {
 		pinStates.clear();
+		return this;
 	}
 
 	@Override

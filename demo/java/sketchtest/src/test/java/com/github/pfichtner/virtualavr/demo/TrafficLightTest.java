@@ -63,8 +63,7 @@ class TrafficLightTest {
 
 	@BeforeEach
 	void beforeEach() {
-		avr = virtualavr.avr();
-		avr.clearStates();
+		avr = virtualavr.avr().clearStates();
 	}
 
 	@Test
@@ -83,7 +82,7 @@ class TrafficLightTest {
 
 	@Test
 	void valueGreaterWithin90Percent_YellowLedIsIOn() {
-		int ref = 100;
+		int ref = 1000;
 		avr.pinState(REF_PIN, ref).pinState(VALUE_PIN, ref * 90 / 100 + 1);
 		awaitUntil(off(GREEN_LED), on(YELLOW_LED), off(RED_LED));
 	}
