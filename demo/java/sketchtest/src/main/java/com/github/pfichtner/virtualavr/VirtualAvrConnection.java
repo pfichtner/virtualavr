@@ -94,8 +94,10 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static class SetPinState {
-		SetPinState(String pin, Object state) {
+
+		private SetPinState(String pin, Object state) {
 			this.pin = pin;
 			this.state = state;
 		}
