@@ -1,9 +1,13 @@
 package com.github.pfichtner.virtualavr;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 
 import org.java_websocket.client.WebSocketClient;
@@ -50,7 +54,11 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	public VirtualAvrConnection(URI serverUri) {
 		super(serverUri);
 		addPinStateListeners(this.pinStates::add);
-		connect();
+		try {
+			connectBlocking();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	public void addPinStateListeners(Listener<PinState> listener) {
@@ -59,6 +67,18 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	public List<PinState> pinStates() {
 		return pinStates;
+	}
+
+	public Map<String, Object> lastStates() {
+		return pinStates().stream().collect(toMap(s -> s.pin, s -> s.state, lastWins()));
+	}
+
+	private static BinaryOperator<Object> lastWins() {
+		return (e0, e1) -> e1;
+	}
+
+	public void clearStates() {
+		pinStates.clear();
 	}
 
 	@Override
@@ -79,17 +99,19 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 			this.state = state;
 		}
 
-		public String type = "fakePinState";
+		public String type = "pinState";
 		public String pin;
 		public Object state;
 	}
 
-	public void setPinState(String pin, boolean state) {
+	public VirtualAvrConnection setPinState(String pin, boolean state) {
 		send(gson.toJson(new FakePinState(pin, state)));
+		return this;
 	}
 
-	public void setPinState(String pin, int state) {
+	public VirtualAvrConnection setPinState(String pin, int state) {
 		send(gson.toJson(new FakePinState(pin, state)));
+		return this;
 	}
 
 	@Override
