@@ -28,7 +28,7 @@ class TrafficLightTest {
 	@Container
 	static VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>()
 			.withSketchFile(loadClasspath("/trafficlight.ino"));
-	private static VirtualAvrConnection avr;
+	static VirtualAvrConnection avr;
 
 	private static File loadClasspath(String name) {
 		try {
@@ -40,7 +40,7 @@ class TrafficLightTest {
 
 	@BeforeAll
 	static void beforeAll() {
-		avr = virtualavr.getAvr();
+		avr = virtualavr.avr();
 	}
 
 	@BeforeEach
@@ -51,21 +51,21 @@ class TrafficLightTest {
 	@Test
 	void valueEqualsRef_GreenLedIsIOn() {
 		int someValue = 1022;
-		avr.setPinState(REF_PIN, someValue).setPinState(VALUE_PIN, someValue);
+		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue);
 		await().until(() -> TRUE.equals(avr.lastStates().get(GREEN_LED)));
 	}
 
 	@Test
 	void valueGreaterThenRef_RedLedIsIOn() {
 		int someValue = 1022;
-		avr.setPinState(REF_PIN, someValue).setPinState(VALUE_PIN, someValue + 1);
+		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue + 1);
 		await().until(() -> TRUE.equals(avr.lastStates().get(RED_LED)));
 	}
 
 	@Test
 	void valueGreaterWithin90Percent_YellowLedIsIOn() {
 		int ref = 100;
-		avr.setPinState(REF_PIN, ref).setPinState(VALUE_PIN, ref * 90 / 100 + 1);
+		avr.pinState(REF_PIN, ref).pinState(VALUE_PIN, ref * 90 / 100 + 1);
 		await().until(() -> TRUE.equals(avr.lastStates().get(YELLOW_LED)));
 	}
 

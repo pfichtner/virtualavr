@@ -26,7 +26,7 @@ public class ArduinoSimulator {
 			virtualAvrContainer.withSketchFile(firmware).start();
 
 			// do sysouts
-			VirtualAvrConnection connectionToVirtualAvr = virtualAvrContainer.getAvr();
+			VirtualAvrConnection connectionToVirtualAvr = virtualAvrContainer.avr();
 
 			try {
 				BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -45,11 +45,11 @@ public class ArduinoSimulator {
 						try {
 							Number state = numberParser.parse(value);
 							System.out.println("Setting " + pin + " to " + state);
-							connectionToVirtualAvr.setPinState(pin, state.intValue());
+							connectionToVirtualAvr.pinState(pin, state.intValue());
 						} catch (ParseException e) {
 							boolean state = Boolean.parseBoolean(value);
 							System.out.println("Setting " + pin + " to " + state);
-							connectionToVirtualAvr.setPinState(pin, state);
+							connectionToVirtualAvr.pinState(pin, state);
 						}
 
 					}

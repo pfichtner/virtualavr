@@ -93,8 +93,8 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		}
 	}
 
-	private static class FakePinState {
-		FakePinState(String pin, Object state) {
+	private static class SetPinState {
+		SetPinState(String pin, Object state) {
 			this.pin = pin;
 			this.state = state;
 		}
@@ -104,13 +104,13 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		public Object state;
 	}
 
-	public VirtualAvrConnection setPinState(String pin, boolean state) {
-		send(gson.toJson(new FakePinState(pin, state)));
+	public VirtualAvrConnection pinState(String pin, boolean state) {
+		send(gson.toJson(new SetPinState(pin, state)));
 		return this;
 	}
 
-	public VirtualAvrConnection setPinState(String pin, int state) {
-		send(gson.toJson(new FakePinState(pin, state)));
+	public VirtualAvrConnection pinState(String pin, int state) {
+		send(gson.toJson(new SetPinState(pin, state)));
 		return this;
 	}
 

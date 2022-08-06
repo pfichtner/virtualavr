@@ -35,7 +35,7 @@ class BlinkFirmwareTest {
 
 	@Test
 	void awaitHasBlinkedAtLeastThreeTimes() {
-		try (VirtualAvrConnection virtualAvrCon = virtualavr.getAvr()) {
+		try (VirtualAvrConnection virtualAvrCon = virtualavr.avr()) {
 			await().until(() -> count(virtualAvrCon.pinStates(), switchedOn(INTERNAL_LED)) >= 3
 					&& count(virtualAvrCon.pinStates(), switchedOff(INTERNAL_LED)) >= 3);
 		}

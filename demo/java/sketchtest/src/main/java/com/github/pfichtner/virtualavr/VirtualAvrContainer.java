@@ -42,14 +42,14 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
-	public synchronized VirtualAvrConnection getAvr() {
+	public synchronized VirtualAvrConnection avr() {
 		if (avr == null) {
 			avr = connectionToVirtualAvr(this);
 		}
 		return avr;
 	}
 
-	public synchronized SerialConnection getSerialConnection() throws SerialPortException {
+	public synchronized SerialConnection serialConnection() throws SerialPortException {
 		if (serialConnection == null) {
 			serialConnection = new SerialConnection(hostDev + "/" + ttyDevice);
 		}
