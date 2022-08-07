@@ -38,7 +38,7 @@ So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virt
 private static final int INTERNAL_LED = 13;
 
 @Container
-VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(loadClasspath("/blink.ino"));
+VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(new File("blink.ino"));
 
 @Test
 void awaitHasBlinkedAtLeastThreeTimes() {
