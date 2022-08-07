@@ -1,6 +1,6 @@
 package com.ardulink.sketch;
 
-import static com.github.pfichtner.virtualavr.demo.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
 
 import java.io.File;
 

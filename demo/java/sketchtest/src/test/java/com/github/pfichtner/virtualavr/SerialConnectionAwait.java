@@ -1,10 +1,8 @@
-package com.github.pfichtner.virtualavr.demo;
+package com.github.pfichtner.virtualavr;
 
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.util.function.Predicate;
-
-import com.github.pfichtner.virtualavr.SerialConnection;
 
 public class SerialConnectionAwait {
 
@@ -23,10 +21,11 @@ public class SerialConnectionAwait {
 		return this;
 	}
 
-	public void sendAwait(String send, Predicate<String> callable) throws Exception {
+	public SerialConnectionAwait sendAwait(String send, Predicate<String> callable) throws Exception {
 		connection.send(send);
 		await().until(() -> callable.test(connection.received()));
 		connection.clearReceived();
+		return this;
 	}
 
 	public SerialConnectionAwait waitReceivedAnything() throws Exception {

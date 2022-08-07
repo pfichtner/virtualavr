@@ -1,7 +1,7 @@
 package com.github.pfichtner.virtualavr.demo;
 
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.switchedOff;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.switchedOn;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
@@ -36,8 +36,8 @@ class BlinkFirmwareTest {
 	@Test
 	void awaitHasBlinkedAtLeastThreeTimes() {
 		try (VirtualAvrConnection virtualAvrCon = virtualavr.avr()) {
-			await().until(() -> count(virtualAvrCon.pinStates(), switchedOn(INTERNAL_LED)) >= 3
-					&& count(virtualAvrCon.pinStates(), switchedOff(INTERNAL_LED)) >= 3);
+			await().until(() -> count(virtualAvrCon.pinStates(), on(INTERNAL_LED)) >= 3
+					&& count(virtualAvrCon.pinStates(), off(INTERNAL_LED)) >= 3);
 		}
 	}
 

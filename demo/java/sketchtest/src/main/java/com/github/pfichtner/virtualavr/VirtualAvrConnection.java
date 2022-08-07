@@ -1,5 +1,7 @@
 package com.github.pfichtner.virtualavr;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toMap;
 
 import java.net.URI;
@@ -26,20 +28,47 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	private final List<Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
 	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
 
-	public static class PinState {
-		public String pin;
-		public Object state;
+	public static class PinState implements Predicate<PinState> {
 
-		public static Predicate<PinState> switchedOn(int pin) {
-			return stateOfPinIs("D" + pin, true);
+		private String pin;
+		private Object state;
+
+		public PinState(String pin, Object state) {
+			this.pin = pin;
+			this.state = state;
 		}
 
-		public static Predicate<PinState> switchedOff(int pin) {
-			return stateOfPinIs("D" + pin, false);
+		public String getPin() {
+			return pin;
 		}
 
-		public static Predicate<PinState> stateOfPinIs(String pin, boolean state) {
-			return p -> Objects.equals(p.pin, pin) && Objects.equals(p.state, state);
+		public Object getState() {
+			return state;
+		}
+
+		public static PinState on(int pin) {
+			return on("D" + pin);
+		}
+
+		public static PinState on(String pin) {
+			return stateOfPinIs(pin, TRUE);
+		}
+
+		public static PinState off(int pin) {
+			return off("D" + pin);
+		}
+
+		public static PinState off(String pin) {
+			return stateOfPinIs(pin, FALSE);
+		}
+
+		public static PinState stateOfPinIs(String pin, Boolean state) {
+			return new PinState(pin, state);
+		}
+
+		@Override
+		public boolean test(PinState other) {
+			return Objects.equals(other.pin, pin) && Objects.equals(other.state, state);
 		}
 
 	}
