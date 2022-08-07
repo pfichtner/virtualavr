@@ -30,6 +30,24 @@ Environment variables supported
 # Screencast of usage
 <a href="http://pfichtner.github.io/virtualavr-asciinema/"><img src="https://pfichtner.github.io/virtualavr-asciinema/asciinema-poster.png" /></a>
 
+# Testing your sketch within your prefered language
+Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
+So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/BlinkFirmwareTest.java)
+
+```java
+private static final int INTERNAL_LED = 13;
+
+@Container
+VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(loadClasspath("/blink.ino"));
+
+@Test
+void awaitHasBlinkedAtLeastThreeTimes() {
+  try (VirtualAvrConnection avr = virtualavr.avr()) {
+    await().until(() -> count(avr.pinStates(), on(INTERNAL_LED)) >= 3 && count(avr.pinStates(), off(INTERNAL_LED)) >= 3);
+  }
+}
+```
+
 
 # What's inside? How does it work? 
 - The heart is [avr8js](https://github.com/wokwi/avr8js)
@@ -43,6 +61,7 @@ Environment variables supported
 # Todos
 - Add support for running simulator without VIRTUALDEVICE (VIRTUALDEVICE="")
 - Add time/cpu-cycles to ws messages
+- Provide Java Bindings as maven artefacts
 - Expose SerialRX/SerialTX events (and have tests for them)
 - Can we connect other handles than stdin/stdout so that we still ca write to stdout from within nodejs/virtualavr.js?
 - Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli
