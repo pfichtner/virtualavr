@@ -42,9 +42,10 @@ VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(n
 
 @Test
 void awaitHasBlinkedAtLeastThreeTimes() {
-  try (VirtualAvrConnection avr = virtualavr.avr()) {
-    await().until(() -> count(avr.pinStates(), on(INTERNAL_LED)) >= 3 && count(avr.pinStates(), off(INTERNAL_LED)) >= 3);
-  }
+  VirtualAvrConnection virtualAvr = virtualavr.avr();
+  await().until(() -> count(virtualAvr.pinStates(), on(INTERNAL_LED)) >= 3
+		  && count(virtualAvr.pinStates(), off(INTERNAL_LED)) >= 3);
+
 }
 ```
 

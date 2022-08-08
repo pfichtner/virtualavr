@@ -99,11 +99,11 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	}
 
 	public Map<String, Object> lastStates() {
-		return pinStates().stream().collect(toMap(s -> s.pin, s -> s.state, lastWins()));
+		return pinStates().stream().collect(toMap(PinState::getPin, PinState::getState, lastWins()));
 	}
 
 	private static BinaryOperator<Object> lastWins() {
-		return (e0, e1) -> e1;
+		return (first, last) -> last;
 	}
 
 	public VirtualAvrConnection clearStates() {

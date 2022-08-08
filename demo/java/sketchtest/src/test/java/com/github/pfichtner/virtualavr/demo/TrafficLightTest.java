@@ -35,7 +35,7 @@ class TrafficLightTest {
 			.withSketchFile(loadClasspath("/trafficlight.ino"));
 	static VirtualAvrConnection avr;
 
-	private static File loadClasspath(String name) {
+	static File loadClasspath(String name) {
 		try {
 			return new File(TrafficLightTest.class.getResource(name).toURI());
 		} catch (URISyntaxException e) {
@@ -69,11 +69,11 @@ class TrafficLightTest {
 		awaitUntil(off(GREEN_LED), on(YELLOW_LED), off(RED_LED));
 	}
 
-	private void awaitUntil(PinState... states) {
+	void awaitUntil(PinState... states) {
 		await().until(() -> statesAre(states));
 	}
 
-	private boolean statesAre(PinState... states) {
+	boolean statesAre(PinState... states) {
 		Map<String, Object> lastStates = avr.lastStates();
 		return Arrays.stream(states).allMatch(s -> equal(s.getState(), lastStates.getOrDefault(s.getPin(), FALSE)));
 	}

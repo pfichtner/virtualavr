@@ -25,7 +25,7 @@ class BlinkFirmwareTest {
 	@Container
 	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(loadClasspath("/blink.ino"));
 
-	private static File loadClasspath(String name) {
+	static File loadClasspath(String name) {
 		try {
 			return new File(BlinkFirmwareTest.class.getResource(name).toURI());
 		} catch (URISyntaxException e) {
@@ -35,10 +35,9 @@ class BlinkFirmwareTest {
 
 	@Test
 	void awaitHasBlinkedAtLeastThreeTimes() {
-		try (VirtualAvrConnection virtualAvrCon = virtualavr.avr()) {
-			await().until(() -> count(virtualAvrCon.pinStates(), on(INTERNAL_LED)) >= 3
-					&& count(virtualAvrCon.pinStates(), off(INTERNAL_LED)) >= 3);
-		}
+		VirtualAvrConnection virtualAvr = virtualavr.avr();
+		await().until(() -> count(virtualAvr.pinStates(), on(INTERNAL_LED)) >= 3
+				&& count(virtualAvr.pinStates(), off(INTERNAL_LED)) >= 3);
 	}
 
 	long count(List<PinState> pinStates, Predicate<PinState> pinState) {
