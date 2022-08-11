@@ -1,5 +1,6 @@
-package com.github.pfichtner.virtualavr.demo;
+package com.github.pfichtner.virtualavr.virtualavrtests;
 
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static org.awaitility.Awaitility.await;
@@ -13,31 +14,99 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.github.pfichtner.virtualavr.SerialConnection;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+
+import jssc.SerialPortException;
 
 @Testcontainers
-class BlinkFirmwareTest {
+class VirtualAvrTest {
 
-	private static final int INTERNAL_LED = 13;
+	private static final String INTERNAL_LED = "D13";
+	private static final String PWM_PIN = "D10";
 
 	@Container
-	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(loadClasspath("/blink.ino"));
+	// TODO we should not use the latest version of the docker image here but the
+	// one actual build (switch to Dockerfile here?)
+	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()
+			.withSketchFile(loadClasspath("/integrationtest.ino"));
 
 	static File loadClasspath(String name) {
 		try {
-			return new File(BlinkFirmwareTest.class.getResource(name).toURI());
+			return new File(VirtualAvrTest.class.getResource(name).toURI());
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException(e);
 		}
 	}
 
 	@Test
-	void awaitHasBlinkedAtLeastThreeTimes() {
-		VirtualAvrConnection virtualAvr = virtualavr.avr();
+	void canReadSerial() throws SerialPortException {
+		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
+		await().until(() -> serialConnection.received().contains("Welcome virtualavr!"));
+	}
+
+	@Test
+	void canWriteSerial() throws SerialPortException {
+		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
+		await().until(() -> {
+			String send = "Echo Test!";
+			serialConnection.send(send);
+			return serialConnection.received().contains("Echo response: " + send);
+		});
+	}
+
+	@Test
+	void canReadDigitalAndDoesPublishStateChangesViaWebsocket() {
+		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
 		await().until(() -> count(virtualAvr.pinStates(), on(INTERNAL_LED)) >= 3
 				&& count(virtualAvr.pinStates(), off(INTERNAL_LED)) >= 3);
+	}
+
+	@Test
+	void canReadAnalogAndDoesPublishStateChangesViaWebsocket() {
+		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
+		virtualAvr.pinReportMode(PWM_PIN, ANALOG);
+		await().until(() -> virtualAvr.pinStates().stream()
+				.anyMatch(s -> s.getPin().equals(PWM_PIN) && s.getState().equals(42.0)));
+	}
+
+	@Test
+	void canSetDigitalPinStateViaWebsocket() throws SerialPortException {
+		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
+		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
+
+		await().until(() -> {
+			virtualAvr.pinState("D11", true);
+			return serialConnection.received().contains("State-Change-D11: ON");
+		});
+
+		await().until(() -> {
+			virtualAvr.pinState("D11", false);
+			return serialConnection.received().contains("State-Change-D11: OFF");
+		});
+	}
+
+	@Test
+	void canSetAnalogPinStateViaWebsocket() throws SerialPortException {
+		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
+		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
+
+		await().until(() -> {
+			virtualAvr.pinState("A0", 42);
+			return serialConnection.received().contains("State-Change-A0: 42");
+		});
+
+		await().until(() -> {
+			virtualAvr.pinState("A0", 84);
+			return serialConnection.received().contains("State-Change-A0: 84");
+		});
+
+		await().until(() -> {
+			virtualAvr.pinState("A0", 0);
+			return serialConnection.received().contains("State-Change-A0: 0");
+		});
 	}
 
 	long count(List<PinState> pinStates, Predicate<PinState> pinState) {

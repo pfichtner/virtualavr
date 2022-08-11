@@ -20,6 +20,16 @@ import com.google.gson.Gson;
 
 public class VirtualAvrConnection extends WebSocketClient implements AutoCloseable {
 
+	public enum PinReportMode {
+		ANALOG("analog"), DIGITAL("digital");
+
+		private String modeName;
+
+		PinReportMode(String message) {
+			this.modeName = message;
+		}
+	}
+
 	public interface Listener<T> {
 		void accept(T t);
 	}
@@ -71,12 +81,18 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 			return Objects.equals(other.pin, pin) && Objects.equals(other.state, state);
 		}
 
+		@Override
+		public String toString() {
+			return "PinState [pin=" + pin + ", state=" + state + "]";
+		}
+		
 	}
 
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
 		VirtualAvrConnection connection = new VirtualAvrConnection(
 				URI.create("ws://localhost:" + container.getFirstMappedPort()));
-		connection.addPinStateListeners(pinState -> System.out.println("Pin " + pinState.pin + " = " + pinState.state));
+		connection.addPinStateListeners(
+				pinState -> System.out.println("Pin " + pinState.getPin() + " = " + pinState.getState()));
 		return connection;
 	}
 
@@ -143,6 +159,24 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	public VirtualAvrConnection pinState(String pin, int state) {
 		send(gson.toJson(new SetPinState(pin, state)));
+		return this;
+	}
+
+	@SuppressWarnings("unused")
+	private static class SetPinReportMode {
+
+		private SetPinReportMode(String pin, PinReportMode mode) {
+			this.pin = pin;
+			this.mode = mode.modeName;
+		}
+
+		public String type = "pinMode";
+		private String pin;
+		private String mode;
+	}
+
+	public VirtualAvrConnection pinReportMode(String pin, PinReportMode mode) {
+		send(gson.toJson(new SetPinReportMode(pin, mode)));
 		return this;
 	}
 

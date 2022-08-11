@@ -4,6 +4,9 @@ const waitForExpect = require("wait-for-expect");
 jest.setTimeout(10000);
 
 // Tests:
+// Can load source/compile
+// Can load zip/compile
+// Can load hex
 // - Callback called
 // - WS messages sent: 
 //   - pin states

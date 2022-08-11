@@ -31,7 +31,7 @@ class TrafficLightTest {
 	private static final String RED_LED = "D12";
 
 	@Container
-	static VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>()
+	static VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()
 			.withSketchFile(loadClasspath("/trafficlight.ino"));
 	static VirtualAvrConnection avr;
 
@@ -45,7 +45,7 @@ class TrafficLightTest {
 
 	@BeforeEach
 	void beforeEach() {
-		avr = virtualavr.avr().clearStates();
+		avr = virtualAvrContainer.avr().clearStates();
 	}
 
 	@Test

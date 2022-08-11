@@ -31,7 +31,7 @@ public class SerialConnection implements AutoCloseable {
 		}
 	}
 
-	public void send(String string) throws SerialPortException, InterruptedException {
+	public void send(String string) throws SerialPortException {
 		port.writeString(string);
 	}
 

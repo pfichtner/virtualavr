@@ -15,12 +15,12 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 class ArdulinkFirmwareTest {
 
 	@Container
-	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>()
+	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()
 			.withSketchFile(new File("/tmp/ArdulinkProtocol.ino"));
 
 	@Test
 	void canDetectArduinoThatSendInitialMessage() throws Exception {
-		try (SerialConnection connection = virtualavr.serialConnection()) {
+		try (SerialConnection connection = virtualAvrContainer.serialConnection()) {
 			awaiter(connection).waitReceivedAnything();
 		}
 	}
@@ -28,7 +28,7 @@ class ArdulinkFirmwareTest {
 	@Test
 	void sendsReplyIfReplyRequested() throws Exception {
 		String id = "42";
-		try (SerialConnection connection = virtualavr.serialConnection()) {
+		try (SerialConnection connection = virtualAvrContainer.serialConnection()) {
 			awaiter(connection).waitReceivedAnything().sendAwait("alp://notn/?id=" + id + "\n",
 					"alp://rply/ok?id=" + id + "\n");
 		}
