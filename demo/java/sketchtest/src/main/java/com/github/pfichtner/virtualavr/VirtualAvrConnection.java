@@ -4,6 +4,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toMap;
 
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,13 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.testcontainers.containers.GenericContainer;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 
 public class VirtualAvrConnection extends WebSocketClient implements AutoCloseable {
 
@@ -34,7 +42,23 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		void accept(T t);
 	}
 
-	private final Gson gson = new Gson();
+	private final Gson gson = new GsonBuilder().registerTypeAdapter(PinState.class, pinStateDeserializer()).create();
+
+	private static JsonDeserializer<PinState> pinStateDeserializer() {
+		return new JsonDeserializer<PinState>() {
+			@Override
+			public PinState deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+					throws JsonParseException {
+				JsonObject object = json.getAsJsonObject();
+				String pin = object.get("pin").getAsString();
+				JsonPrimitive state = object.get("state").getAsJsonPrimitive();
+				return state.isBoolean() //
+						? new PinState(pin, state.getAsBoolean())
+						: new PinState(pin, state.getAsInt());
+			}
+		};
+	}
+
 	private final List<Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
 	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
 
@@ -76,6 +100,10 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 			return new PinState(pin, state);
 		}
 
+		public static PinState stateOfPinIs(String pin, Integer value) {
+			return new PinState(pin, value);
+		}
+
 		@Override
 		public boolean test(PinState other) {
 			return Objects.equals(other.pin, pin) && Objects.equals(other.state, state);
@@ -85,7 +113,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		public String toString() {
 			return "PinState [pin=" + pin + ", state=" + state + "]";
 		}
-		
+
 	}
 
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {

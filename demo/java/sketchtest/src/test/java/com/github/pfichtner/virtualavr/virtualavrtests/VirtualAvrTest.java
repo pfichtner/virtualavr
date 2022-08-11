@@ -68,8 +68,8 @@ class VirtualAvrTest {
 	void canReadAnalogAndDoesPublishStateChangesViaWebsocket() {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
 		virtualAvr.pinReportMode(PWM_PIN, ANALOG);
-		await().until(() -> virtualAvr.pinStates().stream()
-				.anyMatch(s -> s.getPin().equals(PWM_PIN) && s.getState().equals(42.0)));
+		PinState p = PinState.stateOfPinIs(PWM_PIN, 42);
+		await().until(() -> virtualAvr.pinStates().stream().anyMatch(p));
 	}
 
 	@Test
