@@ -21,16 +21,19 @@ public class SerialConnectionAwait {
 		return this;
 	}
 
-	public SerialConnectionAwait sendAwait(String send, Predicate<String> callable) throws Exception {
+	public SerialConnectionAwait sendAwait(String send, Predicate<String> predicate) throws Exception {
 		connection.send(send);
-		await().until(() -> callable.test(connection.received()));
+		return awaitReceived(predicate);
+	}
+
+	public SerialConnectionAwait awaitReceived(Predicate<String> predicate) {
+		await().until(() -> predicate.test(connection.received()));
 		connection.clearReceived();
 		return this;
 	}
 
 	public SerialConnectionAwait waitReceivedAnything() throws Exception {
-		sendAwait("", r -> !r.isEmpty());
-		return this;
+		return awaitReceived(r -> !r.isEmpty());
 	}
 
 }
