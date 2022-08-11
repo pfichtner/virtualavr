@@ -1,5 +1,6 @@
 package com.github.pfichtner.virtualavr.virtualavrtests;
 
+import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
@@ -42,19 +43,14 @@ class VirtualAvrTest {
 	}
 
 	@Test
-	void canReadSerial() throws SerialPortException {
-		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
-		await().until(() -> serialConnection.received().contains("Welcome virtualavr!"));
+	void canReadSerial() throws Exception {
+		awaiter(virtualAvrContainer.serialConnection()).awaitReceived(r -> r.contains("Welcome virtualavr!"));
 	}
 
 	@Test
-	void canWriteSerial() throws SerialPortException {
-		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
-		await().until(() -> {
-			String send = "Echo Test!";
-			serialConnection.send(send);
-			return serialConnection.received().contains("Echo response: " + send);
-		});
+	void canWriteSerial() throws Exception {
+		String send = "Echo Test!";
+		awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains("Echo response: " + send));
 	}
 
 	@Test
