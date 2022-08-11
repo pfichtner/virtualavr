@@ -117,7 +117,7 @@ const runCode = async (inputFilename, portCallback) => {
 			if (listeningModes[led] === 'analog' || listeningModes[led] === 'pwm') {
 				const state = Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255);
 				if (state !== entry.lastStatePublished) {
-					portCallback(avrPin, state);
+					portCallback(led, state);
 				}
 				entry.lastStatePublished = state;
 			}
@@ -161,9 +161,9 @@ function main() {
 		try {
                       const obj = JSON.parse(data);
                       // { "type": "pinMode", "pin": "D12", "mode": "analog" }
-                      if (obj.type == 'pinMode') {
+                      if (obj.type === 'pinMode') {
                          listeningModes[obj.pin] = obj.mode;
-                      } else if (obj.type == 'fakePinState' || obj.type == 'pinState') {
+                      } else if (obj.type === 'fakePinState' || obj.type === 'pinState') {
                               // { "type": "pinState", "pin": "D12", "state": true }
                               if (typeof obj.state === 'boolean') {
 				      const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
@@ -174,7 +174,7 @@ function main() {
                               // { "type": "pinState", "pin": "D12", "state": 42 }
                               if (typeof obj.state === 'number') {
 				      const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
-				      if (avrPin >= 0) {
+				      if (adc && avrPin >= 0) {
 					      adc.channelValues[avrPin] = obj.state * 5 / 1024;
 				      }
                               }
