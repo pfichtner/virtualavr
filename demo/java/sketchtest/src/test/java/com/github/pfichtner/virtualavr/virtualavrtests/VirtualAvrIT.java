@@ -24,8 +24,20 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
 import jssc.SerialPortException;
 
+/**
+ * Integration test for virtualavr. Fires up the docker container and runs
+ * integration tests against it. Features checked are:
+ * <ul>
+ * <li>Serial communication: Can the AVR read data sent from serial line and can
+ * data being received sent by the avr via serial line?
+ * <li>Websocket communication: Are the pin state changes propagated via
+ * websockets? Can the pin states of the avr beeing controlled via websockets?
+ * </ul>
+ * 
+ * @author Peter Fichtner
+ */
 @Testcontainers
-class VirtualAvrTest {
+class VirtualAvrIT {
 
 	private static final String VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME = "virtualavr.docker.tag";
 
@@ -57,7 +69,7 @@ class VirtualAvrTest {
 
 	static File loadClasspath(String name) {
 		try {
-			return new File(VirtualAvrTest.class.getResource(name).toURI());
+			return new File(VirtualAvrIT.class.getResource(name).toURI());
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException(e);
 		}
