@@ -42,6 +42,16 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
+	public VirtualAvrContainer<?> withDeviceGroup(String group) {
+		withEnv("DEVICEGROUP", group);
+		return self();
+	}
+
+	public VirtualAvrContainer<?> withDeviceMode(int deviceMode) {
+		withEnv("DEVICEMODE", String.valueOf(deviceMode));
+		return self();
+	}
+
 	public VirtualAvrContainer<SELF> withSketchFile(File sketchFile) {
 		withEnv("FILENAME", sketchFile.getName()) //
 				.withFileSystemBind(sketchFile.getParent(), "/sketch/", READ_ONLY);

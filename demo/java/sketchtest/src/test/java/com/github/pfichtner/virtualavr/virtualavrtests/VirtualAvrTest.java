@@ -31,8 +31,11 @@ class VirtualAvrTest {
 	private static final String PWM_PIN = "D10";
 
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName())
-			.withSketchFile(loadClasspath("/integrationtest.ino")).withDeviceName("virtualavr" + UUID.randomUUID());
+	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName()) //
+			.withSketchFile(loadClasspath("/integrationtest.ino")) //
+			.withDeviceName("virtualavr" + UUID.randomUUID()) //
+			.withDeviceGroup("root") //
+			.withDeviceMode(666);
 
 	/**
 	 * If you want the version from dockerhub, you have to use <code>latest</code>

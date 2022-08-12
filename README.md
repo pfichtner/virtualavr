@@ -23,6 +23,8 @@ Full example, you can pass the devicename as well the code that gets compiled an
 
 Environment variables supported
 - VIRTUALDEVICE the full path of the virtual device that socat creates (defaults to /dev/virtualavr0)
+- DEVICEGROUP group the VIRTUALDEVICE belongs to (default dialout)
+- DEVICEMODE file mode of the VIRTUALDEVICE (default 660)
 - FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
 - BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
