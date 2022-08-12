@@ -27,6 +27,8 @@ import jssc.SerialPortException;
 @Testcontainers
 class VirtualAvrTest {
 
+	private static final String VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME = "virtualavr.docker.tag";
+
 	private static final String INTERNAL_LED = "D13";
 	private static final String PWM_PIN = "D10";
 
@@ -39,16 +41,16 @@ class VirtualAvrTest {
 
 	/**
 	 * If you want the version from dockerhub, you have to use <code>latest</code>
-	 * for <code>dockerTagName</code>.<br>
+	 * as value for {@value #VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME}. <br>
 	 * To prevent that we test accidentally the image pulled from dockerhub when
 	 * running our integration tests there is <b>NO</b> default value!
 	 * 
 	 * @return the image name including tag
 	 */
 	static DockerImageName imageName() {
-		String dockerTagName = System.getProperty("dockerTagName");
+		String dockerTagName = System.getProperty(VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME);
 		if (dockerTagName == null) {
-			throw new IllegalStateException("\"dockerTagName\" property not set!");
+			throw new IllegalStateException("\"" + VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME + "\" property not set!");
 		}
 		return VirtualAvrContainer.DEFAULT_IMAGE_NAME.withTag(dockerTagName);
 	}
