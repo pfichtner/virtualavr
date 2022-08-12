@@ -19,10 +19,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Get current timestamp
-      id: date
-      run: echo "::set-output name=timestamp::$(date +'%s')"      
+      run: echo "DOCKER_IMAGE_TAG=$(date +'%s-snapshot')" >> $GITHUB_ENV
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag pfichtner/virtualavr:$TAG
+      run: docker build . --file Dockerfile --tag pfichtner/virtualavr:$DOCKER_IMAGE_TAG
       env:
         TAG: ${{ steps.date.outputs.timestamp }}-snapshot
     - name: Set up JDK 11
@@ -31,8 +30,7 @@ jobs:
         java-version: 11
         distribution: 'adopt'
         cache: maven
-    - name: Build with Maven
-      run: mvn -B -Dvirtualavr.docker.tag=$TAG '-Dtest=com.github.pfichtner.virtualavr.virtualavrtests.*IT' verify --file pom.xml
+    - name: Run java based integration tests via maven
+      run: mvn -B -Dvirtualavr.docker.tag=$DOCKER_IMAGE_TAG '-Dtest=com.github.pfichtner.virtualavr.virtualavrtests.*IT' verify --file pom.xml
       working-directory: demo/java/sketchtest
-      env:
-        TAG: ${{ steps.date.outputs.timestamp }}-snapshot
+
