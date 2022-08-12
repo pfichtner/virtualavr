@@ -9,11 +9,13 @@ import static org.awaitility.Awaitility.await;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import com.github.pfichtner.virtualavr.SerialConnection;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
@@ -29,10 +31,24 @@ class VirtualAvrTest {
 	private static final String PWM_PIN = "D10";
 
 	@Container
-	// TODO we should not use the latest version of the docker image here but the
-	// one actual build (switch to Dockerfile here?)
-	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()
-			.withSketchFile(loadClasspath("/integrationtest.ino"));
+	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName())
+			.withSketchFile(loadClasspath("/integrationtest.ino")).withDeviceName("virtualavr" + UUID.randomUUID());
+
+	/**
+	 * If you want the version from dockerhub, you have to use <code>latest</code>
+	 * for <code>dockerTagName</code>.<br>
+	 * To prevent that we test accidentally the image pulled from dockerhub when
+	 * running our integration tests there is <b>NO</b> default value!
+	 * 
+	 * @return the image name including tag
+	 */
+	static DockerImageName imageName() {
+		String dockerTagName = System.getProperty("dockerTagName");
+		if (dockerTagName == null) {
+			throw new IllegalStateException("\"dockerTagName\" property not set!");
+		}
+		return VirtualAvrContainer.DEFAULT_IMAGE_NAME.withTag(dockerTagName);
+	}
 
 	static File loadClasspath(String name) {
 		try {

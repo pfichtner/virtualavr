@@ -12,14 +12,14 @@ import jssc.SerialPortException;
 
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
 
-	private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
-	private static final String DEFAULT_TAG = "latest";
+	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
+	public static final String DEFAULT_TAG = "latest";
 
 	private static final String hostDev = "/dev";
 	private static final String containerDev = "/dev";
-	private static final String ttyDevice = "ttyUSB0";
-
 	private static final int WEBSOCKET_PORT = 8080;
+
+	private String ttyDevice = "ttyUSB0";
 
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
@@ -31,9 +31,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer(DockerImageName dockerImageName) {
 		super(dockerImageName);
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-		withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice) //
+		withDeviceName(containerDev + "/" + ttyDevice) //
 				.withFileSystemBind(hostDev, containerDev) //
 				.addExposedPort(WEBSOCKET_PORT);
+	}
+
+	public VirtualAvrContainer<?> withDeviceName(String ttyDevice) {
+		this.ttyDevice = ttyDevice;
+		withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice);
+		return self();
 	}
 
 	public VirtualAvrContainer<SELF> withSketchFile(File sketchFile) {
