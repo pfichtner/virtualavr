@@ -17,6 +17,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Get current timestamp
       id: date
-      run: echo "::set-output name=TAG::$(date +'%s')"
+      run: echo "::set-output name=timestamp::$(date +'%s')"      
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag pfichtner/virtualavr:$TAG
+      env:
+        TAG: ${{ steps.date.outputs.timestamp }}-snapshot
