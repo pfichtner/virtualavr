@@ -1,4 +1,5 @@
 [![Publish Docker image](https://github.com/pfichtner/virtualavr/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pfichtner/virtualavr/actions/workflows/docker-publish.yml)
+[![Docker Image CI](https://github.com/pfichtner/virtualavr/actions/workflows/docker-image.yml/badge.svg)](https://github.com/pfichtner/virtualavr/actions/workflows/docker-image.yml)
 [![Docker Pulls](https://img.shields.io/docker/pulls/pfichtner/virtualavr.svg?maxAge=604800)](https://hub.docker.com/r/pfichtner/virtualavr/)
 
 ### virtualavr
