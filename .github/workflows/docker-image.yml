@@ -18,7 +18,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Get current timestamp
+    - name: Set DOCKER_IMAGE_TAG env var
       run: echo "DOCKER_IMAGE_TAG=$(date +'%s-snapshot')" >> $GITHUB_ENV
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag pfichtner/virtualavr:$DOCKER_IMAGE_TAG
