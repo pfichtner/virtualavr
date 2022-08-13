@@ -33,4 +33,11 @@ jobs:
     - name: Run java based integration tests via maven
       run: mvn -B -Dvirtualavr.docker.tag=$DOCKER_IMAGE_TAG '-Dtest=com.github.pfichtner.virtualavr.virtualavrtests.*IT' verify --file pom.xml
       working-directory: demo/java/sketchtest
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()    # run this step even if previous step failed
+      with:
+        name: JUnit Tests
+        path: demo/java/sketchtest/target/surefire-reports/*.xml
+        reporter: java-junit
 
