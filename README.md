@@ -50,7 +50,7 @@ Because virtualavr offers a websocket server to interact with you can write your
 So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/VirtualAvrTest.java)
 
 ```java
-private static final int INTERNAL_LED = 13;
+private static final String INTERNAL_LED = "D13";
 
 @Container
 VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(new File("blink.ino"));
