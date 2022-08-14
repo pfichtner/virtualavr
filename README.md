@@ -41,7 +41,7 @@ The screencast is not uptodate!!!
 - Changes when listening for digital pin state changes ```{ 'type': 'pinState', 'pin': 'D13', 'state': true }```
 - Changes when listening for analog pin state changes ```{ 'type': 'pinState', 'pin': 'A0', 'state': 42 }```
 ## Accepted by virtualavr
-- Set the mode for which pin what messages should be send: { "type": "pinMode", "pin": "D12", "mode": "analog" }```
+- Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }```
 - Set an pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
 - Set an pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
 
