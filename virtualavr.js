@@ -74,7 +74,7 @@ const runCode = async (inputFilename, portCallback) => {
 				}
 				entry.lastState = state;
 				entry.lastStateCycles = cpu.cycles;
-				if (listeningModes[arduinoPinOnPortB[pin]] !== 'analog') {
+				if (listeningModes[arduinoPinOnPortB[pin]] === 'digital') {
 					// TODO should we move all publishs out of the callback (also the digitals)?
 					// TODO throttle if there are to much messages (see lastStateCycles)
 					portCallback(arduinoPin, state);
@@ -114,7 +114,7 @@ const runCode = async (inputFilename, portCallback) => {
 			if (portB.pinState(avrPin) == avr8js.PinState.High) {
 				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
 			}
-			if (listeningModes[led] === 'analog' || listeningModes[led] === 'pwm') {
+			if (listeningModes[led] === 'analog') {
 				const state = Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255);
 				if (state !== entry.lastStatePublished) {
 					portCallback(led, state);
@@ -162,7 +162,12 @@ function main() {
                       const obj = JSON.parse(data);
                       // { "type": "pinMode", "pin": "D12", "mode": "analog" }
                       if (obj.type === 'pinMode') {
-                         listeningModes[obj.pin] = obj.mode;
+			 if (obj.mode === 'analog' || obj.mode === 'pwm') {
+				 listeningModes[obj.pin] = 'analog';
+			 } else {
+				 listeningModes[obj.pin] = obj.mode === 'digital' ? obj.mode : undefined;
+			 }
+                         listeningModes[obj.pin] = obj.mode === 'analog' || obj.mode === 'digital' ? obj.mode : undefined;
                       } else if (obj.type === 'fakePinState' || obj.type === 'pinState') {
                               // { "type": "pinState", "pin": "D12", "state": true }
                               if (typeof obj.state === 'boolean') {

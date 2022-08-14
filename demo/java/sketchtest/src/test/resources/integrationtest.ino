@@ -14,8 +14,8 @@ void setup() {
         Serial.println("Welcome virtualavr!");
 }
 
-boolean d11State;
-int a0State;
+boolean digitalInputState;
+int analogInputState;
 
 void loop() {
         if (Serial.available()) {
@@ -42,8 +42,8 @@ void loop() {
 
 void readDigital() {
 	boolean tmp = digitalRead(DIGITAL_INPUT);
-	if (tmp != d11State) {
-		d11State = tmp;
+	if (tmp != digitalInputState) {
+		digitalInputState = tmp;
 		Serial.print("State-Change-D11: ");        	
 		Serial.println(tmp ? "ON" : "OFF");        	
 	}
@@ -51,8 +51,8 @@ void readDigital() {
 
 void readAnalog() {
 	int tmp = analogRead(ANALOG_INPUT);
-	if (tmp != a0State) {
-		a0State = tmp;
+	if (tmp != analogInputState) {
+		analogInputState = tmp;
 		Serial.print("State-Change-A0: ");        	
 		Serial.println(tmp);        	
 	}

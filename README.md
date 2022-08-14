@@ -31,9 +31,12 @@ Environment variables supported
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
 
 # Screencast of usage
+The screencast is not uptodate!!!
+- The prefered way of setting pin states is no more "fakePinState" but "pinState"
+- You now have to enable the reporting of pin states by sending a websocket message ```{ "type": "pinMode", "pin": "D13", "mode": "digital" }```
 <a href="http://pfichtner.github.io/virtualavr-asciinema/"><img src="https://pfichtner.github.io/virtualavr-asciinema/asciinema-poster.png" /></a>
 
-# Testing your sketch within your prefered language
+# Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
 So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/BlinkFirmwareTest.java)
 
@@ -46,8 +49,9 @@ VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(n
 @Test
 void awaitHasBlinkedAtLeastThreeTimes() {
   VirtualAvrConnection virtualAvr = virtualavr.avr();
-  await().until(() -> count(virtualAvr.pinStates(), on(INTERNAL_LED)) >= 3
-		  && count(virtualAvr.pinStates(), off(INTERNAL_LED)) >= 3);
+  virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
+  await().until(() -> count(virtualAvr.pinStates(), PinState.on(INTERNAL_LED)) >= 3
+		  && count(virtualAvr.pinStates(), PinState.off(INTERNAL_LED)) >= 3);
 
 }
 ```

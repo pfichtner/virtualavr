@@ -2,9 +2,14 @@ package com.github.pfichtner.virtualavr.virtualavrtests;
 
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.NONE;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -15,6 +20,7 @@ import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.com.google.common.base.Stopwatch;
 import org.testcontainers.utility.DockerImageName;
 
 import com.github.pfichtner.virtualavr.SerialConnection;
@@ -89,16 +95,36 @@ class VirtualAvrIT {
 	@Test
 	void canReadDigitalAndDoesPublishStateChangesViaWebsocket() {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
-		await().until(() -> count(virtualAvr.pinStates(), on(INTERNAL_LED)) >= 3
-				&& count(virtualAvr.pinStates(), off(INTERNAL_LED)) >= 3);
+		virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
+		waitForToggles(INTERNAL_LED, 3);
 	}
 
 	@Test
 	void canReadAnalogAndDoesPublishStateChangesViaWebsocket() {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
 		virtualAvr.pinReportMode(PWM_PIN, ANALOG);
-		PinState p = PinState.stateOfPinIs(PWM_PIN, 42);
-		await().until(() -> virtualAvr.pinStates().stream().anyMatch(p));
+		await().until(() -> virtualAvr.pinStates().stream().anyMatch(stateOfPinIs(PWM_PIN, 42)));
+	}
+
+	@Test
+	void canSwitchOffListening() throws InterruptedException {
+		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
+		virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
+		long timeToTogglePinThreeTimes = waitForToggles(INTERNAL_LED, 3);
+
+		virtualAvr.pinReportMode(INTERNAL_LED, NONE);
+		virtualAvr.clearStates();
+		MILLISECONDS.sleep(timeToTogglePinThreeTimes * 2);
+		assertTrue(String.valueOf(virtualAvr.pinStates()),
+				virtualAvr.pinStates().stream().noneMatch(s -> INTERNAL_LED.equals(s.getPin())));
+	}
+
+	private long waitForToggles(String pin, int times) {
+		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		await().until(() -> count(virtualAvr.pinStates(), on(pin)) >= times
+				&& count(virtualAvr.pinStates(), off(pin)) >= times);
+		return stopwatch.elapsed(MILLISECONDS);
 	}
 
 	@Test

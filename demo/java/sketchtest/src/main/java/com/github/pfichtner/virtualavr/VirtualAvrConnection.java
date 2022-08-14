@@ -29,11 +29,11 @@ import com.google.gson.JsonPrimitive;
 public class VirtualAvrConnection extends WebSocketClient implements AutoCloseable {
 
 	public enum PinReportMode {
-		ANALOG("analog"), DIGITAL("digital");
+		ANALOG("analog"), DIGITAL("digital"), NONE("none");
 
 		private String modeName;
 
-		PinReportMode(String message) {
+		private PinReportMode(String message) {
 			this.modeName = message;
 		}
 	}
