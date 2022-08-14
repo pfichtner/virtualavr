@@ -38,7 +38,7 @@ The screencast is not uptodate!!!
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
-So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/BlinkFirmwareTest.java)
+So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/VirtualAvrTest.java)
 
 ```java
 private static final int INTERNAL_LED = 13;
