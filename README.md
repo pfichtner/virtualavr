@@ -36,6 +36,15 @@ The screencast is not uptodate!!!
 - You now have to enable the reporting of pin states by sending a websocket message ```{ "type": "pinMode", "pin": "D13", "mode": "digital" }```
 <a href="http://pfichtner.github.io/virtualavr-asciinema/"><img src="https://pfichtner.github.io/virtualavr-asciinema/asciinema-poster.png" /></a>
 
+# Websocket messages
+## Sent by virtualavr
+- Changes when listening for digital pin state changes ```{ 'type': 'pinState', 'pin': 'D13', 'state': true }```
+- Changes when listening for analog pin state changes ```{ 'type': 'pinState', 'pin': 'A0', 'state': 42 }```
+## Accepted by virtualavr
+- Set the mode for which pin what messages should be send: { "type": "pinMode", "pin": "D12", "mode": "analog" }```
+- Set an pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
+- Set an pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
+
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
 So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/VirtualAvrTest.java)
