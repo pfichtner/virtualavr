@@ -1,5 +1,6 @@
 package com.github.pfichtner.virtualavr.demo;
 
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static org.awaitility.Awaitility.await;
@@ -20,7 +21,7 @@ import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
 @Testcontainers
 class VirtualAvrTest {
 
-	private static final int INTERNAL_LED = 13;
+	private static final String INTERNAL_LED = "D13";
 
 	@Container
 	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(loadClasspath("/blink.ino"));
@@ -36,6 +37,7 @@ class VirtualAvrTest {
 	@Test
 	void awaitHasBlinkedAtLeastThreeTimes() {
 		VirtualAvrConnection virtualAvr = virtualavr.avr();
+		virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
 		await().until(() -> count(virtualAvr.pinStates(), on(INTERNAL_LED)) >= 3
 				&& count(virtualAvr.pinStates(), off(INTERNAL_LED)) >= 3);
 	}

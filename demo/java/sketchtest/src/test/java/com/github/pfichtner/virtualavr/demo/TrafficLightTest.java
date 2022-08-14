@@ -1,5 +1,6 @@
 package com.github.pfichtner.virtualavr.demo;
 
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static java.lang.Boolean.FALSE;
@@ -45,7 +46,11 @@ class TrafficLightTest {
 
 	@BeforeEach
 	void beforeEach() {
-		avr = virtualAvrContainer.avr().clearStates();
+		avr = virtualAvrContainer.avr() //
+				.pinReportMode(GREEN_LED, DIGITAL) //
+				.pinReportMode(YELLOW_LED, DIGITAL) //
+				.pinReportMode(RED_LED, DIGITAL) //
+				.clearStates();
 	}
 
 	@Test

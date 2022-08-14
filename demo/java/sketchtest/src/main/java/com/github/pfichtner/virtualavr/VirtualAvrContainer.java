@@ -31,7 +31,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer(DockerImageName dockerImageName) {
 		super(dockerImageName);
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-		withDeviceName(containerDev + "/" + ttyDevice) //
+		withDeviceName(ttyDevice) //
 				.withFileSystemBind(hostDev, containerDev) //
 				.addExposedPort(WEBSOCKET_PORT);
 	}
