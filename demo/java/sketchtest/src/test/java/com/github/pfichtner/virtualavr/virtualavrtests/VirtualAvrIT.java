@@ -7,6 +7,7 @@ import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
+import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
@@ -20,7 +21,6 @@ import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.com.google.common.base.Stopwatch;
 import org.testcontainers.utility.DockerImageName;
 
 import com.github.pfichtner.virtualavr.SerialConnection;
@@ -113,6 +113,9 @@ class VirtualAvrIT {
 		long timeToTogglePinThreeTimes = waitForToggles(INTERNAL_LED, 3);
 
 		virtualAvr.pinReportMode(INTERNAL_LED, NONE);
+		// Test could fail because "pinReportMode" is async and there are some messages
+		// sent even after #clearStates call. To prevent we should implement an
+		// non-async "pause" command to halt/pause the simulator
 		virtualAvr.clearStates();
 		MILLISECONDS.sleep(timeToTogglePinThreeTimes * 2);
 		assertTrue(String.valueOf(virtualAvr.pinStates()),
@@ -121,10 +124,10 @@ class VirtualAvrIT {
 
 	private long waitForToggles(String pin, int times) {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
-		Stopwatch stopwatch = Stopwatch.createStarted();
+		long start = currentTimeMillis();
 		await().until(() -> count(virtualAvr.pinStates(), on(pin)) >= times
 				&& count(virtualAvr.pinStates(), off(pin)) >= times);
-		return stopwatch.elapsed(MILLISECONDS);
+		return currentTimeMillis() - start;
 	}
 
 	@Test
