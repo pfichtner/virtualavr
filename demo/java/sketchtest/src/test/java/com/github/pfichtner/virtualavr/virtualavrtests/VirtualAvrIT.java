@@ -16,6 +16,7 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
@@ -116,7 +117,12 @@ class VirtualAvrIT {
 		// Test could fail because "pinReportMode" is async and there are some messages
 		// sent even after #clearStates call. To prevent we should implement an
 		// non-async "pause" command to halt/pause the simulator
-		virtualAvr.clearStates();
+		await().until(() -> {
+			virtualAvr.clearStates();
+			MILLISECONDS.sleep(500);
+			return virtualAvr.pinStates().isEmpty();
+		});
+
 		MILLISECONDS.sleep(timeToTogglePinThreeTimes * 2);
 		assertTrue(String.valueOf(virtualAvr.pinStates()),
 				virtualAvr.pinStates().stream().noneMatch(s -> INTERNAL_LED.equals(s.getPin())));
