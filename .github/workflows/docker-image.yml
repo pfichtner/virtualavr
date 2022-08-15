@@ -31,7 +31,7 @@ jobs:
         distribution: 'adopt'
         cache: maven
     - name: Run java based integration tests via maven
-      run: mvn -B -DTESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=localhost -Dvirtualavr.docker.tag=$DOCKER_IMAGE_TAG '-Dtest=com.github.pfichtner.virtualavr.virtualavrtests.*IT' verify --file pom.xml
+      run: mvn -B -DTESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=localhost -Dvirtualavr.docker.tag=$DOCKER_IMAGE_TAG verify --file pom.xml
       working-directory: demo/java/sketchtest
     - name: Test Report
       uses: dorny/test-reporter@v1
