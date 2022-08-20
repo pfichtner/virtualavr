@@ -13,10 +13,10 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
@@ -24,12 +24,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import com.github.pfichtner.virtualavr.SerialConnection;
+import com.github.pfichtner.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
 import com.github.pfichtner.virtualavr.VirtualAvrContainer;
-
-import jssc.SerialPortException;
 
 /**
  * Integration test for virtualavr. Fires up the docker container and runs
@@ -137,39 +135,44 @@ class VirtualAvrIT {
 	}
 
 	@Test
-	void canSetDigitalPinStateViaWebsocket() throws SerialPortException {
+	void canSetDigitalPinStateViaWebsocket() throws IOException {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
-		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
+		SerialConnectionAwait awaiter = awaiter(virtualAvrContainer.serialConnection());
 
-		await().until(() -> {
+		// TODO make side-affect-free
+		awaiter.awaitReceived(s -> {
 			virtualAvr.pinState("D11", true);
-			return serialConnection.received().contains("State-Change-D11: ON");
+			return s.contains("State-Change-D11: ON");
 		});
 
-		await().until(() -> {
+		// TODO make side-affect-free
+		awaiter.awaitReceived(s -> {
 			virtualAvr.pinState("D11", false);
-			return serialConnection.received().contains("State-Change-D11: OFF");
+			return s.contains("State-Change-D11: OFF");
 		});
 	}
 
 	@Test
-	void canSetAnalogPinStateViaWebsocket() throws SerialPortException {
+	void canSetAnalogPinStateViaWebsocket() throws IOException {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
-		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
+		SerialConnectionAwait awaiter = awaiter(virtualAvrContainer.serialConnection());
 
-		await().until(() -> {
+		// TODO make side-affect-free
+		awaiter.awaitReceived(s -> {
 			virtualAvr.pinState("A0", 42);
-			return serialConnection.received().contains("State-Change-A0: 42");
+			return s.contains("State-Change-A0: 42");
 		});
 
-		await().until(() -> {
+		// TODO make side-affect-free
+		awaiter.awaitReceived(s -> {
 			virtualAvr.pinState("A0", 84);
-			return serialConnection.received().contains("State-Change-A0: 84");
+			return s.contains("State-Change-A0: 84");
 		});
 
-		await().until(() -> {
+		// TODO make side-affect-free
+		awaiter.awaitReceived(s -> {
 			virtualAvr.pinState("A0", 0);
-			return serialConnection.received().contains("State-Change-A0: 0");
+			return s.contains("State-Change-A0: 0");
 		});
 	}
 

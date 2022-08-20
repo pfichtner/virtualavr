@@ -1,16 +1,19 @@
 package com.github.pfichtner.virtualavr;
 
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
+import static jssc.SerialPort.BAUDRATE_115200;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Optional;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import jssc.SerialPortException;
-
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
+
+	private static final String BAUDRATE = "BAUDRATE";
 
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
@@ -42,6 +45,11 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
+	public VirtualAvrContainer<?> withBaudrate(int baudrate) {
+		withEnv(BAUDRATE, String.valueOf(baudrate));
+		return self();
+	}
+
 	public VirtualAvrContainer<?> withDeviceGroup(String group) {
 		withEnv("DEVICEGROUP", group);
 		return self();
@@ -65,11 +73,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return avr;
 	}
 
-	public synchronized SerialConnection serialConnection() throws SerialPortException {
+	public synchronized SerialConnection serialConnection() throws IOException {
 		if (serialConnection == null) {
-			serialConnection = new SerialConnection(hostDev + "/" + ttyDevice);
+			serialConnection = new SerialConnection(hostDev + "/" + ttyDevice, baudrate());
 		}
 		return serialConnection;
+	}
+
+	private int baudrate() {
+		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt).orElse(BAUDRATE_115200);
 	}
 
 }
