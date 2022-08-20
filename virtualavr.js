@@ -90,9 +90,10 @@ const runCode = async (inputFilename, portCallback) => {
 	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
 	const buff = [];
 	usart.onRxComplete = () => sendNextChar(buff, usart);
+        process.stdin.setRawMode(true);
 	process.stdin.on('data', data => {
-		const bytes = data.toString();
-		for (let i = 0; i < bytes.length; i++) buff.push(bytes.charCodeAt(i));
+		var bytes = Array.prototype.slice.call(data, 0);
+		for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
 		sendNextChar(buff, usart);
 	});
 
