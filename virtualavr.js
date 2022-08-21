@@ -87,7 +87,11 @@ const runCode = async (inputFilename, portCallback) => {
 	adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
 
 	const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
-	usart.onByteTransmit = data => process.stdout.write(String.fromCharCode(data));
+        usart.onByteTransmit = data => {
+		const arrBuff = new Uint8Array(1);
+		arrBuff[0] = data;
+		process.stdout.write(arrBuff);
+	}
 	const buff = [];
 	usart.onRxComplete = () => sendNextChar(buff, usart);
         process.stdin.setRawMode(true);
