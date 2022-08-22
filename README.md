@@ -42,8 +42,8 @@ The screencast is not uptodate!!!
 - Changes when listening for analog pin state changes ```{ 'type': 'pinState', 'pin': 'A0', 'state': 42 }```
 ## Accepted by virtualavr
 - Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }```
-- Set an pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
-- Set an pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
+- Set a pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
+- Set a (PWM) pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
