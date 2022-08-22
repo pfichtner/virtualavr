@@ -7,14 +7,15 @@ import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
+import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.imageName;
+import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.onlyPullIfEnabled;
+import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.loadClasspath;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -22,7 +23,6 @@ import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import com.github.pfichtner.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
@@ -44,41 +44,16 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 @Testcontainers
 class VirtualAvrIT {
 
-	private static final String VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME = "virtualavr.docker.tag";
-
 	private static final String INTERNAL_LED = "D13";
 	private static final String PWM_PIN = "D10";
 
 	@Container
 	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName()) //
+			.withImagePullPolicy(onlyPullIfEnabled()) //
 			.withSketchFile(loadClasspath("/integrationtest.ino")) //
 			.withDeviceName("virtualavr" + UUID.randomUUID()) //
 			.withDeviceGroup("root") //
 			.withDeviceMode(666);
-
-	/**
-	 * If you want the version from dockerhub, you have to use <code>latest</code>
-	 * as value for {@value #VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME}. <br>
-	 * To prevent that we test accidentally the image pulled from dockerhub when
-	 * running our integration tests there is <b>NO</b> default value!
-	 * 
-	 * @return the image name including tag
-	 */
-	static DockerImageName imageName() {
-		String dockerTagName = System.getProperty(VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME);
-		if (dockerTagName == null) {
-			throw new IllegalStateException("\"" + VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME + "\" property not set!");
-		}
-		return VirtualAvrContainer.DEFAULT_IMAGE_NAME.withTag(dockerTagName);
-	}
-
-	static File loadClasspath(String name) {
-		try {
-			return new File(VirtualAvrIT.class.getResource(name).toURI());
-		} catch (URISyntaxException e) {
-			throw new IllegalStateException(e);
-		}
-	}
 
 	@Test
 	void canReadSerial() throws Exception {

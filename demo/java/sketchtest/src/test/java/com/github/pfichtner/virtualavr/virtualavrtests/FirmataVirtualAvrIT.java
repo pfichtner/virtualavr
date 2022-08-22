@@ -1,13 +1,14 @@
 package com.github.pfichtner.virtualavr.virtualavrtests;
 
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.imageName;
+import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.onlyPullIfEnabled;
+import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.loadClasspath;
 import static java.lang.Integer.parseInt;
 import static java.lang.Integer.toBinaryString;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import com.github.pfichtner.virtualavr.SerialConnection;
 import com.github.pfichtner.virtualavr.SerialConnectionAwait;
@@ -27,40 +27,15 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 @Testcontainers
 class FirmataVirtualAvrIT {
 
-	private static final String VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME = "virtualavr.docker.tag";
-
 	@Container
 	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName()) //
+			.withImagePullPolicy(onlyPullIfEnabled()) //
 			.withSketchFile(loadClasspath("/firmata-project.zip")) //
 			.withDeviceName("virtualavr" + UUID.randomUUID()) //
 			.withBaudrate(57600) //
 			.withDeviceGroup("root") //
 			.withDeviceMode(666) //
 	;
-
-	/**
-	 * If you want the version from dockerhub, you have to use <code>latest</code>
-	 * as value for {@value #VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME}. <br>
-	 * To prevent that we test accidentally the image pulled from dockerhub when
-	 * running our integration tests there is <b>NO</b> default value!
-	 * 
-	 * @return the image name including tag
-	 */
-	static DockerImageName imageName() {
-		String dockerTagName = System.getProperty(VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME);
-		if (dockerTagName == null) {
-			throw new IllegalStateException("\"" + VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME + "\" property not set!");
-		}
-		return VirtualAvrContainer.DEFAULT_IMAGE_NAME.withTag(dockerTagName);
-	}
-
-	static File loadClasspath(String name) {
-		try {
-			return new File(FirmataVirtualAvrIT.class.getResource(name).toURI());
-		} catch (URISyntaxException e) {
-			throw new IllegalStateException(e);
-		}
-	}
 
 	static final byte startSysex = (byte) 0xF0;
 	static final byte reportFirmwareQuery = 0x79;
