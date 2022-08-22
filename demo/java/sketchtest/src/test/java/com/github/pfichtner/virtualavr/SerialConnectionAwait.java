@@ -2,6 +2,7 @@ package com.github.pfichtner.virtualavr;
 
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.function.Predicate;
 
@@ -25,22 +26,22 @@ public class SerialConnectionAwait {
 		return this;
 	}
 
-	public SerialConnectionAwait sendAwait(byte[] data, byte[] awaitResponse) throws Exception {
+	public SerialConnectionAwait sendAwait(byte[] data, byte[] awaitResponse) throws IOException {
 		sendAwait(data, r -> new String(r).contains(new String(awaitResponse)));
 		return this;
 	}
 
-	public SerialConnectionAwait sendAwait(String data, String awaitResponse) throws Exception {
+	public SerialConnectionAwait sendAwait(String data, String awaitResponse) throws IOException {
 		sendAwait(data, r -> r.contains(awaitResponse));
 		return this;
 	}
 
-	public SerialConnectionAwait sendAwait(byte[] data, Predicate<byte[]> predicate) throws Exception {
+	public SerialConnectionAwait sendAwait(byte[] data, Predicate<byte[]> predicate) throws IOException {
 		connection.send(data);
 		return awaitReceivedBytes(predicate);
 	}
 
-	public SerialConnectionAwait sendAwait(String data, Predicate<String> predicate) throws Exception {
+	public SerialConnectionAwait sendAwait(String data, Predicate<String> predicate) throws IOException {
 		connection.send(data);
 		return awaitReceived(predicate);
 	}
@@ -59,7 +60,7 @@ public class SerialConnectionAwait {
 		return this.duration == null ? await() : await().timeout(duration);
 	}
 
-	public SerialConnectionAwait waitReceivedAnything() throws Exception {
+	public SerialConnectionAwait waitReceivedAnything() {
 		return awaitReceived(r -> !r.isEmpty());
 	}
 
