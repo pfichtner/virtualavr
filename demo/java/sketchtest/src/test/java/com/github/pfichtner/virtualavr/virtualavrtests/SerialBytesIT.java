@@ -1,13 +1,10 @@
 package com.github.pfichtner.virtualavr.virtualavrtests;
 
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static java.util.Collections.indexOfSubList;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.IntStream.range;
 
 import java.io.File;
 import java.net.URISyntaxException;
-import java.util.List;
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -15,6 +12,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import com.github.pfichtner.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
@@ -24,7 +22,7 @@ class SerialBytesIT {
 
 	@Container
 	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName()) //
-			.withSketchFile(loadClasspath("/allBytes.ino")) //
+			.withSketchFile(loadClasspath("/byteecho.ino")) //
 			.withDeviceName("virtualavr" + UUID.randomUUID()) //
 			.withBaudrate(115200) //
 			.withDeviceGroup("root") //
@@ -57,13 +55,12 @@ class SerialBytesIT {
 
 	@Test
 	void doesReceiveAllPossibleByteValues() throws Exception {
-		List<Byte> allPossibleBytes = range(0, 255).mapToObj(i -> Byte.valueOf((byte) i)).collect(toList());
-		awaiter(virtualAvrContainer.serialConnection())
-				.awaitReceivedBytes(bytes -> indexOfSubList(toByteList(bytes), allPossibleBytes) >= 0);
-	}
-
-	static List<Byte> toByteList(byte[] bytes) {
-		return range(0, bytes.length).mapToObj(i -> bytes[i]).collect(toList());
+		SerialConnectionAwait awaiter = awaiter(virtualAvrContainer.serialConnection());
+		for (int i = 1; i < 255; i++) {
+			byte[] arr = new byte[] { (byte) i };
+			awaiter.sendAwait(arr, b -> Arrays.equals(b, arr));
+		}
+		awaiter.sendAwait(new byte[] { (byte) 255 }, b -> Arrays.equals(b, new byte[] { (byte) 255, 0 }));
 	}
 
 }
