@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.github.pfichtner.virtualavr.SerialConnection;
 import com.github.pfichtner.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
@@ -57,6 +58,16 @@ class VirtualAvrIT {
 	void canWriteSerial() throws Exception {
 		String send = "Echo Test!";
 		awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains("Echo response: " + send));
+	}
+
+	@Test
+	void serialConnectionCanBeReestablished() throws Exception {
+		String send = "Echo Test!";
+		for (int i = 0; i < 3; i++) {
+			try (SerialConnection serialConnection = virtualAvrContainer.newSerialConnection()) {
+				awaiter(serialConnection).sendAwait(send, r -> r.contains("Echo response: " + send));
+			}
+		}
 	}
 
 	@Test

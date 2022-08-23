@@ -74,10 +74,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	public synchronized SerialConnection serialConnection() throws IOException {
-		if (serialConnection == null) {
-			serialConnection = new SerialConnection(hostDev + "/" + ttyDevice, baudrate());
+		// TODO a shared connection that can be closed is not very smart
+		if (serialConnection == null || serialConnection.isClosed()) {
+			serialConnection = newSerialConnection();
 		}
 		return serialConnection;
+	}
+
+	public SerialConnection newSerialConnection() throws IOException {
+		return new SerialConnection(hostDev + "/" + ttyDevice, baudrate());
 	}
 
 	private int baudrate() {

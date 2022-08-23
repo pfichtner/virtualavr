@@ -68,6 +68,10 @@ public class SerialConnection implements AutoCloseable {
 		received.reset();
 		return this;
 	}
+	
+	public boolean isClosed() {
+		return !port.isOpened();
+	}
 
 	@Override
 	public void close() throws Exception {
