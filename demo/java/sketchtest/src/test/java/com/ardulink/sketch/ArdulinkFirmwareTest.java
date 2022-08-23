@@ -65,8 +65,8 @@ class ArdulinkFirmwareTest {
 	void sendsReplyIfReplyRequested() throws Exception {
 		String id = "42";
 		try (SerialConnection serial = virtualAvrContainer.serialConnection()) {
-			awaiter(serial).waitReceivedAnything().sendAwait("alp://notn/?id=" + id + "\n",
-					"alp://rply/ok?id=" + id + "\n");
+			awaiter(serial).waitReceivedAnything().sendAwait(ardulinkMessage("notn/?id=" + id),
+					ardulinkMessage("rply/ok?id=" + id));
 		}
 	}
 
@@ -177,7 +177,11 @@ class ArdulinkFirmwareTest {
 	}
 
 	static String ardulinkMessage(Object... parts) {
-		return "alp://" + concat(parts) + "\n";
+		return ardulinkMessage(concat(parts));
+	}
+
+	private static String ardulinkMessage(String message) {
+		return "alp://" + message + "\n";
 	}
 
 	static String concat(Object... parts) {
