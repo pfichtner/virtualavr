@@ -1,7 +1,7 @@
 package com.ardulink.sketch;
 
+import static com.github.pfichtner.virtualavr.IOUtil.downloadTo;
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.TestcontainerSupport.downloadTo;
 import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;

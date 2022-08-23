@@ -1,8 +1,8 @@
 package com.github.pfichtner.virtualavr.virtualavrtests;
 
+import static com.github.pfichtner.virtualavr.IOUtil.withSketchFromClasspath;
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
 import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
-import static com.github.pfichtner.virtualavr.TestcontainerSupport.withSketchFromClasspath;
 
 import java.util.Arrays;
 
