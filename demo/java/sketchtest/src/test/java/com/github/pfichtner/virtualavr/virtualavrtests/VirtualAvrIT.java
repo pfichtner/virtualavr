@@ -1,15 +1,14 @@
 package com.github.pfichtner.virtualavr.virtualavrtests;
 
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.virtualavr.TestcontainerSupport.withSketchFromClasspath;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.NONE;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.imageName;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.onlyPullIfEnabled;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.loadClasspath;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
@@ -17,7 +16,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
@@ -48,12 +46,7 @@ class VirtualAvrIT {
 	private static final String PWM_PIN = "D10";
 
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName()) //
-			.withImagePullPolicy(onlyPullIfEnabled()) //
-			.withSketchFile(loadClasspath("/integrationtest.ino")) //
-			.withDeviceName("virtualavr" + UUID.randomUUID()) //
-			.withDeviceGroup("root") //
-			.withDeviceMode(666);
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/integrationtest.ino"));
 
 	@Test
 	void canReadSerial() throws Exception {

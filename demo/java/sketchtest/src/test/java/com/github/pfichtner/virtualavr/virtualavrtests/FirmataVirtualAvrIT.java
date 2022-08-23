@@ -1,9 +1,8 @@
 package com.github.pfichtner.virtualavr.virtualavrtests;
 
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.imageName;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.loadClasspath;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.onlyPullIfEnabled;
+import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.virtualavr.TestcontainerSupport.withSketchFromClasspath;
 import static java.lang.Integer.parseInt;
 import static java.lang.Integer.toBinaryString;
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -12,7 +11,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -30,14 +28,8 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 class FirmataVirtualAvrIT {
 
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName()) //
-			.withImagePullPolicy(onlyPullIfEnabled()) //
-			.withSketchFile(loadClasspath("/firmata-project.zip")) //
-			.withDeviceName("virtualavr" + UUID.randomUUID()) //
-			.withBaudrate(57600) //
-			.withDeviceGroup("root") //
-			.withDeviceMode(666) //
-	;
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/firmata-project.zip")) //
+			.withBaudrate(57600);
 
 	static final byte startSysex = (byte) 0xF0;
 	static final byte reportFirmwareQuery = 0x79;
@@ -55,18 +47,18 @@ class FirmataVirtualAvrIT {
 			127, 0, 1, 11, 1, 1, 1, 2, 10, 4, 14, 127, 0, 1, 11, 1, 1, 1, 2, 10, 4, 14, 127, 0, 1, 11, 1, 1, 1, 2, 10,
 			4, 14, 6, 1, 127, 0, 1, 11, 1, 1, 1, 2, 10, 4, 14, 6, 1, 127, endSysex };
 
-	SerialConnection serialConnection;
+	SerialConnection serial;
 	SerialConnectionAwait awaiter;
 
 	@BeforeEach
 	void setup() throws IOException {
-		serialConnection = virtualAvrContainer.serialConnection().clearReceived();
-		awaiter = awaiter(serialConnection).withTimeout(Duration.of(20, SECONDS));
+		serial = virtualAvrContainer.serialConnection().clearReceived();
+		awaiter = awaiter(serial).withTimeout(Duration.of(20, SECONDS));
 	}
 
 	@AfterEach
 	void tearDown(TestInfo testInfo) {
-		byte[] bytes = serialConnection.receivedBytes();
+		byte[] bytes = serial.receivedBytes();
 		if (bytes.length > 0) {
 			System.out.println(testInfo.getDisplayName() + ", remaining bytes (" + new String(bytes) + "): ");
 			printBytes(bytes);

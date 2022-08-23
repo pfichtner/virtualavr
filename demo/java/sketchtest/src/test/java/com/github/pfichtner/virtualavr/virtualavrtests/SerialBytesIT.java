@@ -1,12 +1,10 @@
 package com.github.pfichtner.virtualavr.virtualavrtests;
 
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.imageName;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.onlyPullIfEnabled;
-import static com.github.pfichtner.virtualavr.demo.TestcontainerSupport.loadClasspath;
+import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.virtualavr.TestcontainerSupport.withSketchFromClasspath;
 
 import java.util.Arrays;
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -19,14 +17,8 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 class SerialBytesIT {
 
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>(imageName()) //
-			.withImagePullPolicy(onlyPullIfEnabled()) //
-			.withSketchFile(loadClasspath("/byteecho.ino")) //
-			.withDeviceName("virtualavr" + UUID.randomUUID()) //
-			.withBaudrate(115200) //
-			.withDeviceGroup("root") //
-			.withDeviceMode(666) //
-	;
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/byteecho.ino")) //
+			.withBaudrate(115200);
 
 	@Test
 	void doesReceiveAllPossibleByteValues() throws Exception {
