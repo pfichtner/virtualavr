@@ -17,7 +17,7 @@ public final class TestcontainerSupport {
 
 	@SuppressWarnings("resource")
 	public static VirtualAvrContainer<?> virtualAvrContainer(File inoFile) {
-		return new VirtualAvrContainer<>() //
+		return new VirtualAvrContainer<>(imageName()) //
 				.withImagePullPolicy(onlyPullIfEnabled()) //
 				.withSketchFile(inoFile) //
 				.withDeviceName("virtualavr" + UUID.randomUUID()) //
