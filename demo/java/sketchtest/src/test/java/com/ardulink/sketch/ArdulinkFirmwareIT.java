@@ -1,6 +1,7 @@
 package com.ardulink.sketch;
 
 import static com.github.pfichtner.virtualavr.IOUtil.downloadTo;
+import static com.github.pfichtner.virtualavr.IOUtil.filename;
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
 import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
@@ -13,7 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -32,12 +32,16 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
  * Arduino based Ardulink firmware behavior can be tested without having real
  * hardware/flashing real hardware.
  * 
+ * This test should become part of Ardulink itself (to test the local/internal
+ * sketch file not the one uploaded to github).
+ * 
  * @author Peter Fichtner
  */
 @Testcontainers
-class ArdulinkFirmwareTest {
+class ArdulinkFirmwareIT {
 
-	static final String REMOTE_INO_FILE = "https://raw.githubusercontent.com/Ardulink/Ardulink-2/master/deploy-dist/rootfolder/sketches/ArdulinkProtocol/ArdulinkProtocol.ino";
+	static final String REMOTE_INO_FILE = "https://raw.githubusercontent.com/Ardulink/Ardulink-2/"
+			+ "master/deploy-dist/rootfolder/sketches/ArdulinkProtocol/ArdulinkProtocol.ino";
 
 	static File inoFile;
 
@@ -45,10 +49,6 @@ class ArdulinkFirmwareTest {
 	static void loadFromNet(@TempDir File tmpDir) throws MalformedURLException, IOException {
 		URL source = new URL(REMOTE_INO_FILE);
 		inoFile = downloadTo(source, new File(tmpDir, filename(source)));
-	}
-
-	static String filename(URL url) {
-		return Paths.get(url.getPath()).getFileName().toString();
 	}
 
 	@Container
@@ -63,7 +63,7 @@ class ArdulinkFirmwareTest {
 
 	@Test
 	void sendsReplyIfReplyRequested() throws Exception {
-		String id = "42";
+		int id = -42;
 		try (SerialConnection serial = virtualAvrContainer.serialConnection()) {
 			awaiter(serial).waitReceivedAnything().sendAwait(ardulinkMessage("notn/?id=" + id),
 					ardulinkMessage("rply/ok?id=" + id));
@@ -180,7 +180,7 @@ class ArdulinkFirmwareTest {
 		return ardulinkMessage(concat(parts));
 	}
 
-	private static String ardulinkMessage(String message) {
+	static String ardulinkMessage(String message) {
 		return "alp://" + message + "\n";
 	}
 

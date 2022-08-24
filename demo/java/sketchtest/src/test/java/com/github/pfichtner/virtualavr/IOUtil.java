@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 
 public final class IOUtil {
 	
@@ -30,6 +31,10 @@ public final class IOUtil {
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException(e);
 		}
+	}
+
+	public static String filename(URL url) {
+		return Paths.get(url.getPath()).getFileName().toString();
 	}
 
 }
