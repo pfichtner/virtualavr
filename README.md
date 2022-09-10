@@ -40,10 +40,13 @@ The screencast is not uptodate!!!
 ## Sent by virtualavr
 - Changes when listening for digital pin state changes ```{ 'type': 'pinState', 'pin': 'D13', 'state': true }```
 - Changes when listening for analog pin state changes ```{ 'type': 'pinState', 'pin': 'A0', 'state': 42 }```
+- When data is received via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'RX', 'bytes': (bytes received) }```
+- When data is send via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'TX', 'bytes': (bytes send) }```
 ## Accepted by virtualavr
 - Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }```
 - Set a pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
 - Set a (PWM) pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
+- Enable/disable serial debug ```{ "type": "serialDebug", "state": true|false }```
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
@@ -79,7 +82,6 @@ void awaitHasBlinkedAtLeastThreeTimes() {
 - Add support for running simulator without VIRTUALDEVICE (VIRTUALDEVICE="")
 - Add time/cpu-cycles to ws messages
 - Provide Java Bindings as maven artefacts
-- Expose SerialRX/SerialTX events (and have tests for them)
 - Can we connect other handles than stdin/stdout so that we still ca write to stdout from within nodejs/virtualavr.js?
 - Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306

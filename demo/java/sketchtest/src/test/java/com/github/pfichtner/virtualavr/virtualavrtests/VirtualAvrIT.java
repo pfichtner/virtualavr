@@ -9,13 +9,18 @@ import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction.RX;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction.TX;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +31,7 @@ import com.github.pfichtner.virtualavr.SerialConnection;
 import com.github.pfichtner.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction;
 import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
 /**
@@ -101,8 +107,7 @@ class VirtualAvrIT {
 		});
 
 		MILLISECONDS.sleep(timeToTogglePinThreeTimes * 2);
-		assertTrue(String.valueOf(virtualAvr.pinStates()),
-				virtualAvr.pinStates().stream().noneMatch(s -> INTERNAL_LED.equals(s.getPin())));
+		assertThat(virtualAvr.pinStates().stream()).noneMatch(s -> INTERNAL_LED.equals(s.getPin()));
 	}
 
 	private long waitForToggles(String pin, int times) {
@@ -153,6 +158,37 @@ class VirtualAvrIT {
 			virtualAvr.pinState("A0", 0);
 			return s.contains("State-Change-A0: 0");
 		});
+	}
+
+	@Test
+	void doesPublishRxTxWhenEnabled() throws IOException {
+		Map<Direction, ByteArrayOutputStream> serialData = new HashMap<>();
+		virtualAvrContainer.avr().debugSerial(true)
+				.addSerialDebugListener(d -> write(getOutputStream(serialData, d.direction()), d.bytes()));
+
+		String send = "Echo Test!";
+		awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains("Echo response: " + send));
+
+		await().untilAsserted(() -> assertThat(getText(serialData, RX)).isEqualTo(send));
+		await().untilAsserted(
+				() -> assertThat(getText(serialData, TX)).contains("Loop").contains("Echo response: " + send));
+	}
+
+	private String getText(Map<Direction, ByteArrayOutputStream> serialData, Direction direction) {
+		return new String(getOutputStream(serialData, direction).toByteArray());
+	}
+
+	static ByteArrayOutputStream getOutputStream(Map<Direction, ByteArrayOutputStream> serialData,
+			Direction direction) {
+		return serialData.computeIfAbsent(direction, $ -> new ByteArrayOutputStream());
+	}
+
+	static void write(ByteArrayOutputStream outputStream, byte[] bytes) {
+		try {
+			outputStream.write(bytes);
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	long count(List<PinState> pinStates, Predicate<PinState> pinState) {

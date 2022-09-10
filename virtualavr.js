@@ -12,6 +12,7 @@ const ws = require('ws');
 var portB;
 var adc;
 const listeningModes = {};
+var serialDebug;
 
 // TODO Is there a define in avr8js's boards? PORTB: arduino pins D8,D9,D10,D11,D12,D13,D20,D21
 const arduinoPinOnPortB = [ 'D8','D9','D10','D11','D12','D13','D20','D21' ];
@@ -22,7 +23,7 @@ const arduinoPinOnPortC = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
 
 const args = process.argv.slice(2);
 
-const runCode = async (inputFilename, portCallback) => {
+const runCode = async (inputFilename, portCallback, serialCallback) => {
 	let sketch = fs.readFileSync(inputFilename).toString();
 	let files = [];
 
@@ -91,6 +92,9 @@ const runCode = async (inputFilename, portCallback) => {
 		const arrBuff = new Uint8Array(1);
 		arrBuff[0] = data;
 		process.stdout.write(arrBuff);
+		if (serialDebug) {
+			serialCallback('TX', [ data ]);
+		}
 	}
 	const buff = [];
 	usart.onRxComplete = () => sendNextChar(buff, usart);
@@ -99,6 +103,9 @@ const runCode = async (inputFilename, portCallback) => {
 		var bytes = Array.prototype.slice.call(data, 0);
 		for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
 		sendNextChar(buff, usart);
+		if (serialDebug) {
+			serialCallback('RX', bytes);
+		}
 	});
 
 	new avr8js.AVRTimer(cpu, avr8js.timer0Config);
@@ -152,13 +159,19 @@ function main() {
 			threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
 		}
 	});
-	const callback = (pin, state) => {
+	const callbackPinState = (pin, state) => {
 		wss.clients.forEach(client => {
 			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
 				client.send(JSON.stringify({ type: 'pinState', pin, state}));
 			}
 		});
-
+	};
+	const callbackSerialDebug = (direction, bytes) => {
+		wss.clients.forEach(client => {
+			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
+				client.send(JSON.stringify({ type: 'serialDebug', direction, bytes}));
+			}
+		});
 	};
 
        wss.on('connection', function connection(ws) {
@@ -189,6 +202,8 @@ function main() {
 				      }
                               }
 
+                      } else if (obj.type === 'serialDebug') {
+                              serialDebug = obj.state;
                       }
 		} catch (e) {
 			console.log(e);
@@ -199,7 +214,7 @@ function main() {
 
 
 
-	runCode(args.length == 0 ? 'sketch.ino' : args[0], callback);
+	runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState, callbackSerialDebug);
 }
 
 if (require.main === module) {

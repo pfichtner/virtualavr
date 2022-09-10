@@ -60,6 +60,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	}
 
 	private final List<Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
+	private final List<Listener<SerialDebug>> serialDebugListeners = new CopyOnWriteArrayList<>();
 	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
 
 	public static class PinState implements Predicate<PinState> {
@@ -116,17 +117,36 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	}
 
+	public static class SerialDebug {
+
+		public static enum Direction {
+			RX, TX;
+		}
+
+		private Direction direction;
+		private byte[] bytes;
+
+		public Direction direction() {
+			return direction;
+		}
+
+		public byte[] bytes() {
+			return bytes;
+		}
+
+	}
+
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
 		VirtualAvrConnection connection = new VirtualAvrConnection(
 				URI.create("ws://localhost:" + container.getFirstMappedPort()));
-		connection.addPinStateListeners(
+		connection.addPinStateListener(
 				pinState -> System.out.println("Pin " + pinState.getPin() + " = " + pinState.getState()));
 		return connection;
 	}
 
 	public VirtualAvrConnection(URI serverUri) {
 		super(serverUri);
-		addPinStateListeners(this.pinStates::add);
+		addPinStateListener(this.pinStates::add);
 		try {
 			connectBlocking();
 		} catch (InterruptedException e) {
@@ -134,8 +154,14 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		}
 	}
 
-	public void addPinStateListeners(Listener<PinState> listener) {
+	public VirtualAvrConnection addPinStateListener(Listener<PinState> listener) {
 		pinStateListeners.add(listener);
+		return this;
+	}
+
+	public VirtualAvrConnection addSerialDebugListener(Listener<SerialDebug> listener) {
+		serialDebugListeners.add(listener);
+		return this;
 	}
 
 	public List<PinState> pinStates() {
@@ -161,9 +187,17 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	@Override
 	public void onMessage(String message) {
-		PinState pinState = gson.fromJson(message, PinState.class);
-		for (Listener<PinState> listener : pinStateListeners) {
-			listener.accept(pinState);
+		String type = String.valueOf(gson.fromJson(message, Map.class).get("type"));
+		if ("pinState".equals(type)) {
+			PinState pinState = gson.fromJson(message, PinState.class);
+			for (Listener<PinState> listener : pinStateListeners) {
+				listener.accept(pinState);
+			}
+		} else if ("serialDebug".equals(type)) {
+			SerialDebug serialDebug = gson.fromJson(message, SerialDebug.class);
+			for (Listener<SerialDebug> listener : serialDebugListeners) {
+				listener.accept(serialDebug);
+			}
 		}
 	}
 
@@ -193,18 +227,36 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	@SuppressWarnings("unused")
 	private static class SetPinReportMode {
 
+		public String type = "pinMode";
+		private String pin;
+		private String mode;
+
 		private SetPinReportMode(String pin, PinReportMode mode) {
 			this.pin = pin;
 			this.mode = mode.modeName;
 		}
 
-		public String type = "pinMode";
-		private String pin;
-		private String mode;
+	}
+
+	@SuppressWarnings("unused")
+	private static class SetSerialDebug {
+
+		public String type = "serialDebug";
+		private boolean state;
+
+		private SetSerialDebug(boolean state) {
+			this.state = state;
+		}
+
 	}
 
 	public VirtualAvrConnection pinReportMode(String pin, PinReportMode mode) {
 		send(gson.toJson(new SetPinReportMode(pin, mode)));
+		return this;
+	}
+
+	public VirtualAvrConnection debugSerial(boolean state) {
+		send(gson.toJson(new SetSerialDebug(state)));
 		return this;
 	}
 
