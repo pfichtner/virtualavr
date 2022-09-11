@@ -163,7 +163,7 @@ class VirtualAvrIT {
 	@Test
 	void doesPublishRxTxWhenEnabled() throws IOException {
 		Map<Direction, ByteArrayOutputStream> serialData = new HashMap<>();
-		virtualAvrContainer.avr().debugSerial(true)
+		virtualAvrContainer.avr()
 				.addSerialDebugListener(d -> write(getOutputStream(serialData, d.direction()), d.bytes()));
 
 		String send = "Echo Test!";

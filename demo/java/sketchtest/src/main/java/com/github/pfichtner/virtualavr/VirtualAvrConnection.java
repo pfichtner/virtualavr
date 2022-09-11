@@ -62,6 +62,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	private final List<Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
 	private final List<Listener<SerialDebug>> serialDebugListeners = new CopyOnWriteArrayList<>();
 	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
+	private boolean debugSerial;
 
 	public static class PinState implements Predicate<PinState> {
 
@@ -159,9 +160,19 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		return this;
 	}
 
+	public VirtualAvrConnection removePinStateListener(Listener<PinState> listener) {
+		pinStateListeners.remove(listener);
+		return this;
+	}
+
 	public VirtualAvrConnection addSerialDebugListener(Listener<SerialDebug> listener) {
 		serialDebugListeners.add(listener);
-		return this;
+		return debugSerial(true);
+	}
+
+	public VirtualAvrConnection removeSerialDebugListener(Listener<SerialDebug> listener) {
+		serialDebugListeners.remove(listener);
+		return debugSerial(!serialDebugListeners.isEmpty());
 	}
 
 	public List<PinState> pinStates() {
@@ -256,7 +267,10 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	}
 
 	public VirtualAvrConnection debugSerial(boolean state) {
-		send(gson.toJson(new SetSerialDebug(state)));
+		if (state != debugSerial) {
+			debugSerial = state;
+			send(gson.toJson(new SetSerialDebug(state)));
+		}
 		return this;
 	}
 
