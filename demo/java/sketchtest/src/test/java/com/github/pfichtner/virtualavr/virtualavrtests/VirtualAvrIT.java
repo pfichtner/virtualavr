@@ -30,7 +30,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import com.github.pfichtner.virtualavr.SerialConnection;
 import com.github.pfichtner.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.virtualavr.VirtualAvrConnection.Listener;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug;
 import com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction;
 import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
@@ -49,12 +51,38 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 @Testcontainers
 class VirtualAvrIT {
 
+	private static class RxTxListener implements AutoCloseable {
+
+		private final VirtualAvrConnection avr;
+		private final Map<Direction, ByteArrayOutputStream> serialData = new HashMap<>();
+		private final Listener<SerialDebug> listener = s -> write(outputStream(s.direction()), s.bytes());
+
+		private RxTxListener(VirtualAvrConnection avr) {
+			this.avr = avr;
+			avr.addSerialDebugListener(listener);
+		}
+
+		public String text(Direction direction) {
+			return new String(outputStream(direction).toByteArray());
+		}
+
+		private ByteArrayOutputStream outputStream(Direction direction) {
+			return serialData.computeIfAbsent(direction, __ -> new ByteArrayOutputStream());
+		}
+
+		@Override
+		public void close() {
+			avr.removeSerialDebugListener(listener);
+		}
+
+	}
+
 	private static final String INTERNAL_LED = "D13";
 	private static final String PWM_PIN = "D10";
 
 	// since integrationtest.ino toggles each 100 ms between 0 and 42 we have to
-	// measure at least each 50ms
-	private static final int PUBLISH_MILLIS = 50;
+	// measure at least each 100ms / 2
+	private static final int PUBLISH_MILLIS = 100 / 2;
 
 	@Container
 	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/integrationtest.ino"))
@@ -167,25 +195,12 @@ class VirtualAvrIT {
 
 	@Test
 	void doesPublishRxTxWhenEnabled() throws IOException {
-		Map<Direction, ByteArrayOutputStream> serialData = new HashMap<>();
-		virtualAvrContainer.avr()
-				.addSerialDebugListener(d -> write(getOutputStream(serialData, d.direction()), d.bytes()));
-
 		String send = "Echo Test!";
-		awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains("Echo response: " + send));
-
-		await().untilAsserted(() -> assertThat(getText(serialData, RX)).isEqualTo(send));
-		await().untilAsserted(
-				() -> assertThat(getText(serialData, TX)).contains("Loop").contains("Echo response: " + send));
-	}
-
-	private String getText(Map<Direction, ByteArrayOutputStream> serialData, Direction direction) {
-		return new String(getOutputStream(serialData, direction).toByteArray());
-	}
-
-	static ByteArrayOutputStream getOutputStream(Map<Direction, ByteArrayOutputStream> serialData,
-			Direction direction) {
-		return serialData.computeIfAbsent(direction, $ -> new ByteArrayOutputStream());
+		try (RxTxListener rxTx = new RxTxListener(virtualAvrContainer.avr())) {
+			awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains("Echo response: " + send));
+			await().untilAsserted(() -> assertThat(rxTx.text(RX)).isEqualTo(send));
+			await().untilAsserted(() -> assertThat(rxTx.text(TX)).contains("Loop").contains("Echo response: " + send));
+		}
 	}
 
 	static void write(ByteArrayOutputStream outputStream, byte[] bytes) {
