@@ -52,8 +52,13 @@ class VirtualAvrIT {
 	private static final String INTERNAL_LED = "D13";
 	private static final String PWM_PIN = "D10";
 
+	// since integrationtest.ino toggles each 100 ms between 0 and 42 we have to
+	// measure at least each 50ms
+	private static final int PUBLISH_MILLIS = 50;
+
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/integrationtest.ino"));
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/integrationtest.ino"))
+			.withPublishMillis(PUBLISH_MILLIS);
 
 	@Test
 	void canReadSerial() throws Exception {
