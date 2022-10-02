@@ -37,8 +37,12 @@ public class SerialConnectionAwait {
 	}
 
 	public SerialConnectionAwait sendAwait(byte[] data, Predicate<byte[]> predicate) throws IOException {
+		return send(data).awaitReceivedBytes(predicate);
+	}
+
+	public SerialConnectionAwait send(byte[] data) throws IOException {
 		connection.send(data);
-		return awaitReceivedBytes(predicate);
+		return this;
 	}
 
 	public SerialConnectionAwait sendAwait(String data, Predicate<String> predicate) throws IOException {
