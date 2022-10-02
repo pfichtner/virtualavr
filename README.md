@@ -29,6 +29,8 @@ Environment variables supported
 - FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
 - BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
+- PUBLISH_MILLIS analog values gets published each millis on change (default 250)
+- MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
 
 # Screencast of usage
 The screencast is not uptodate!!!

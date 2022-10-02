@@ -9,8 +9,8 @@ const ws = require('ws');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
-const PUBLISH_MILLIS = 250;
-const DIFF_TO_PUBLISH = 0;
+const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
+const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 
 var portB;
 var adc;
@@ -134,7 +134,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 				if (listeningModes[led] === 'analog') {
 					const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
 					const state = Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255);
-					if (Math.abs(state - entry.lastStatePublished) > DIFF_TO_PUBLISH) {
+					if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
 						portCallback(led, state);
 					}
 					entry.lastStatePublished = state;

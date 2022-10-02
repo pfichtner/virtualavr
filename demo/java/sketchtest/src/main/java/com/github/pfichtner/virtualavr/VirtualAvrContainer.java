@@ -66,6 +66,11 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
+	public VirtualAvrContainer<?> withPublishMillis(int millis) {
+		withEnv("PUBLISH_MILLIS", String.valueOf(millis));
+		return self();
+	}
+
 	public synchronized VirtualAvrConnection avr() {
 		if (avr == null) {
 			avr = connectionToVirtualAvr(this);
@@ -88,5 +93,6 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private int baudrate() {
 		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt).orElse(BAUDRATE_115200);
 	}
+
 
 }
