@@ -9,10 +9,14 @@ const ws = require('ws');
 
 // import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
 
+const PUBLISH_MILLIS = 250;
+const DIFF_TO_PUBLISH = 0;
+
 var portB;
 var adc;
 const listeningModes = {};
 var serialDebug;
+var lastPublish = new Date();
 
 // TODO Is there a define in avr8js's boards? PORTB: arduino pins D8,D9,D10,D11,D12,D13,D20,D21
 const arduinoPinOnPortB = [ 'D8','D9','D10','D11','D12','D13','D20','D21' ];
@@ -70,8 +74,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 			}
 			if (entry.lastState === undefined ? state : entry.lastState !== state) {
 				if (entry.lastState) {
-					const delta = cpu.cycles - entry.lastStateCycles;
-					entry.ledHighCycles += delta;
+					entry.ledHighCycles += (cpu.cycles - entry.lastStateCycles);
 				}
 				entry.lastState = state;
 				entry.lastStateCycles = cpu.cycles;
@@ -118,24 +121,28 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 		}
 		await new Promise(resolve => setTimeout(resolve));
 
-		for (const led in portStates) {
-			const entry = portStates[led];
-			const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
-                        const avrPin = arduinoPinOnPortB.indexOf(led);
-			// TODO why does === do not work here?
-			if (portB.pinState(avrPin) == avr8js.PinState.High) {
-				entry.ledHighCycles += cpu.cycles - entry.lastStateCycles;
-			}
-			if (listeningModes[led] === 'analog') {
-				const state = Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255);
-				if (state !== entry.lastStatePublished) {
-					portCallback(led, state);
+		const now = new Date();
+		if (now - lastPublish > PUBLISH_MILLIS) {
+			lastPublish = now;
+			for (const led in portStates) {
+				const entry = portStates[led];
+				const avrPin = arduinoPinOnPortB.indexOf(led);
+				// TODO why does === do not work here?
+				if (portB.pinState(avrPin) == avr8js.PinState.High) {
+					entry.ledHighCycles += (cpu.cycles - entry.lastStateCycles);
 				}
-				entry.lastStatePublished = state;
+				if (listeningModes[led] === 'analog') {
+					const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
+					const state = Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255);
+					if (Math.abs(state - entry.lastStatePublished) > DIFF_TO_PUBLISH) {
+						portCallback(led, state);
+					}
+					entry.lastStatePublished = state;
+				}
+				entry.lastUpdateCycles = cpu.cycles;
+				entry.lastStateCycles = cpu.cycles;
+				entry.ledHighCycles = 0;
 			}
-			entry.lastUpdateCycles = cpu.cycles;
-			entry.lastStateCycles = cpu.cycles;
-			entry.ledHighCycles = 0;
 		}
 
 
