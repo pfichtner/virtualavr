@@ -6,13 +6,14 @@ import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrCon
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.NONE;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction.RX;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction.TX;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -147,8 +148,8 @@ class VirtualAvrIT {
 	private long waitForToggles(String pin, int times) {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
 		long start = currentTimeMillis();
-		await().until(() -> count(virtualAvr.pinStates(), on(pin)) >= times
-				&& count(virtualAvr.pinStates(), off(pin)) >= times);
+		await().until(() -> count(virtualAvr.pinStates(), isEqual(stateIsOn(pin))) >= times
+				&& count(virtualAvr.pinStates(), isEqual(stateIsOff(pin))) >= times);
 		return currentTimeMillis() - start;
 	}
 

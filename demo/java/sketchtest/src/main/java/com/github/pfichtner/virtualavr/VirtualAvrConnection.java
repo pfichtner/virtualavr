@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BinaryOperator;
-import java.util.function.Predicate;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -64,7 +63,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
 	private boolean debugSerial;
 
-	public static class PinState implements Predicate<PinState> {
+	public static class PinState {
 
 		private String pin;
 		private Object state;
@@ -82,19 +81,19 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 			return state;
 		}
 
-		public static PinState on(int pin) {
-			return on("D" + pin);
+		public static PinState stateIsOn(int pin) {
+			return stateIsOn("D" + pin);
 		}
 
-		public static PinState on(String pin) {
+		public static PinState stateIsOn(String pin) {
 			return stateOfPinIs(pin, TRUE);
 		}
 
-		public static PinState off(int pin) {
-			return off("D" + pin);
+		public static PinState stateIsOff(int pin) {
+			return stateIsOff("D" + pin);
 		}
 
-		public static PinState off(String pin) {
+		public static PinState stateIsOff(String pin) {
 			return stateOfPinIs(pin, FALSE);
 		}
 
@@ -107,8 +106,20 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		}
 
 		@Override
-		public boolean test(PinState other) {
-			return Objects.equals(other.pin, pin) && Objects.equals(other.state, state);
+		public int hashCode() {
+			return Objects.hash(pin, state);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			PinState other = (PinState) obj;
+			return Objects.equals(pin, other.pin) && Objects.equals(state, other.state);
 		}
 
 		@Override

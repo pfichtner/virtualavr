@@ -1,8 +1,9 @@
 package com.github.pfichtner.virtualavr.demo;
 
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.off;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.on;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
+import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
+import static java.util.function.Predicate.isEqual;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
@@ -38,8 +39,8 @@ class VirtualAvrTest {
 	void awaitHasBlinkedAtLeastThreeTimes() {
 		VirtualAvrConnection virtualAvr = virtualavr.avr();
 		virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
-		await().until(() -> count(virtualAvr.pinStates(), on(INTERNAL_LED)) >= 3
-				&& count(virtualAvr.pinStates(), off(INTERNAL_LED)) >= 3);
+		await().until(() -> count(virtualAvr.pinStates(), isEqual(stateIsOn(INTERNAL_LED))) >= 3
+				&& count(virtualAvr.pinStates(), isEqual(stateIsOff(INTERNAL_LED))) >= 3);
 	}
 
 	long count(List<PinState> pinStates, Predicate<PinState> pinState) {
