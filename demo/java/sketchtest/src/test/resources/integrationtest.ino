@@ -33,11 +33,11 @@ void loop() {
 
         analogWrite(ANALOG_OUTPUT, 0);
         digitalWrite(DIGITAL_OUTPUT, HIGH);
-        delay(100);
+        delay(250);
 
         analogWrite(ANALOG_OUTPUT, 42);
         digitalWrite(DIGITAL_OUTPUT, LOW);
-        delay(100);
+        delay(250);
 }
 
 void readDigital() {
