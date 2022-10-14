@@ -81,9 +81,9 @@ class VirtualAvrIT {
 	private static final String INTERNAL_LED = "D13";
 	private static final String PWM_PIN = "D10";
 
-	// since integrationtest.ino toggles each 250 ms between 0 and 42 we have to
-	// measure at least each 250ms / 4
-	private static final int PUBLISH_MILLIS = 250 / 4;
+	// since integrationtest.ino toggles each 100 ms between 0 and 42 we have to
+	// measure at least each 100ms / 2
+	private static final int PUBLISH_MILLIS = 100 / 2;
 
 	@Container
 	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/integrationtest.ino"))
