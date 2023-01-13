@@ -5,7 +5,7 @@
   "dependencies": {
     "avr8js": "^0.20.1",
     "intel-hex": "^0.1.2",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.8"
   },
   "devDependencies": {
     "jest": "^29.3.1",
