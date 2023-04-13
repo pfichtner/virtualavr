@@ -4,7 +4,7 @@
   },
   "dependencies": {
     "avr8js": "^0.20.1",
-    "intel-hex": "^0.1.2",
+    "intel-hex": "^0.2.0",
     "node-fetch": "^2.6.9"
   },
   "devDependencies": {
