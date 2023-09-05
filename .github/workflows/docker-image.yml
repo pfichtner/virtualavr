@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set DOCKER_IMAGE_TAG env var
       run: echo "DOCKER_IMAGE_TAG=$(date +'%s-snapshot')" >> $GITHUB_ENV
     - name: Build the Docker image
