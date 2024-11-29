@@ -1,9 +1,6 @@
-FROM node:16-alpine
+FROM node:16
 
-# ubuntu/debian
-#RUN apt-get update && apt-get install -y socat && rm -rf /var/lib/apt/lists/*
-# alpine
-RUN apk add --no-cache bash socat
+RUN apt-get update && apt-get install -y socat && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /sketch
 ADD /sketch /sketch/
