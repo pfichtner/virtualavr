@@ -152,7 +152,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 
 function sendNextChar(buff, usart) {
 	const ch = buff.shift();
-	if (ch) {
+	if (ch !== undefined) {
 		usart.writeByte(ch);
 	}
 }
