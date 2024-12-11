@@ -47,7 +47,7 @@ The screencast is not uptodate!!!
 - When data is received via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'RX', 'bytes': (bytes received) }```
 - When data is send via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'TX', 'bytes': (bytes send) }```
 ## Accepted by virtualavr
-- Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }```
+- Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }``` (supported modes: analog (or alternative pwm), digital, any other value means off)
 - Set a pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
 - Set a (PWM) pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
 - Enable/disable serial debug ```{ "type": "serialDebug", "state": true|false }```
