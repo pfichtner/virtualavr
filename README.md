@@ -26,6 +26,7 @@ Full example, you can pass the devicename as well the code that gets compiled an
 
 Environment variables supported
 - VIRTUALDEVICE the full path of the virtual device that socat creates (defaults to /dev/virtualavr0)
+- DEVICEUSER user the VIRTUALDEVICE belongs to (default root)
 - DEVICEGROUP group the VIRTUALDEVICE belongs to (default dialout)
 - DEVICEMODE file mode of the VIRTUALDEVICE (default 660)
 - FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
