@@ -34,28 +34,60 @@ const arduinoPinOnPortC = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
 
 const args = process.argv.slice(2);
 
-const prepareTemporaryDirectory = (inputFilename) => {
-    const tempDir = tmp.dirSync({ unsafeCleanup: true }).name;
 
-    const sketchDirName = path.basename(inputFilename, '.ino');
-    const sketchDir = path.join(tempDir, sketchDirName);
-    mkdirp.sync(sketchDir);
+const prepareTemporaryDirectory = async () => {
+    return new Promise((resolve, reject) => {
+        tmp.dir({ unsafeCleanup: true, prefix: 'arduino-sketch-' }, async (err, dirPath, cleanupCallback) => {
+            if (err) {
+                return reject(new Error(`Failed to create temporary directory: ${err.message}`));
+            }
 
-    const destinationPath = path.join(sketchDir, path.basename(inputFilename));
-    fs.copyFileSync(inputFilename, destinationPath);
-
-    return sketchDir;
+            try {
+                resolve(dirPath);
+            } catch (error) {
+                reject(new Error(`Failed to clean up temporary directory: ${error.message}`));
+            }
+        });
+    });
 };
 
-const compileArduinoSketch = async (inputFilename) => {
+
+const compileArduinoSketch = async (inputFilename, sketchContent, libraryContent) => {
     try {
-        const tempDir = await prepareTemporaryDirectory(inputFilename);
-        const command = `arduino-cli compile --fqbn arduino:avr:uno --output-dir ${tempDir} ${tempDir}`;
-        const { stdout, stderr } = await execAsync(command);
+        if (libraryContent) {
+            const libraryList = libraryContent.split('\n')
+                .map(line => line.trim())
+                .filter(line => line !== '' && !line.startsWith('#'));
+
+            for (const library of libraryList) {
+                const installCommand = `arduino-cli lib install "${library}"`;
+                const { stdout, stderr } = await execAsync(installCommand);
+
+                if (stderr) {
+                    console.error(`Error installing library: ${library}`, stderr);
+                }
+            }
+        }
+
+        const tempDir = await prepareTemporaryDirectory();  // Generate a unique temporary directory
+        const sketchName = path.basename(inputFilename, '.ino');  // Get the sketch name without the extension
+        const sketchDir = path.join(tempDir, sketchName);  // Create a subdirectory with the sketch name
+
+        if (!fs.existsSync(sketchDir)) {
+            fs.mkdirSync(sketchDir, { recursive: true });
+        }
+
+        const sketchFilePath = path.join(sketchDir, inputFilename);
+        await fsp.writeFile(sketchFilePath, sketchContent);
+
+        const compileCommand = `arduino-cli compile --fqbn arduino:avr:uno --output-dir ${tempDir} ${sketchDir}`;
+        const { stdout, stderr } = await execAsync(compileCommand);
+
         if (stderr) {
             console.error('Compiler warnings/errors:', stderr);
         }
-	const hexFilename = `${inputFilename}.hex`;
+
+        const hexFilename = path.join(tempDir, `${inputFilename}.hex`);
         return await fsp.readFile(hexFilename);
     } catch (error) {
         console.error('Error during sketch compilation:', error);
@@ -64,27 +96,31 @@ const compileArduinoSketch = async (inputFilename) => {
 };
 
 const runCode = async (inputFilename, portCallback, serialCallback) => {
-	let sketch = fs.readFileSync(inputFilename).toString();
-	let files = [];
+    let hexContent = "";
+    if (inputFilename.endsWith('.hex')) {
+        hexContent = fs.readFileSync(inputFilename);
+    } else if (inputFilename.endsWith('.zip')) {
+        const zip = new streamZip.async({ file: inputFilename });
 
-	if (!inputFilename.endsWith('.hex')) {
-		if (inputFilename.endsWith('.zip')) {
-		    const zip = new streamZip.async({ file: inputFilename });
-		    const sketchBuf = await zip.entryData('sketch.ino');
-		    sketch = sketchBuf.toString();
-		    const libraries = await zip.entryData('libraries.txt');
-		    files.push({ name: 'libraries.txt', content: libraries.toString() });
-		    await zip.close();
-		}
-	       const hex = await compileArduinoSketch(inputFilename);
-	       if (!hex) {
-			console.log("Error on compilation");
-			return;
-	       }
-	       sketch = hex;
-	}
+	const sketchBuf = await zip.entryData('sketch.ino');
+        const sketchContent = sketchBuf.toString();
 
-	const { data } = intelhex.parse(sketch);
+	const librariesBuf = await zip.entryData('libraries.txt');
+        const libraryContent = librariesBuf.toString();
+
+	await zip.close();
+        hexContent = await compileArduinoSketch('sketch.ino', sketchBuf.toString(), libraryContent);
+    } else {
+        const sketchContent = fs.readFileSync(inputFilename).toString();
+        hexContent = await compileArduinoSketch(inputFilename, sketchContent);
+    }
+
+    if (!hexContent) {
+	console.error("Error on compilation");
+	return;
+    }
+
+	const { data } = intelhex.parse(hexContent);
 	const progData = new Uint8Array(data);
 
 	// Set up the simulation
