@@ -22,7 +22,7 @@ Connect to virtual serial device
 ```minicom -D /dev/virtualavr0```
 
 Full example, you can pass the devicename as well the code that gets compiled and the executed on the virtual AVR
-```docker run -e VIRTUALDEVICE=/dev/ttyUSB0 -e FILENAME=myArduinoSketch.ino -v /dev:/dev -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr```
+```docker run -p8080:8080 -e VIRTUALDEVICE=/dev/ttyUSB0 -e FILENAME=myArduinoSketch.ino -v /dev:/dev -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr```
 
 Environment variables supported
 - VIRTUALDEVICE the full path of the virtual device that socat creates (defaults to /dev/virtualavr0)
@@ -94,7 +94,6 @@ void awaitHasBlinkedAtLeastThreeTimes() {
 - Possibility to define component layout, e.g. add a DHT22
 - JS Callbacks for pin states/Components, e.g. DHT22
 - Java-Bindings for pin states/Components, e.g. DHT22 (IPC, using websockets?)
-- Make websockets port configurable
 - Watch support: Recompile/reload firmware when changed on filesystem
 - Could we implement upload? So that you can upload the compiled firmware to runniner container / /dev/virtualdevice?
   Could we use arduino firmware? https://github.com/arduino/ArduinoCore-avr/tree/master/bootloaders/atmega : If this works? Do we have to upload elf binaries?
