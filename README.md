@@ -89,7 +89,6 @@ void awaitHasBlinkedAtLeastThreeTimes() {
 - Add time/cpu-cycles to ws messages
 - Provide Java Bindings as maven artefacts
 - Can we connect other handles than stdin/stdout so that we still ca write to stdout from within nodejs/virtualavr.js?
-- Compile local instead of cloud service, using https://arduino.github.io/arduino-cli/0.22/installation/ and https://www.npmjs.com/package/arduino-cli
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
 - We could use WS to interact with the simulator: "loadFirmware", "start", "stop", ...
 - Possibility to define component layout, e.g. add a DHT22
