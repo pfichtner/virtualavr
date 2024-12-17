@@ -6,9 +6,7 @@ on:
   # each first day of month
   - cron: "0 0 1 * *"
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 jobs:
 
