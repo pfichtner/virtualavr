@@ -1,6 +1,8 @@
 FROM node:16
 
 RUN apt-get update && apt-get install -y socat && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+RUN arduino-cli core install arduino:avr
 
 WORKDIR /sketch
 ADD /sketch /sketch/

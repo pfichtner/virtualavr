@@ -1,8 +1,15 @@
-const fs = require("fs");
+const fs = require('fs');
+const fsp = require('fs').promises;
 const fetch = require('node-fetch');
 const avr8js = require('avr8js');
+const { exec } = require('child_process');
+const util = require('util');
+const execAsync = util.promisify(exec);
 const intelhex = require('intel-hex');
 
+const path = require('path');
+const tmp = require('tmp');
+const mkdirp = require('mkdirp');
 const streamZip = require('node-stream-zip');
 
 const ws = require('ws');
@@ -27,30 +34,54 @@ const arduinoPinOnPortC = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
 
 const args = process.argv.slice(2);
 
+const prepareTemporaryDirectory = (inputFilename) => {
+    const tempDir = tmp.dirSync({ unsafeCleanup: true }).name;
+
+    const sketchDirName = path.basename(inputFilename, '.ino');
+    const sketchDir = path.join(tempDir, sketchDirName);
+    mkdirp.sync(sketchDir);
+
+    const destinationPath = path.join(sketchDir, path.basename(inputFilename));
+    fs.copyFileSync(inputFilename, destinationPath);
+
+    return sketchDir;
+};
+
+const compileArduinoSketch = async (inputFilename) => {
+    try {
+        const tempDir = await prepareTemporaryDirectory(inputFilename);
+        const command = `arduino-cli compile --fqbn arduino:avr:uno --output-dir ${tempDir} ${tempDir}`;
+        const { stdout, stderr } = await execAsync(command);
+        if (stderr) {
+            console.error('Compiler warnings/errors:', stderr);
+        }
+	const hexFilename = `${inputFilename}.hex`;
+        return await fsp.readFile(hexFilename);
+    } catch (error) {
+        console.error('Error during sketch compilation:', error);
+        throw error; // Re-throw error for upstream handling
+    }
+};
+
 const runCode = async (inputFilename, portCallback, serialCallback) => {
 	let sketch = fs.readFileSync(inputFilename).toString();
 	let files = [];
 
 	if (!inputFilename.endsWith('.hex')) {
 		if (inputFilename.endsWith('.zip')) {
-				const zip = new streamZip.async({ file: inputFilename });
-				const sketchBuf = await zip.entryData('sketch.ino');
-				sketch = sketchBuf.toString();
-				const libraries = await zip.entryData('libraries.txt');
-				files.push({ name: 'libraries.txt', content: libraries.toString() });
-				await zip.close();
+		    const zip = new streamZip.async({ file: inputFilename });
+		    const sketchBuf = await zip.entryData('sketch.ino');
+		    sketch = sketchBuf.toString();
+		    const libraries = await zip.entryData('libraries.txt');
+		    files.push({ name: 'libraries.txt', content: libraries.toString() });
+		    await zip.close();
 		}
-		const result = await fetch('https://hexi.wokwi.com/build', {
-			method: 'post',
-			body: JSON.stringify({ board: 'uno', sketch, files }),
-			headers: { 'Content-Type': 'application/json' }
-		});
-		const { hex, stderr } = await result.json();
-		if (!hex) {
-			console.log(stderr);
+	       const hex = await compileArduinoSketch(inputFilename);
+	       if (!hex) {
+			console.log("Error on compilation");
 			return;
-		}
-		sketch = hex;
+	       }
+	       sketch = hex;
 	}
 
 	const { data } = intelhex.parse(sketch);
@@ -231,3 +262,4 @@ if (require.main === module) {
 module.exports = {
 	runCode
 }
+

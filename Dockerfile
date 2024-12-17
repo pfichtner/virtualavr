@@ -1,6 +1,8 @@
 FROM node:16-alpine
 
-RUN apk add --no-cache bash socat
+RUN apk add --no-cache bash socat curl gcc-avr g++ gcompat libc6-compat
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+RUN arduino-cli core install arduino:avr
 
 WORKDIR /sketch
 ADD /sketch /sketch/
