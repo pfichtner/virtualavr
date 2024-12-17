@@ -11,7 +11,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 
 public final class IOUtil {
-	
+
 	private IOUtil() {
 		super();
 	}
@@ -27,7 +27,7 @@ public final class IOUtil {
 
 	public static File withSketchFromClasspath(String name) {
 		try {
-			return new File(TestcontainerSupport.class.getResource(name).toURI());
+			return new File(IOUtil.class.getResource(name).toURI());
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException(e);
 		}
