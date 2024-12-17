@@ -74,6 +74,43 @@ void awaitHasBlinkedAtLeastThreeTimes() {
 }
 ```
 
+```python
+@pytest.fixture
+def docker_container():
+    client = docker.from_env()
+    container = client.containers.run(
+        "pfichtner/virtualavr",
+        detach=True,
+        auto_remove=True,
+        ports={"8080/tcp": None},  # Map container's websocket port to a random free port on the host
+        volumes={
+            os.path.abspath(os.path.join(os.getcwd(), "ArdulinkProtocol")): {"bind": "/sketch", "mode": "ro"},
+            "/dev/": {"bind": "/dev/", "mode": "rw"}
+        },
+        environment={
+            "VIRTUALDEVICE": SERIAL_PORT,
+            "FILENAME": "ArdulinkProtocol.ino.hex",
+            "DEVICEUSER": str(os.getuid())
+        }
+    )
+
+    ws_url = f"ws://localhost:{container.attrs['NetworkSettings']['Ports']['8080/tcp'][0]['HostPort']}"
+    yield container, ws_url
+    container.remove(force=True)
+
+def test_can_switch_digital_pin_on_and_off(docker_container):
+    container, ws_url = docker_container
+    ws = websocket.create_connection(ws_url, timeout=WS_TIMEOUT)
+    send_ws_message(ws, {"type": "pinMode", "pin": "D12", "mode": "digital"})
+
+    with serial.Serial(SERIAL_PORT, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+        send_serial_message(ser, "alp://ppsw/12/1")
+        wait_for_ws_message(ws, {"type": "pinState", "pin": "D12", "state": True})
+
+    ws.close()
+```
+For the complete python example see https://github.com/Ardulink/Firmware/tree/main/tests
+
 
 # What's inside? How does it work? 
 - The heart is [avr8js](https://github.com/wokwi/avr8js)
