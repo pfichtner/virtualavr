@@ -136,12 +136,12 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 
 		    let entry = portStates[arduinoPin];
 		    if (entry === undefined) {
-			    entry = { lastStateCycles: 0, lastUpdateCycles: 0, ledHighCycles: 0 };
+			    entry = { lastState: undefined, lastStateCycles: 0, lastUpdateCycles: 0, pinHighCycles: 0 };
 			    portStates[arduinoPin] = entry
 		    }
-		    if (entry.lastState === undefined ? state : entry.lastState !== state) {
+		    if (entry.lastState !== state) {
 			    if (entry.lastState) {
-				    entry.ledHighCycles += (cpu.cycles - entry.lastStateCycles);
+				    entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
 			    }
 			    entry.lastState = state;
 			    entry.lastStateCycles = cpu.cycles;
@@ -191,24 +191,24 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 	    const now = new Date();
 	    if (now - lastPublish > PUBLISH_MILLIS) {
 		    lastPublish = now;
-		    for (const led in portStates) {
-			    const entry = portStates[led];
-			    const avrPin = arduinoPinOnPortB.indexOf(led);
+		    for (const pin in portStates) {
+			    const entry = portStates[pin];
+			    const avrPin = arduinoPinOnPortB.indexOf(pin);
 			    // TODO why does === do not work here?
 			    if (portB.pinState(avrPin) == avr8js.PinState.High) {
-				    entry.ledHighCycles += (cpu.cycles - entry.lastStateCycles);
+				    entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
 			    }
-			    if (listeningModes[led] === 'analog') {
+			    if (listeningModes[pin] === 'analog') {
 				    const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
-				    const state = Math.round(entry.ledHighCycles / cyclesSinceUpdate * 255);
+				    const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
 				    if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
-					    portCallback(led, state);
+					    portCallback(pin, state);
 				    }
 				    entry.lastStatePublished = state;
 			    }
 			    entry.lastUpdateCycles = cpu.cycles;
 			    entry.lastStateCycles = cpu.cycles;
-			    entry.ledHighCycles = 0;
+			    entry.pinHighCycles = 0;
 		    }
 	    }
 
