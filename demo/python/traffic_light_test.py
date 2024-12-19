@@ -122,25 +122,35 @@ def send_ws_message(listener, message=None):
         print(f"Sent WebSocket message: {json.dumps(message)}")
 
 
-def wait_for_ws_message(listener, expected_response, timeout=20):
+def wait_for_ws_message(listener, pin, expected_state, timeout=20):
     """
-    Wait for an expected response in the WebSocket listener's buffer.
-    Checks all messages in the buffer to see if any match the expected response.
+    Check the last message of a specific pin in the WebSocket listener's buffer.
+    If it does not match or no message for the pin is found, wait for it until the timeout.
+
+    Args:
+        listener: The WebSocket listener instance.
+        pin: The pin to look for in the messages.
+        expected_state: The expected state of the pin.
+        timeout: The maximum time to wait for the message.
+
+    Raises:
+        AssertionError: If the expected state for the pin is not received within the timeout.
     """
     start_time = time.time()
 
     while time.time() - start_time < timeout:
-        # Retrieve all messages from the listener's queue
-        messages = listener.get_all_messages()
-        for message in messages:
-            if message == expected_response:
-                print(f"Received expected WebSocket response: {message}")
-                return message
-        
-        # If we don't find a match, wait a moment before checking again
+        # Filter messages related to the specified pin
+        pin_messages = [msg for msg in listener.get_all_messages() if msg.get("pin") == pin]
+
+        if pin_messages:
+            last_message = pin_messages[-1]
+            if last_message.get("state") == expected_state:
+                print(f"Last message for pin {pin} has the expected state: {expected_state}")
+                return last_message
+
         time.sleep(0.1)
-    
-    pytest.fail(f"Expected WebSocket response '{expected_response}' not received within {timeout} seconds.")
+
+    pytest.fail(f"No message for pin {pin} with the expected state {expected_state} received within {timeout} seconds.")
 
 
 def set_pin_mode(ws, pin, mode):
@@ -160,9 +170,9 @@ def test_valueEqualsIs90PercentOfRef_GreenLedIsOn(ws_listener):
     send_ws_message(ws_listener, pin_state(REF_PIN, ref))
     send_ws_message(ws_listener, pin_state(VALUE_PIN, int(ref * 0.9)))
 
-    wait_for_ws_message(ws_listener, pin_state(GREEN_LED, True))
-    wait_for_ws_message(ws_listener, pin_state(YELLOW_LED, False))
-    wait_for_ws_message(ws_listener, pin_state(RED_LED, False))
+    wait_for_ws_message(ws_listener, GREEN_LED, True)
+    wait_for_ws_message(ws_listener, YELLOW_LED, False)
+    wait_for_ws_message(ws_listener, RED_LED, False)
 
 
 def test_valueGreaterThenRef_RedLedIsOn(ws_listener):
@@ -174,9 +184,9 @@ def test_valueGreaterThenRef_RedLedIsOn(ws_listener):
     send_ws_message(ws_listener, pin_state(REF_PIN, someValue - 1))
     send_ws_message(ws_listener, pin_state(VALUE_PIN, someValue))
 
-    wait_for_ws_message(ws_listener, pin_state(GREEN_LED, False))
-    wait_for_ws_message(ws_listener, pin_state(YELLOW_LED, False))
-    wait_for_ws_message(ws_listener, pin_state(RED_LED, True))
+    wait_for_ws_message(ws_listener, GREEN_LED, False)
+    wait_for_ws_message(ws_listener, YELLOW_LED, False)
+    wait_for_ws_message(ws_listener, RED_LED, True)
 
 
 def test_valueGreaterWithin90Percent_YellowLedIsOn(ws_listener):
@@ -188,6 +198,6 @@ def test_valueGreaterWithin90Percent_YellowLedIsOn(ws_listener):
     send_ws_message(ws_listener, pin_state(REF_PIN, ref))
     send_ws_message(ws_listener, pin_state(VALUE_PIN, int(ref * 0.9 + 1)))
 
-    wait_for_ws_message(ws_listener, pin_state(GREEN_LED, False))
-    wait_for_ws_message(ws_listener, pin_state(YELLOW_LED, True))
-    wait_for_ws_message(ws_listener, pin_state(RED_LED, False))
+    wait_for_ws_message(ws_listener, GREEN_LED, False)
+    wait_for_ws_message(ws_listener, YELLOW_LED, True)
+    wait_for_ws_message(ws_listener, RED_LED, False)
