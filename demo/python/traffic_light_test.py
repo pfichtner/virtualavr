@@ -77,7 +77,7 @@ def docker_container():
     print(f"Docker container is running with WebSocket bound to host port {host_port}")
 
     ws_url = f"ws://localhost:{host_port}"
-    yield container, ws_url
+    yield ws_url
 
     container.remove(force=True)
 
@@ -87,7 +87,7 @@ def ws_listener(docker_container):
     Starts a global WebSocket listener after the Docker container is ready.
     Retries connection until the WebSocket server is reachable.
     """
-    _, ws_url = docker_container
+    ws_url = docker_container
 
     # Retry connection to WebSocket
     for _ in range(20):
@@ -141,38 +141,51 @@ def wait_for_ws_message(listener, expected_response, timeout=20):
     pytest.fail(f"Expected WebSocket response '{expected_response}' not received within {timeout} seconds.")
 
 
-def test_valueEqualsIs90PercentOfRef_GreenLedIsIOn(ws_listener):
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": GREEN_LED, "mode": "digital"})
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": YELLOW_LED, "mode": "digital"})
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": RED_LED, "mode": "digital"})
+def set_pin_mode(ws, pin, mode):
+    send_ws_message(ws, {"type": "pinMode", "pin": pin, "mode": mode})
+
+
+def pin_state(pin, state):
+    return {"type": "pinState", "pin": pin, "state": state}
+
+
+def test_valueEqualsIs90PercentOfRef_GreenLedIsOn(ws_listener):
+    set_pin_mode(ws_listener, GREEN_LED, "digital")
+    set_pin_mode(ws_listener, YELLOW_LED, "digital")
+    set_pin_mode(ws_listener, RED_LED, "digital")
 
     ref = 1000
-    send_ws_message(ws_listener, {"type": "pinState", "pin": REF_PIN, "state": ref})
-    send_ws_message(ws_listener, {"type": "pinState", "pin": VALUE_PIN, "state": int(ref * 90 / 100)})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": GREEN_LED, "state": True})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": YELLOW_LED, "state": False})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": RED_LED, "state": False})
+    send_ws_message(ws_listener, pin_state(REF_PIN, ref))
+    send_ws_message(ws_listener, pin_state(VALUE_PIN, int(ref * 0.9)))
+
+    wait_for_ws_message(ws_listener, pin_state(GREEN_LED, True))
+    wait_for_ws_message(ws_listener, pin_state(YELLOW_LED, False))
+    wait_for_ws_message(ws_listener, pin_state(RED_LED, False))
+
 
 def test_valueGreaterThenRef_RedLedIsOn(ws_listener):
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": GREEN_LED, "mode": "digital"})
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": YELLOW_LED, "mode": "digital"})
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": RED_LED, "mode": "digital"})
+    set_pin_mode(ws_listener, GREEN_LED, "digital")
+    set_pin_mode(ws_listener, YELLOW_LED, "digital")
+    set_pin_mode(ws_listener, RED_LED, "digital")
 
     someValue = 1023
-    send_ws_message(ws_listener, {"type": "pinState", "pin": REF_PIN, "state": someValue - 1})
-    send_ws_message(ws_listener, {"type": "pinState", "pin": VALUE_PIN, "state": someValue})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": GREEN_LED, "state": False})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": YELLOW_LED, "state": False})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": RED_LED, "state": True})
+    send_ws_message(ws_listener, pin_state(REF_PIN, someValue - 1))
+    send_ws_message(ws_listener, pin_state(VALUE_PIN, someValue))
 
-def test_valueGreaterWithin90Percent_YellowLedIsIOn(ws_listener):
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": GREEN_LED, "mode": "digital"})
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": YELLOW_LED, "mode": "digital"})
-    send_ws_message(ws_listener, {"type": "pinMode", "pin": RED_LED, "mode": "digital"})
+    wait_for_ws_message(ws_listener, pin_state(GREEN_LED, False))
+    wait_for_ws_message(ws_listener, pin_state(YELLOW_LED, False))
+    wait_for_ws_message(ws_listener, pin_state(RED_LED, True))
+
+
+def test_valueGreaterWithin90Percent_YellowLedIsOn(ws_listener):
+    set_pin_mode(ws_listener, GREEN_LED, "digital")
+    set_pin_mode(ws_listener, YELLOW_LED, "digital")
+    set_pin_mode(ws_listener, RED_LED, "digital")
 
     ref = 1000
-    send_ws_message(ws_listener, {"type": "pinState", "pin": REF_PIN, "state": ref})
-    send_ws_message(ws_listener, {"type": "pinState", "pin": VALUE_PIN, "state": int(ref * 90 / 100 + 1)})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": GREEN_LED, "state": False})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": YELLOW_LED, "state": True})
-    wait_for_ws_message(ws_listener, {"type": "pinState", "pin": RED_LED, "state": False})
+    send_ws_message(ws_listener, pin_state(REF_PIN, ref))
+    send_ws_message(ws_listener, pin_state(VALUE_PIN, int(ref * 0.9 + 1)))
+
+    wait_for_ws_message(ws_listener, pin_state(GREEN_LED, False))
+    wait_for_ws_message(ws_listener, pin_state(YELLOW_LED, True))
+    wait_for_ws_message(ws_listener, pin_state(RED_LED, False))
