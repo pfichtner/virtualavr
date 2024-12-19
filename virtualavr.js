@@ -184,46 +184,43 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
     new avr8js.AVRTimer(cpu, avr8js.timer2Config);
     while (true) {
 	for (let i = 0; i < 500000; i++) {
-		    avr8js.avrInstruction(cpu);
-		    cpu.tick();
-	    }
-	    await new Promise(resolve => setTimeout(resolve));
+	    avr8js.avrInstruction(cpu);
+	    cpu.tick();
+	}
+	await new Promise(resolve => setTimeout(resolve));
 
-	    try {
-		while (messageQueue.length > 0) {
-		    processMessage(messageQueue.shift(), portCallback);
+	try {
+	    while (messageQueue.length > 0) {
+		processMessage(messageQueue.shift(), portCallback);
+	    }
+	} catch (e) {
+	    console.log(e);
+	}
+
+	const now = new Date();
+	if (now - lastPublish > PUBLISH_MILLIS) {
+	    lastPublish = now;
+	    for (const pin in portStates) {
+		const entry = portStates[pin];
+		const avrPin = arduinoPinOnPortB.indexOf(pin);
+		// TODO why does === do not work here?
+		if (portB.pinState(avrPin) == avr8js.PinState.High) {
+			entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
 		}
-	    } catch (e) {
-		console.log(e);
+		if (listeningModes[pin] === 'analog') {
+			const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
+			const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
+			if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
+				portCallback(pin, state);
+			}
+			entry.lastStatePublished = state;
+		}
+		entry.lastUpdateCycles = cpu.cycles;
+		entry.lastStateCycles = cpu.cycles;
+		entry.pinHighCycles = 0;
 	    }
-
-	    const now = new Date();
-	    if (now - lastPublish > PUBLISH_MILLIS) {
-		    lastPublish = now;
-		    for (const pin in portStates) {
-			    const entry = portStates[pin];
-			    const avrPin = arduinoPinOnPortB.indexOf(pin);
-			    // TODO why does === do not work here?
-			    if (portB.pinState(avrPin) == avr8js.PinState.High) {
-				    entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
-			    }
-			    if (listeningModes[pin] === 'analog') {
-				    const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
-				    const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
-				    if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
-					    portCallback(pin, state);
-				    }
-				    entry.lastStatePublished = state;
-			    }
-			    entry.lastUpdateCycles = cpu.cycles;
-			    entry.lastStateCycles = cpu.cycles;
-			    entry.pinHighCycles = 0;
-		    }
-	    }
-
-
+	}
     }
-
 }
 
 function sendNextChar(buff, usart) {
