@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
@@ -196,9 +197,10 @@ class VirtualAvrIT {
 	}
 
 	@Test
-	void doesPublishRxTxWhenEnabled() throws IOException {
+	void doesPublishRxTxWhenEnabled() throws Exception {
 		String send = "Echo Test!";
 		try (RxTxListener rxTx = new RxTxListener(virtualAvrContainer.avr())) {
+			TimeUnit.MILLISECONDS.sleep(100);
 			awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains("Echo response: " + send));
 			await().untilAsserted(() -> assertThat(rxTx.text(RX)).isEqualTo(send));
 			await().untilAsserted(() -> assertThat(rxTx.text(TX)).contains("Loop").contains("Echo response: " + send));
