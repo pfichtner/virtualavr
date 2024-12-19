@@ -203,8 +203,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 	    for (const pin in portStates) {
 		const entry = portStates[pin];
 		const avrPin = arduinoPinOnPortB.indexOf(pin);
-		// TODO why does === do not work here?
-		if (portB.pinState(avrPin) == avr8js.PinState.High) {
+		if (portB.pinState(avrPin) === avr8js.PinState.High) {
 			entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
 		}
 		if (listeningModes[pin] === 'analog') {
