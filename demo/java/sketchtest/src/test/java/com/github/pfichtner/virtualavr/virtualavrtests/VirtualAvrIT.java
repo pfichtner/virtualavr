@@ -200,7 +200,7 @@ class VirtualAvrIT {
 	void doesPublishRxTxWhenEnabled() throws Exception {
 		String send = "Echo Test!";
 		try (RxTxListener rxTx = new RxTxListener(virtualAvrContainer.avr())) {
-			TimeUnit.MILLISECONDS.sleep(100);
+			TimeUnit.MILLISECONDS.sleep(500);
 			String expectedResponse = "Echo response: " + send;
 			awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains(expectedResponse));
 			await().untilAsserted(() -> assertThat(rxTx.text(RX)).isEqualTo(send));
