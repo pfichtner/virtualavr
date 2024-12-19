@@ -19,6 +19,7 @@ const ws = require('ws');
 const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 
+let messageQueue = [];
 var portB;
 var adc;
 const listeningModes = {};
@@ -130,7 +131,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
     const portStates = {};
     portB.addListener(() => {
 // console.log("portB");
-	    for (let pin = 0; pin <= 7; pin++) {
+	    for (let pin = 0; pin < arduinoPinOnPortB.length; pin++) {
 		    const arduinoPin = arduinoPinOnPortB[pin];
 		    const state = portB.pinState(pin) === avr8js.PinState.High;
 
@@ -182,11 +183,19 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
     new avr8js.AVRTimer(cpu, avr8js.timer1Config);
     new avr8js.AVRTimer(cpu, avr8js.timer2Config);
     while (true) {
-	    for (let i = 0; i < 500000; i++) {
+	for (let i = 0; i < 500000; i++) {
 		    avr8js.avrInstruction(cpu);
 		    cpu.tick();
 	    }
 	    await new Promise(resolve => setTimeout(resolve));
+
+	    try {
+		while (messageQueue.length > 0) {
+		    processMessage(messageQueue.shift(), portCallback);
+		}
+	    } catch (e) {
+		console.log(e);
+	    }
 
 	    const now = new Date();
 	    if (now - lastPublish > PUBLISH_MILLIS) {
@@ -224,6 +233,42 @@ function sendNextChar(buff, usart) {
 	}
 }
 
+function processMessage(obj, callbackPinState) {
+    // { "type": "pinMode", "pin": "D12", "mode": "analog" }
+    if (obj.type === 'pinMode') {
+        if (obj.mode === 'analog' || obj.mode === 'pwm') {
+            listeningModes[obj.pin] = 'analog';
+        } else if (obj.mode === 'digital') {
+            listeningModes[obj.pin] = 'digital';
+            // immediately publish the current state
+            const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
+            if (avrPin >= 0) {
+                const state = portB.pinState(avrPin) === avr8js.PinState.High;
+                callbackPinState(obj.pin, state);
+            }
+        } else {
+            listeningModes[obj.pin] = undefined;
+        }
+    } else if (obj.type === 'fakePinState' || obj.type === 'pinState') {
+        // { "type": "pinState", "pin": "D12", "state": true }
+        if (typeof obj.state === 'boolean') {
+            const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
+            if (avrPin >= 0)
+                portB.setPin(avrPin, obj.state == 1);
+        }
+
+        // { "type": "pinState", "pin": "D12", "state": 42 }
+        if (typeof obj.state === 'number') {
+            const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
+            if (adc && avrPin >= 0) {
+                adc.channelValues[avrPin] = obj.state * 5 / 1024;
+            }
+        }
+    } else if (obj.type === 'serialDebug') {
+        serialDebug = obj.state;
+    }
+}
+
 function main() {
 	// const callback = (pin, state) => {};
 	const wss = new ws.WebSocketServer({
@@ -250,38 +295,7 @@ function main() {
 
        wss.on('connection', function connection(ws) {
                ws.on('message', function message(data) {
-		try {
-                      const obj = JSON.parse(data);
-                      // { "type": "pinMode", "pin": "D12", "mode": "analog" }
-                      if (obj.type === 'pinMode') {
-			 if (obj.mode === 'analog' || obj.mode === 'pwm') {
-				 listeningModes[obj.pin] = 'analog';
-			 } else {
-				 listeningModes[obj.pin] = obj.mode === 'digital' ? obj.mode : undefined;
-			 }
-                         listeningModes[obj.pin] = obj.mode === 'analog' || obj.mode === 'digital' ? obj.mode : undefined;
-                      } else if (obj.type === 'fakePinState' || obj.type === 'pinState') {
-                              // { "type": "pinState", "pin": "D12", "state": true }
-                              if (typeof obj.state === 'boolean') {
-				      const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
-				      if (avrPin >= 0)
-					      portB.setPin(avrPin, obj.state == 1);
-			      }
-
-                              // { "type": "pinState", "pin": "D12", "state": 42 }
-                              if (typeof obj.state === 'number') {
-				      const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
-				      if (adc && avrPin >= 0) {
-					      adc.channelValues[avrPin] = obj.state * 5 / 1024;
-				      }
-                              }
-
-                      } else if (obj.type === 'serialDebug') {
-                              serialDebug = obj.state;
-                      }
-		} catch (e) {
-			console.log(e);
-		}
+                  messageQueue.push(JSON.parse(data));
                });
        });
 
