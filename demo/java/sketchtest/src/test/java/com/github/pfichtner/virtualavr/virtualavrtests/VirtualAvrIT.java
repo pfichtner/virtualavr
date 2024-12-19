@@ -201,9 +201,10 @@ class VirtualAvrIT {
 		String send = "Echo Test!";
 		try (RxTxListener rxTx = new RxTxListener(virtualAvrContainer.avr())) {
 			TimeUnit.MILLISECONDS.sleep(100);
-			awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains("Echo response: " + send));
+			String expectedResponse = "Echo response: " + send;
+			awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains(expectedResponse));
 			await().untilAsserted(() -> assertThat(rxTx.text(RX)).isEqualTo(send));
-			await().untilAsserted(() -> assertThat(rxTx.text(TX)).contains("Loop").contains("Echo response: " + send));
+			await().untilAsserted(() -> assertThat(rxTx.text(TX)).contains("Loop").contains(expectedResponse));
 		}
 	}
 
