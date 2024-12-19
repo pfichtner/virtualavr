@@ -40,9 +40,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r demo/python/requirements.txt
-    - name: Run pytest in the 'tests' folder
+    - name: Run python based integration tests via pytest
       run: |
-        pytest demo/python -v --junit-xml=demo/python test-results/pytest.xml
+        pytest demo/python -v --junit-xml=demo/python/test-results/pytest.xml
 
     - name: Test Report
       uses: dorny/test-reporter@v1
