@@ -62,12 +62,13 @@ def docker_container():
     client = docker.from_env()
 
     print("Starting Docker container...")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     container = client.containers.run(
         "pfichtner/virtualavr",
         detach=True,
         auto_remove=True,
         ports={"8080/tcp": None},  # Map container port to a random free port on the host
-        volumes={os.path.abspath(os.getcwd()): {"bind": "/sketch", "mode": "ro"}},
+        volumes={script_dir: {"bind": "/sketch", "mode": "ro"}},
         environment={"FILENAME": "trafficlight.ino"}
     )
 
