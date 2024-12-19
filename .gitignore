@@ -9,3 +9,8 @@ target
 .project
 .classpath
 .settings
+
+__pycache__/
+*.py[cod]
+*$py.class
+
