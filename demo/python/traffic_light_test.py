@@ -62,9 +62,10 @@ def docker_container():
     client = docker.from_env()
 
     print("Starting Docker container...")
+    docker_image_tag = os.getenv("DOCKER_IMAGE_TAG", "latest")
     script_dir = os.path.dirname(os.path.abspath(__file__))
     container = client.containers.run(
-        "pfichtner/virtualavr",
+	f"pfichtner/virtualavr:{docker_image_tag}",
         detach=True,
         auto_remove=True,
         ports={"8080/tcp": None},  # Map container port to a random free port on the host

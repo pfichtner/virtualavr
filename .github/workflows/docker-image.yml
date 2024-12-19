@@ -41,6 +41,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r demo/python/requirements.txt
     - name: Run python based integration tests via pytest
+      env:
+        DOCKER_IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
       run: |
         pytest demo/python -v --junit-xml=demo/python/test-results/pytest.xml
 
