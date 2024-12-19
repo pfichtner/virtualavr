@@ -109,7 +109,7 @@ def test_can_switch_digital_pin_on_and_off(docker_container):
 
     ws.close()
 ```
-For the complete python example see https://github.com/Ardulink/Firmware/tree/main/tests
+For a complete python example see https://github.com/pfichtner/virtualavr/tree/main/demo/python
 
 
 # What's inside? How does it work? 
