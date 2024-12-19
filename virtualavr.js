@@ -246,17 +246,16 @@ function processMessage(obj, callbackPinState) {
             listeningModes[obj.pin] = undefined;
         }
     } else if (obj.type === 'fakePinState' || obj.type === 'pinState') {
-        // { "type": "pinState", "pin": "D12", "state": true }
         if (typeof obj.state === 'boolean') {
+	    // { "type": "pinState", "pin": "D12", "state": true }
             const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
-            if (avrPin >= 0)
+            if (avrPin >= 0) {
                 portB.setPin(avrPin, obj.state == 1);
-        }
-
-        // { "type": "pinState", "pin": "D12", "state": 42 }
-        if (typeof obj.state === 'number') {
+	    }
+        } else if (typeof obj.state === 'number') {
+	    // { "type": "pinState", "pin": "D12", "state": 42 }
             const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
-            if (adc && avrPin >= 0) {
+            if (avrPin >= 0) {
                 adc.channelValues[avrPin] = obj.state * 5 / 1024;
             }
         }
