@@ -3,7 +3,6 @@ package com.github.pfichtner.virtualavr.demo;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
-import static java.lang.Boolean.FALSE;
 import static org.awaitility.Awaitility.await;
 import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
@@ -54,21 +53,21 @@ class TrafficLightTest {
 	}
 
 	@Test
-	void valueEqualsRef_GreenLedIsIOn() {
-		int someValue = 1022;
-		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue);
+	void valueEqualsIs90PercentOfRef_GreenLedIsOn() {
+		int someValue = 1000;
+		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue * 90 / 100);
 		awaitUntil(stateIsOn(GREEN_LED), stateIsOff(YELLOW_LED), stateIsOff(RED_LED));
 	}
 
 	@Test
-	void valueGreaterThenRef_RedLedIsIOn() {
-		int someValue = 1022;
-		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue + 1);
+	void valueGreaterThenRef_RedLedIsOn() {
+		int someValue = 1023;
+		avr.pinState(REF_PIN, someValue - 1).pinState(VALUE_PIN, someValue);
 		awaitUntil(stateIsOff(GREEN_LED), stateIsOff(YELLOW_LED), stateIsOn(RED_LED));
 	}
 
 	@Test
-	void valueGreaterWithin90Percent_YellowLedIsIOn() {
+	void valueGreaterWithin90Percent_YellowLedIsOn() {
 		int ref = 1000;
 		avr.pinState(REF_PIN, ref).pinState(VALUE_PIN, ref * 90 / 100 + 1);
 		awaitUntil(stateIsOff(GREEN_LED), stateIsOn(YELLOW_LED), stateIsOff(RED_LED));
@@ -80,7 +79,7 @@ class TrafficLightTest {
 
 	boolean statesAre(PinState... states) {
 		Map<String, Object> lastStates = avr.lastStates();
-		return Arrays.stream(states).allMatch(s -> equal(s.getState(), lastStates.getOrDefault(s.getPin(), FALSE)));
+		return Arrays.stream(states).allMatch(s -> equal(s.getState(), lastStates.get(s.getPin())));
 	}
 
 }
