@@ -106,8 +106,12 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
 	const sketchBuf = await zip.entryData('sketch.ino');
         const sketchContent = sketchBuf.toString();
 
-	const librariesBuf = await zip.entryData('libraries.txt');
-        const libraryContent = librariesBuf.toString();
+        if (await zip.entry('libraries.txt')) {
+            const librariesBuf = await zip.entryData('libraries.txt');
+            libraryContent = librariesBuf.toString();
+        } else {
+            libraryContent = undefined;
+        }
 
 	await zip.close();
         hexContent = await compileArduinoSketch('sketch.ino', sketchBuf.toString(), libraryContent);
