@@ -1,5 +1,6 @@
 package com.github.pfichtner.virtualavr.demo;
 
+import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
@@ -31,8 +32,8 @@ class TrafficLightTest {
 	private static final String RED_LED = "D12";
 
 	@Container
-	static VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()
-			.withSketchFile(new File(property("virtualavr.sketchfile")));
+	static VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(
+			new File(property("virtualavr.sketchfile")));
 
 	private static String property(String name) {
 		return Optional.ofNullable(System.getProperty(name))
