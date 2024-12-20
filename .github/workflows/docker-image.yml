@@ -44,19 +44,19 @@ jobs:
     - name: Run python based integration tests via pytest (ino-file)
       env:
         DOCKER_IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
-	SKETCH_FILE: test-artifacts/ino-file/trafficlight/trafficlight.ino
+        SKETCH_FILE: test-artifacts/ino-file/trafficlight/trafficlight.ino
       run: |
         pytest demo/python -v --junit-xml=demo/python/ino-file/test-results/pytest.xml
     - name: Run python based integration tests via pytest (hex-file)
       env:
         DOCKER_IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
-	SKETCH_FILE: test-artifacts/hex-file/trafficlight.ino.hex 
+        SKETCH_FILE: test-artifacts/hex-file/trafficlight.ino.hex 
       run: |
         pytest demo/python -v --junit-xml=demo/python/hex-file/test-results/pytest.xml
     - name: Run python based integration tests via pytest (wokwi-zip)
       env:
         DOCKER_IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
-	SKETCH_FILE: test-artifacts/wokwi-zip/project.zip
+        SKETCH_FILE: test-artifacts/wokwi-zip/project.zip
       run: |
         pytest demo/python -v --junit-xml=demo/python/wokwi-zip/test-results/pytest.xml
 
