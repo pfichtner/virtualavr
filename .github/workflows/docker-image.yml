@@ -64,11 +64,17 @@ jobs:
       run: |
         pytest demo/python -v --junit-xml=demo/python/wokwi-zip/test-results/pytest.xml
 
+    - name: Run python/gherkin based integration tests via pytest (ino-file)
+      env:
+        DOCKER_IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
+        SKETCH_FILE: test-artifacts/ino-file/trafficlight/trafficlight.ino
+      run: |
+        behave --junit --junit-directory demo/python-gherkin/test-results demo/python-gherkin
     - name: Test Report
       uses: dorny/test-reporter@v1
       if: (success() || failure()) && github.event_name != 'pull_request'  # run this step even if previous step failed
       with:
         name: JUnit Tests
-        path: demo/java/sketchtest/target/surefire-reports/*.xml,demo/python/*/test-results/pytest.xml
+        path: demo/java/sketchtest/target/surefire-reports/*.xml,demo/python/*/test-results/pytest.xml,demo/python-gherkin/test-results/TESTS-*_behavior.xml
         reporter: java-junit
 
