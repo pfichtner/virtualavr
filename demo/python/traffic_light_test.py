@@ -61,16 +61,20 @@ class WebSocketListener:
 def docker_container():
     client = docker.from_env()
 
+    sketch_path = os.getenv("SKETCH_FILE")
+    if not sketch_path:
+        raise ValueError("Environment variable 'SKETCH_FILE' is not set.")
+    sketch_dir, sketch_file = os.path.split(sketch_path)
+
     print("Starting Docker container...")
     docker_image_tag = os.getenv("DOCKER_IMAGE_TAG", "latest")
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     container = client.containers.run(
 	f"pfichtner/virtualavr:{docker_image_tag}",
         detach=True,
         auto_remove=True,
         ports={"8080/tcp": None},  # Map container port to a random free port on the host
-        volumes={script_dir: {"bind": "/sketch", "mode": "ro"}},
-        environment={"FILENAME": "trafficlight.ino"}
+        volumes={os.path.abspath(sketch_dir): {"bind": "/sketch", "mode": "ro"}},
+        environment={"FILENAME": sketch_file}
     )
 
     # Retrieve the dynamically assigned host port
