@@ -32,6 +32,10 @@ jobs:
       run: mvn -B -DTESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=localhost -Dvirtualavr.docker.tag=$DOCKER_IMAGE_TAG '-Dtest=com.github.pfichtner.virtualavr.virtualavrtests.*IT' verify --file pom.xml
       working-directory: demo/java/sketchtest
 
+    - name: Run java demo
+      run: mvn -B -DTESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=localhost -Dvirtualavr.docker.tag=$DOCKER_IMAGE_TAG -Dvirtualavr.sketchfile=../../../test-artifacts/ino-file/trafficlight/trafficlight.ino '-Dtest=com.github.pfichtner.virtualavr.demo.TrafficLightTest' verify --file pom.xml
+      working-directory: demo/java/sketchtest
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:

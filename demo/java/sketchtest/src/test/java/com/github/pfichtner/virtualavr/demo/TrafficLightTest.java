@@ -9,6 +9,7 @@ import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,13 @@ class TrafficLightTest {
 
 	@Container
 	static VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()
-			.withSketchFile(new File("../../../test-artifacts/ino-file/trafficlight/trafficlight.ino"));
+			.withSketchFile(new File(property("virtualavr.sketchfile")));
+
+	private static String property(String name) {
+		return Optional.ofNullable(System.getProperty(name))
+				.orElseThrow(() -> new IllegalStateException("env var " + name + " not set"));
+	}
+
 	static VirtualAvrConnection avr;
 
 	@BeforeEach
