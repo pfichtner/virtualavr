@@ -7,7 +7,6 @@ import static org.awaitility.Awaitility.await;
 import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -32,16 +31,8 @@ class TrafficLightTest {
 
 	@Container
 	static VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()
-			.withSketchFile(loadClasspath("/trafficlight.ino"));
+			.withSketchFile(new File("../../../test-artifacts/ino-file/trafficlight/trafficlight.ino"));
 	static VirtualAvrConnection avr;
-
-	static File loadClasspath(String name) {
-		try {
-			return new File(TrafficLightTest.class.getResource(name).toURI());
-		} catch (URISyntaxException e) {
-			throw new IllegalStateException(e);
-		}
-	}
 
 	@BeforeEach
 	void beforeEach() {
