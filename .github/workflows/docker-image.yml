@@ -64,6 +64,10 @@ jobs:
       run: |
         pytest demo/python -v --junit-xml=demo/python/wokwi-zip/test-results/pytest.xml
 
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r demo/python-gherkin/requirements.txt
     - name: Run python/gherkin based integration tests via pytest (ino-file)
       env:
         DOCKER_IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
