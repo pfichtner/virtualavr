@@ -8,32 +8,26 @@ Feature: LED Behavior based on Reference and Value Pins
       | GREEN_LED   | D10  |
       | YELLOW_LED  | D11  |
       | RED_LED     | D12  |
-
-  Scenario: Value equals 90% of Reference, green led is on
-    Given the pin GREEN_LED is watched
+    And the pin GREEN_LED is watched
     And the pin YELLOW_LED is watched
     And the pin RED_LED is watched
-    And the pin REFERENCE is set to 1000
+
+  Scenario: Value equals 90% of Reference, green led is on
+    When the pin REFERENCE is set to 1000
     When the pin VALUE is set to 900
     Then the pin GREEN_LED should be ON
     And the pin YELLOW_LED should be OFF
     And the pin RED_LED should be OFF
 
   Scenario: Value greater than Reference, red led is on
-    Given the pin GREEN_LED is watched
-    And the pin YELLOW_LED is watched
-    And the pin RED_LED is watched
-    And the pin REFERENCE is set to 1022
+    When the pin REFERENCE is set to 1022
     When the pin VALUE is set to 1023
     Then the pin GREEN_LED should be OFF
     And the pin YELLOW_LED should be OFF
     And the pin RED_LED should be ON
 
   Scenario: Value is greater within 90% of Reference, yellow led is on
-    Given the pin GREEN_LED is watched
-    And the pin YELLOW_LED is watched
-    And the pin RED_LED is watched
-    And the pin REFERENCE is set to 1000
+    When the pin REFERENCE is set to 1000
     When the pin VALUE is set to 901
     Then the pin GREEN_LED should be OFF
     And the pin YELLOW_LED should be ON
