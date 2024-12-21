@@ -72,6 +72,14 @@ class VirtualAvrIT {
 			return serialData.computeIfAbsent(direction, __ -> new ByteArrayOutputStream());
 		}
 
+		private static void write(ByteArrayOutputStream outputStream, byte[] bytes) {
+			try {
+				outputStream.write(bytes);
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
 		@Override
 		public void close() {
 			avr.removeSerialDebugListener(listener);
@@ -200,19 +208,12 @@ class VirtualAvrIT {
 	void doesPublishRxTxWhenEnabled() throws Exception {
 		String send = "Echo Test!";
 		try (RxTxListener rxTx = new RxTxListener(virtualAvrContainer.avr())) {
-			TimeUnit.MILLISECONDS.sleep(500);
 			String expectedResponse = "Echo response: " + send;
-			awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains(expectedResponse));
-			await().untilAsserted(() -> assertThat(rxTx.text(RX)).isEqualTo(send));
-			await().untilAsserted(() -> assertThat(rxTx.text(TX)).contains("Loop").contains(expectedResponse));
-		}
-	}
-
-	static void write(ByteArrayOutputStream outputStream, byte[] bytes) {
-		try {
-			outputStream.write(bytes);
-		} catch (IOException e) {
-			throw new IllegalStateException(e);
+			await().untilAsserted(() -> {
+				awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains(expectedResponse));
+				assertThat(rxTx.text(RX)).isEqualTo(send);
+				assertThat(rxTx.text(TX)).contains("Loop").contains(expectedResponse);
+			});
 		}
 	}
 
