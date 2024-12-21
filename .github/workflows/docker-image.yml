@@ -78,7 +78,7 @@ jobs:
       uses: dorny/test-reporter@v1
       if: (success() || failure()) && github.event_name != 'pull_request'  # run this step even if previous step failed
       with:
-        name: JUnit Tests
+        name: Test report
         path: demo/java/sketchtest/target/surefire-reports/*.xml,demo/python/*/test-results/pytest.xml,demo/python-gherkin/test-results/TESTS-*_behavior.xml
         reporter: java-junit
 
