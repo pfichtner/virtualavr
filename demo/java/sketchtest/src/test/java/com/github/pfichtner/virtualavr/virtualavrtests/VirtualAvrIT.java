@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
@@ -45,7 +44,7 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
  * <li>Serial communication: Can the AVR read data sent from serial line and can
  * data being received sent by the avr via serial line?
  * <li>Websocket communication: Are the pin state changes propagated via
- * websockets? Can the pin states of the avr beeing controlled via websockets?
+ * websockets? Can the pin states of the avr being controlled via websockets?
  * </ul>
  * 
  * @author Peter Fichtner
