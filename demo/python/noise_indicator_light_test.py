@@ -164,8 +164,7 @@ def set_pin_mode(ws, pin, mode):
 def pin_state(pin, state):
     return {"type": "pinState", "pin": pin, "state": state}
 
-
-def test_valueEqualsIs90PercentOfRef_GreenLedIsOn(ws_listener):
+def test_whenTheNoiseLevelIsWithin90PercentOfTheReferenceThenTheGreenLedIsOn(ws_listener):
     set_pin_mode(ws_listener, GREEN_LED, "digital")
     set_pin_mode(ws_listener, YELLOW_LED, "digital")
     set_pin_mode(ws_listener, RED_LED, "digital")
@@ -178,22 +177,7 @@ def test_valueEqualsIs90PercentOfRef_GreenLedIsOn(ws_listener):
     wait_for_ws_message(ws_listener, YELLOW_LED, False)
     wait_for_ws_message(ws_listener, RED_LED, False)
 
-
-def test_valueGreaterThenRef_RedLedIsOn(ws_listener):
-    set_pin_mode(ws_listener, GREEN_LED, "digital")
-    set_pin_mode(ws_listener, YELLOW_LED, "digital")
-    set_pin_mode(ws_listener, RED_LED, "digital")
-
-    someValue = 1023
-    send_ws_message(ws_listener, pin_state(REF_PIN, someValue - 1))
-    send_ws_message(ws_listener, pin_state(VALUE_PIN, someValue))
-
-    wait_for_ws_message(ws_listener, GREEN_LED, False)
-    wait_for_ws_message(ws_listener, YELLOW_LED, False)
-    wait_for_ws_message(ws_listener, RED_LED, True)
-
-
-def test_valueGreaterWithin90Percent_YellowLedIsOn(ws_listener):
+def test_whenTheNoiseLevelIsSlightlyAbove90PercentOfTheReferenceThenTheYellowLedIsOn(ws_listener):
     set_pin_mode(ws_listener, GREEN_LED, "digital")
     set_pin_mode(ws_listener, YELLOW_LED, "digital")
     set_pin_mode(ws_listener, RED_LED, "digital")
@@ -205,3 +189,17 @@ def test_valueGreaterWithin90Percent_YellowLedIsOn(ws_listener):
     wait_for_ws_message(ws_listener, GREEN_LED, False)
     wait_for_ws_message(ws_listener, YELLOW_LED, True)
     wait_for_ws_message(ws_listener, RED_LED, False)
+
+
+def test_whenThenNoiseLevelExceedsTheReferenceThenTheRedLedIsOn(ws_listener):
+    set_pin_mode(ws_listener, GREEN_LED, "digital")
+    set_pin_mode(ws_listener, YELLOW_LED, "digital")
+    set_pin_mode(ws_listener, RED_LED, "digital")
+
+    someValue = 1023
+    send_ws_message(ws_listener, pin_state(REF_PIN, someValue - 1))
+    send_ws_message(ws_listener, pin_state(VALUE_PIN, someValue))
+
+    wait_for_ws_message(ws_listener, GREEN_LED, False)
+    wait_for_ws_message(ws_listener, YELLOW_LED, False)
+    wait_for_ws_message(ws_listener, RED_LED, True)
