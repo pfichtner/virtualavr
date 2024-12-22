@@ -24,24 +24,24 @@ def wait_for_ws_message(listener, pin, expected_state, timeout=20):
         time.sleep(0.1)
     raise AssertionError(f"Expected state {expected_state} for pin {pin} not received within {timeout} seconds.")
 
-@given('the following aliases are defined')
+@given('the following pins are assigned')
 def step_define_aliases(context):
     context.aliases = {row['alias']: row['pin'] for row in context.table}
     print("Defined aliases:", context.aliases)
 
-@given('the pin {alias} is watched')
+@given('the pin of {alias} is monitored')
 def step_watch_pin(context, alias):
     pin = resolve_alias(context, alias)
     send_ws_message(context.listener.ws, {"type": "pinMode", "pin": pin, "mode": "digital"})
 
-@given('the pin {alias} is set to {value}')
-@when('the pin {alias} is set to {value}')
+@given('the {alias} is set to {value}')
+@when('the {alias} is set to {value}')
 def step_set_pin(context, alias, value):
     pin = resolve_alias(context, alias)
     parsed_value = parse_value(value)
     send_ws_message(context.listener.ws, {"type": "pinState", "pin": pin, "state": parsed_value})
 
-@then('the pin {alias} should be {state}')
+@then('the {alias} should be {state}')
 def step_check_pin_state(context, alias, state):
     pin = resolve_alias(context, alias)
     expected_state = parse_value(state)

@@ -22,7 +22,7 @@ import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
 import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
-class TrafficLightTest {
+class NoiseLevelIndicatorTest {
 
 	private static final String REF_PIN = "A0";
 	private static final String VALUE_PIN = "A1";
@@ -59,19 +59,19 @@ class TrafficLightTest {
 	}
 
 	@Test
-	void valueGreaterThenRef_RedLedIsOn() {
-		int someValue = 1023;
-		avr.pinState(REF_PIN, someValue - 1).pinState(VALUE_PIN, someValue);
-		awaitUntil(stateIsOff(GREEN_LED), stateIsOff(YELLOW_LED), stateIsOn(RED_LED));
-	}
-
-	@Test
 	void valueGreaterWithin90Percent_YellowLedIsOn() {
 		int ref = 1000;
 		avr.pinState(REF_PIN, ref).pinState(VALUE_PIN, ref * 90 / 100 + 1);
 		awaitUntil(stateIsOff(GREEN_LED), stateIsOn(YELLOW_LED), stateIsOff(RED_LED));
 	}
 
+	@Test
+	void valueGreaterThenRef_RedLedIsOn() {
+		int someValue = 1023;
+		avr.pinState(REF_PIN, someValue - 1).pinState(VALUE_PIN, someValue);
+		awaitUntil(stateIsOff(GREEN_LED), stateIsOff(YELLOW_LED), stateIsOn(RED_LED));
+	}
+	
 	void awaitUntil(PinState... states) {
 		await().until(() -> statesAre(states));
 	}
