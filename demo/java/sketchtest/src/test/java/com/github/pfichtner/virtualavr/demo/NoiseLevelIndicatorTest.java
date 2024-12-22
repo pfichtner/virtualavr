@@ -52,26 +52,26 @@ class NoiseLevelIndicatorTest {
 	}
 
 	@Test
-	void valueEqualsIs90PercentOfRef_GreenLedIsOn() {
+	void whenTheNoiseLevelIsWithin90PercentOfTheReferenceThenTheGreenLedIsOn() {
 		int someValue = 1000;
 		avr.pinState(REF_PIN, someValue).pinState(VALUE_PIN, someValue * 90 / 100);
 		awaitUntil(stateIsOn(GREEN_LED), stateIsOff(YELLOW_LED), stateIsOff(RED_LED));
 	}
 
 	@Test
-	void valueGreaterWithin90Percent_YellowLedIsOn() {
+	void whenTheNoiseLevelIsSlightlyAbove90PercentOfTheReferenceThenTheYellowLedIsOn() {
 		int ref = 1000;
 		avr.pinState(REF_PIN, ref).pinState(VALUE_PIN, ref * 90 / 100 + 1);
 		awaitUntil(stateIsOff(GREEN_LED), stateIsOn(YELLOW_LED), stateIsOff(RED_LED));
 	}
 
 	@Test
-	void valueGreaterThenRef_RedLedIsOn() {
+	void whenThenNoiseLevelExceedsTheReferenceThenTheRedLedIsOn() {
 		int someValue = 1023;
 		avr.pinState(REF_PIN, someValue - 1).pinState(VALUE_PIN, someValue);
 		awaitUntil(stateIsOff(GREEN_LED), stateIsOff(YELLOW_LED), stateIsOn(RED_LED));
 	}
-	
+
 	void awaitUntil(PinState... states) {
 		await().until(() -> statesAre(states));
 	}
