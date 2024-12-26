@@ -65,6 +65,11 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
+	public VirtualAvrContainer<?> withBuildExtraFlags(String cFlags) {
+		withEnv("BUILD_EXTRA_FLAGS", cFlags);
+		return self();
+	}
+
 	public VirtualAvrContainer<SELF> withSketchFile(File sketchFile) {
 		withEnv("FILENAME", sketchFile.getName()) //
 				.withFileSystemBind(sketchFile.getParent(), "/sketch/", READ_ONLY);
