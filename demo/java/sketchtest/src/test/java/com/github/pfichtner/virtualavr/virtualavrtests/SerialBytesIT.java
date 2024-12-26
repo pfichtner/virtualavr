@@ -23,7 +23,7 @@ class SerialBytesIT {
 	@Test
 	void doesReceiveAllPossibleByteValues() throws Exception {
 		SerialConnectionAwait awaiter = awaiter(virtualAvrContainer.serialConnection());
-		for (int i = 1; i < 255; i++) {
+		for (int i = 0; i < 255; i++) {
 			byte[] arr = new byte[] { (byte) i };
 			awaiter.sendAwait(arr, b -> Arrays.equals(b, arr));
 		}
