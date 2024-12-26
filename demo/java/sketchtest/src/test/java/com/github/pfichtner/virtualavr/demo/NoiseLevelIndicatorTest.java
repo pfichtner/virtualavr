@@ -32,11 +32,11 @@ class NoiseLevelIndicatorTest {
 	private static final String RED_LED = "D12";
 
 	@Container
-	static VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(
-			new File(property("virtualavr.sketchfile")));
+	static VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(property("virtualavr.sketchfile"));
 
-	private static String property(String name) {
-		return Optional.ofNullable(System.getProperty(name))
+	private static File property(String name) {
+		return Optional.ofNullable(System.getProperty(name)) //
+				.map(File::new) //
 				.orElseThrow(() -> new IllegalStateException("env var " + name + " not set"));
 	}
 
