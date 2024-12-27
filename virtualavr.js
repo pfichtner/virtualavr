@@ -300,14 +300,15 @@ function main() {
 
        wss.on('connection', function connection(ws) {
                ws.on('message', function message(data) {
-                  messageQueue.push(JSON.parse(data));
+                   try {
+                       messageQueue.push(JSON.parse(data));
+                   } catch (e) {
+                       console.log(e);
+                   }
                });
        });
 
-
-
-
-	runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState, callbackSerialDebug);
+       runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState, callbackSerialDebug);
 }
 
 if (require.main === module) {
