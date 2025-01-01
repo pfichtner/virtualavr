@@ -26,12 +26,11 @@ const listeningModes = {};
 var serialDebug;
 var lastPublish = new Date();
 
-// TODO Is there a define in avr8js's boards? PORTB: arduino pins D8,D9,D10,D11,D12,D13,D20,D21
-const arduinoPinOnPortB = [ 'D8','D9','D10','D11','D12','D13','D20','D21' ];
-
-// analog ports A0,A1,A2,A3,A4,A5,A6,A7 (19,20,21,22,23,24,25,26)
-const arduinoPinOnPortC = [ 'A0','A1','A2','A3','A4','A5','A6','A7' ]
-
+// TODO Is there a define in avr8js's boards? 
+const arduinoPinOnPortB = [ 'D8', 'D9', 'D10','D11','D12', 'D13' ];
+const arduinoPinOnPortC = [ 'A0', 'A1', 'A2', 'A3', 'A4',  'A5', 'A6', 'A7' ]
+const arduinoPinOnPortD = [ 'D0', 'D1', 'D2', 'D3', 'D4',  'D5', 'D6', 'D7' ];
+const pwmFrequencies = { 'D5': 980, 'D6': 980 };
 
 const args = process.argv.slice(2);
 
@@ -109,7 +108,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
     } else if (inputFilename.endsWith('.zip')) {
         const zip = new streamZip.async({ file: inputFilename });
 
-	const sketchBuf = await zip.entryData('sketch.ino');
+        const sketchBuf = await zip.entryData('sketch.ino');
         const sketchContent = sketchBuf.toString();
 
         if (await zip.entry('libraries.txt')) {
@@ -119,7 +118,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
             libraryContent = undefined;
         }
 
-	await zip.close();
+        await zip.close();
         hexContent = await compileArduinoSketch('sketch.ino', sketchBuf.toString(), libraryContent);
     } else {
         const sketchContent = fs.readFileSync(inputFilename).toString();
@@ -127,8 +126,8 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
     }
 
     if (!hexContent) {
-	console.error("Error on compilation");
-	return;
+        console.error("Error on compilation");
+        return;
     }
 
     const { data } = intelhex.parse(hexContent);
@@ -138,118 +137,139 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
     const cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
     // Attach the virtual hardware
     portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
-    const portStates = {};
-    portB.addListener(() => {
-// console.log("portB");
-	    for (let pin = 0; pin < arduinoPinOnPortB.length; pin++) {
-		    const arduinoPin = arduinoPinOnPortB[pin];
-		    const state = portB.pinState(pin) === avr8js.PinState.High;
-
-		    let entry = portStates[arduinoPin];
-		    if (entry === undefined) {
-			    entry = { lastState: undefined, lastStateCycles: 0, lastUpdateCycles: 0, pinHighCycles: 0 };
-			    portStates[arduinoPin] = entry
-		    }
-		    if (entry.lastState !== state) {
-			    if (entry.lastState) {
-				    entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
-			    }
-			    entry.lastState = state;
-			    entry.lastStateCycles = cpu.cycles;
-			    if (listeningModes[arduinoPinOnPortB[pin]] === 'digital') {
-				    // TODO should we move all publishs out of the callback (also the digitals)?
-				    // TODO throttle if there are to much messages (see lastStateCycles)
-				    portCallback(arduinoPin, state);
-				    entry.lastStatePublished = state;
-			    }
-		    }
-	    }
-    });
-
+    portD = new avr8js.AVRIOPort(cpu, avr8js.portDConfig);
     adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
+
+    const portStates = {};
+    const handlePort = (port, arduinoPins, portCallback) => {
+        port.addListener(() => {
+            for (let pin = 0; pin < arduinoPins.length; pin++) {
+                const arduinoPin = arduinoPins[pin];
+                const state = port.pinState(pin) === avr8js.PinState.High;
+
+                let entry = portStates[arduinoPin];
+                if (entry === undefined) {
+                    entry = { lastState: undefined, lastStateCycles: 0, lastUpdateCycles: cpu.cycles, lastStatePublished: 0, pinHighCycles: 0 };
+                    portStates[arduinoPin] = entry;
+                }
+                if (entry.lastState !== state) {
+                    if (entry.lastState) {
+                        entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
+                    }
+                    entry.lastState = state;
+                    entry.lastStateCycles = cpu.cycles;
+                    if (listeningModes[arduinoPin] === 'digital') {
+                        // TODO: Should we move all publishes out of the callback (also the digitals)?
+                        // TODO: Throttle if there are too many messages (see lastStateCycles)
+                        portCallback(arduinoPin, state);
+                        entry.lastStatePublished = state;
+                    }
+                }
+            }
+        });
+    };
+    handlePort(portB, arduinoPinOnPortB, portCallback);
+    handlePort(portD, arduinoPinOnPortD, portCallback);
 
     const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
     usart.onByteTransmit = data => {
-	    const arrBuff = new Uint8Array(1);
-	    arrBuff[0] = data;
-	    process.stdout.write(arrBuff);
-	    if (serialDebug) {
-		    serialCallback('TX', [ data ]);
-	    }
+            const arrBuff = new Uint8Array(1);
+            arrBuff[0] = data;
+            process.stdout.write(arrBuff);
+            if (serialDebug) {
+                    serialCallback('TX', [ data ]);
+            }
     }
     const buff = [];
     usart.onRxComplete = () => sendNextChar(buff, usart);
     process.stdin.setRawMode(true);
     process.stdin.on('data', data => {
-	    var bytes = Array.prototype.slice.call(data, 0);
-	    for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
-	    sendNextChar(buff, usart);
-	    if (serialDebug) {
-		    serialCallback('RX', bytes);
-	    }
+            var bytes = Array.prototype.slice.call(data, 0);
+            for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
+            sendNextChar(buff, usart);
+            if (serialDebug) {
+                    serialCallback('RX', bytes);
+            }
     });
 
     new avr8js.AVRTimer(cpu, avr8js.timer0Config);
     new avr8js.AVRTimer(cpu, avr8js.timer1Config);
     new avr8js.AVRTimer(cpu, avr8js.timer2Config);
     while (true) {
-	for (let i = 0; i < 500000; i++) {
-	    avr8js.avrInstruction(cpu);
-	    cpu.tick();
-	}
-	await new Promise(resolve => setTimeout(resolve));
+        for (let i = 0; i < 500000; i++) {
+            avr8js.avrInstruction(cpu);
+            cpu.tick();
+        }
+        await new Promise(resolve => setTimeout(resolve));
 
-	try {
-	    while (messageQueue.length > 0) {
-		processMessage(messageQueue.shift(), portCallback);
-	    }
-	} catch (e) {
-	    console.log(e);
-	}
+        try {
+            while (messageQueue.length > 0) {
+                processMessage(messageQueue.shift(), portCallback);
+            }
+        } catch (e) {
+            console.log(e);
+        }
 
-	const now = new Date();
-	if (now - lastPublish > PUBLISH_MILLIS) {
-	    lastPublish = now;
-	    for (const pin in portStates) {
-		const entry = portStates[pin];
-		const avrPin = arduinoPinOnPortB.indexOf(pin);
-		if (portB.pinState(avrPin) === avr8js.PinState.High) {
-			entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
-		}
-		if (listeningModes[pin] === 'analog') {
-			const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
-			const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
-			if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
-				portCallback(pin, state);
-			}
-			entry.lastStatePublished = state;
-		}
-		entry.lastUpdateCycles = cpu.cycles;
-		entry.lastStateCycles = cpu.cycles;
-		entry.pinHighCycles = 0;
-	    }
-	}
+        const now = new Date();
+        if (now - lastPublish > PUBLISH_MILLIS) {
+            lastPublish = now;
+
+            // Function to process a port's state
+            const processPortState = (port, arduinoPins) => {
+                for (const arduinoPin in portStates) {
+                    const entry = portStates[arduinoPin];
+                    const avrPin = arduinoPins.indexOf(arduinoPin);
+
+                    if (avrPin >= 0) {
+                        if (port.pinState(avrPin) === avr8js.PinState.High) {
+                            entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
+                        }
+                        if (String(listeningModes[arduinoPin]) === 'analog') {
+                            const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
+                            if (cyclesSinceUpdate > 0) {
+                                // TODO fix pwmFrequencies
+                                const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
+                                if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
+                                    portCallback(arduinoPin, state);
+                                    entry.lastStatePublished = state;
+                                }
+                            }
+                        }
+                        entry.lastUpdateCycles = cpu.cycles;
+                        entry.lastStateCycles = cpu.cycles;
+                        entry.pinHighCycles = 0;
+                    }
+                }
+            };
+
+            processPortState(portB, arduinoPinOnPortB);
+            processPortState(portD, arduinoPinOnPortD);
+        }
     }
 }
 
 function sendNextChar(buff, usart) {
-	const ch = buff.shift();
-	if (ch !== undefined) {
-		usart.writeByte(ch);
-	}
+        const ch = buff.shift();
+        if (ch !== undefined) {
+                usart.writeByte(ch);
+        }
 }
 
 function processMessage(obj, callbackPinState) {
     // { "type": "pinMode", "pin": "D12", "mode": "analog" }
+    const avrPinB = arduinoPinOnPortB.indexOf(obj.pin);
+    const avrPinD = arduinoPinOnPortD.indexOf(obj.pin);
     if (obj.type === 'pinMode') {
         if (obj.mode === 'analog' || obj.mode === 'pwm') {
             listeningModes[obj.pin] = 'analog';
         } else if (obj.mode === 'digital') {
             listeningModes[obj.pin] = 'digital';
-            // immediately publish the current state
-            const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
-            if (avrPin >= 0) {
-                const state = portB.pinState(avrPin) === avr8js.PinState.High;
+            // Immediately publish the current state
+            if (avrPinB >= 0) {
+                const state = portB.pinState(avrPinB) === avr8js.PinState.High;
+                callbackPinState(obj.pin, state);
+            } else if (avrPinD >= 0) {
+                const state = portD.pinState(avrPinD) === avr8js.PinState.High;
                 callbackPinState(obj.pin, state);
             }
         } else {
@@ -257,16 +277,22 @@ function processMessage(obj, callbackPinState) {
         }
     } else if (obj.type === 'fakePinState' || obj.type === 'pinState') {
         if (typeof obj.state === 'boolean') {
-	    // { "type": "pinState", "pin": "D12", "state": true }
-            const avrPin = arduinoPinOnPortB.indexOf(obj.pin);
-            if (avrPin >= 0) {
-                portB.setPin(avrPin, obj.state == 1);
-	    }
+            // { "type": "pinState", "pin": "D12", "state": true }
+            if (avrPinB >= 0) {
+                portB.setPin(avrPinB, obj.state);
+            } else if (avrPinD >= 0) {
+                portD.setPin(avrPinD, obj.state);
+            }
         } else if (typeof obj.state === 'number') {
-	    // { "type": "pinState", "pin": "D12", "state": 42 }
-            const avrPin = arduinoPinOnPortC.indexOf(obj.pin);
-            if (avrPin >= 0) {
-                adc.channelValues[avrPin] = obj.state * 5 / 1024;
+            // { "type": "pinState", "pin": "D12", "state": 42 }
+            const avrPinC = arduinoPinOnPortC.indexOf(obj.pin);
+            const avrPinD = arduinoPinOnPortD.indexOf(obj.pin);
+
+            if (avrPinC >= 0) {
+                adc.channelValues[avrPinC] = obj.state * 5 / 1024;
+            } else if (avrPinD >= 0) {
+                // Example for portD analog handling, if applicable
+                adc.channelValues[avrPinD] = obj.state * 5 / 1024;
             }
         }
     } else if (obj.type === 'serialDebug') {
@@ -275,47 +301,47 @@ function processMessage(obj, callbackPinState) {
 }
 
 function main() {
-	// const callback = (pin, state) => {};
-	const wss = new ws.WebSocketServer({
-		port: 8080,
-		perMessageDeflate: {
-			concurrencyLimit: 2, // Limits zlib concurrency for perf.
-			threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
-		}
-	});
-	const callbackPinState = (pin, state) => {
-		wss.clients.forEach(client => {
-			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-				client.send(JSON.stringify({ type: 'pinState', pin, state}));
-			}
-		});
-	};
-	const callbackSerialDebug = (direction, bytes) => {
-		wss.clients.forEach(client => {
-			if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-				client.send(JSON.stringify({ type: 'serialDebug', direction, bytes}));
-			}
-		});
-	};
+        // const callback = (pin, state) => {};
+        const wss = new ws.WebSocketServer({
+                port: 8080,
+                perMessageDeflate: {
+                        concurrencyLimit: 2, // Limits zlib concurrency for perf.
+                        threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
+                }
+        });
+        const callbackPinState = (pin, state) => {
+                wss.clients.forEach(client => {
+                        if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
+                                client.send(JSON.stringify({ type: 'pinState', pin, state}));
+                        }
+                });
+        };
+        const callbackSerialDebug = (direction, bytes) => {
+                wss.clients.forEach(client => {
+                        if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
+                                client.send(JSON.stringify({ type: 'serialDebug', direction, bytes}));
+                        }
+                });
+        };
 
-       wss.on('connection', function connection(ws) {
-               ws.on('message', function message(data) {
-                   try {
-                       messageQueue.push(JSON.parse(data));
-                   } catch (e) {
-                       console.log(e);
-                   }
-               });
-       });
+    wss.on('connection', function connection(ws) {
+            ws.on('message', function message(data) {
+                try {
+                    messageQueue.push(JSON.parse(data));
+                } catch (e) {
+                    console.log(e);
+                }
+            });
+    });
 
-       runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState, callbackSerialDebug);
+    runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState, callbackSerialDebug);
 }
 
 if (require.main === module) {
-	main();
+        main();
 }
 
 module.exports = {
-	runCode
+        runCode
 }
 
