@@ -160,7 +160,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		}
 	}
 
-	private void sendAndWaitForReply(WithReplyId messageToSend) {
+	private VirtualAvrConnection sendAndWaitForReply(WithReplyId messageToSend) {
 		AtomicBoolean replyReceived = new AtomicBoolean();
 		Listener<CommandReply> listener = r -> {
 			if (Objects.equals(messageToSend.replyId(), r.replyId())) {
@@ -174,6 +174,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		} finally {
 			commandReplyListeners.remove(listener);
 		}
+		return this;
 	}
 
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
@@ -284,13 +285,11 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	}
 
 	public VirtualAvrConnection pinState(String pin, boolean state) {
-		sendAndWaitForReply(new SetPinState(pin, state));
-		return this;
+		return sendAndWaitForReply(new SetPinState(pin, state));
 	}
 
 	public VirtualAvrConnection pinState(String pin, int state) {
-		sendAndWaitForReply(new SetPinState(pin, state));
-		return this;
+		return sendAndWaitForReply(new SetPinState(pin, state));
 	}
 
 	@SuppressWarnings("unused")
@@ -320,14 +319,14 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	}
 
 	public VirtualAvrConnection pinReportMode(String pin, PinReportMode mode) {
-		sendAndWaitForReply(new SetPinReportMode(pin, mode));
-		return this;
+		return sendAndWaitForReply(new SetPinReportMode(pin, mode));
 	}
 
 	private VirtualAvrConnection debugSerial(boolean state) {
 		if (state != debugSerial) {
-			sendAndWaitForReply(new SetSerialDebug(state));
+			VirtualAvrConnection connection = sendAndWaitForReply(new SetSerialDebug(state));
 			debugSerial = state;
+			return connection;
 		}
 		return this;
 	}
