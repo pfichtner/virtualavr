@@ -81,10 +81,14 @@ const compileArduinoSketch = async (inputFilename, sketchContent, libraryContent
         await fsp.writeFile(sketchFilePath, sketchContent);
 
         const buildExtraFlags = process.env.BUILD_EXTRA_FLAGS
-            ? process.env.BUILD_EXTRA_FLAGS.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+            ? process.env.BUILD_EXTRA_FLAGS
+                .split(/\s+(?=-D)/)
+                .map(flag => flag.replace(/\\/g, "\\\\").replace(/"/g, '\\"'))
+                .map(flag => `\\"${flag}\\"`)
+                .join(" ")
             : "";
         const buildPropertyFlag = buildExtraFlags
-            ? `--build-property "build.extra_flags=\\"${buildExtraFlags}\\""`
+            ? `--build-property "build.extra_flags=${buildExtraFlags}"`
             : "";
         const compileCommand = `arduino-cli compile --fqbn arduino:avr:uno ${buildPropertyFlag} --output-dir ${tempDir} ${sketchDir}`;
         const { stdout, stderr } = await execAsync(compileCommand);

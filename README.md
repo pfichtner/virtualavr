@@ -34,6 +34,7 @@ Environment variables supported
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
 - PUBLISH_MILLIS analog values gets published each millis on change (default 250)
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
+- BUILD_EXTRA_FLAGS to set/overwrite defines, e.g. '-DSLEEP_MILLIS=100 -DMESSAGE_TEXT="Hello World"'
 
 # Screencast of usage
 The screencast is not uptodate!!!

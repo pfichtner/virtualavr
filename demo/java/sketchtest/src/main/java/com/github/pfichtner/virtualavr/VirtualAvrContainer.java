@@ -1,11 +1,14 @@
 package com.github.pfichtner.virtualavr;
 
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 import static jssc.SerialPort.BAUDRATE_115200;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 import org.testcontainers.containers.GenericContainer;
@@ -63,6 +66,17 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer<?> withDeviceMode(int deviceMode) {
 		withEnv("DEVICEMODE", String.valueOf(deviceMode));
 		return self();
+	}
+
+	public VirtualAvrContainer<?> withBuildExtraFlags(Map<String, Object> cFlags) {
+		return withBuildExtraFlags(cFlags.entrySet() //
+				.stream() //
+				.map(e -> createDefine(e.getKey(), e.getValue())) //
+				.collect(joining(" ")));
+	}
+
+	private static String createDefine(String key, Object value) {
+		return format("-D%s=%s", key, value instanceof String ? "\"" + value + "\"" : value);
 	}
 
 	public VirtualAvrContainer<?> withBuildExtraFlags(String cFlags) {
