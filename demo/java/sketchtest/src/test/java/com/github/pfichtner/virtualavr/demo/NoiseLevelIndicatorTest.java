@@ -48,7 +48,7 @@ class NoiseLevelIndicatorTest {
 				.pinReportMode(GREEN_LED, DIGITAL) //
 				.pinReportMode(YELLOW_LED, DIGITAL) //
 				.pinReportMode(RED_LED, DIGITAL) //
-				.clearStates();
+		;
 	}
 
 	@Test
