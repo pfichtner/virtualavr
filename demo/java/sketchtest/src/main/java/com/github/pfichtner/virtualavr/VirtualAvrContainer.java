@@ -76,7 +76,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	private static String createDefine(String key, Object value) {
-		return format("-D%s=%s", key, value instanceof String ? "\"" + value + "\"" : value);
+		return format("-D%s=%s", key, value instanceof String ? format("\"%s\"", value) : value);
 	}
 
 	public VirtualAvrContainer<?> withBuildExtraFlags(String cFlags) {
