@@ -301,6 +301,9 @@ function processMessage(obj, callbackPinState) {
     } else if (obj.type === 'serialDebug') {
         serialDebug = obj.state;
     }
+    if (obj.replyId) {
+        callbackPinState({ type: 'commandReply', replyId: obj.replyId });
+    }
 }
 
 function main() {
