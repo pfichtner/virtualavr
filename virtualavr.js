@@ -105,7 +105,7 @@ const compileArduinoSketch = async (inputFilename, sketchContent, libraryContent
     }
 };
 
-const runCode = async (inputFilename, portCallback, serialCallback) => {
+const runCode = async (inputFilename, portCallback) => {
     let hexContent = "";
     if (inputFilename.endsWith('.hex')) {
         hexContent = fs.readFileSync(inputFilename);
@@ -165,7 +165,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
                     if (listeningModes[arduinoPin] === 'digital') {
                         // TODO: Should we move all publishes out of the callback (also the digitals)?
                         // TODO: Throttle if there are too many messages (see lastStateCycles)
-                        portCallback(arduinoPin, state);
+                        portCallback({ type: 'pinState', pin: arduinoPin, state: state });
                         entry.lastStatePublished = state;
                     }
                 }
@@ -181,7 +181,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
             arrBuff[0] = data;
             process.stdout.write(arrBuff);
             if (serialDebug) {
-                    serialCallback('TX', [ data ]);
+                portCallback({ type: 'serialDebug', direction: 'TX', bytes: [data] });
             }
     }
     const buff = [];
@@ -192,7 +192,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
             for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
             sendNextChar(buff, usart);
             if (serialDebug) {
-                    serialCallback('RX', bytes);
+                portCallback({ type: 'serialDebug', direction: 'RX', bytes: bytes });
             }
     });
 
@@ -234,7 +234,7 @@ const runCode = async (inputFilename, portCallback, serialCallback) => {
                                 // TODO fix pwmFrequencies
                                 const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
                                 if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
-                                    portCallback(arduinoPin, state);
+                                    portCallback({ type: 'pinState', pin: arduinoPin, state: state });
                                     entry.lastStatePublished = state;
                                 }
                             }
@@ -271,10 +271,10 @@ function processMessage(obj, callbackPinState) {
             // Immediately publish the current state
             if (avrPinB >= 0) {
                 const state = portB.pinState(avrPinB) === avr8js.PinState.High;
-                callbackPinState(obj.pin, state);
+                callbackPinState({ type: 'pinState', pin: obj.pin, state: state });
             } else if (avrPinD >= 0) {
                 const state = portD.pinState(avrPinD) === avr8js.PinState.High;
-                callbackPinState(obj.pin, state);
+                callbackPinState({ type: 'pinState', pin: obj.pin, state: state });
             }
         } else {
             listeningModes[obj.pin] = undefined;
@@ -295,7 +295,6 @@ function processMessage(obj, callbackPinState) {
             if (avrPinC >= 0) {
                 adc.channelValues[avrPinC] = obj.state * 5 / 1024;
             } else if (avrPinD >= 0) {
-                // Example for portD analog handling, if applicable
                 adc.channelValues[avrPinD] = obj.state * 5 / 1024;
             }
         }
@@ -305,40 +304,33 @@ function processMessage(obj, callbackPinState) {
 }
 
 function main() {
-        // const callback = (pin, state) => {};
-        const wss = new ws.WebSocketServer({
-                port: 8080,
-                perMessageDeflate: {
-                        concurrencyLimit: 2, // Limits zlib concurrency for perf.
-                        threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
-                }
+    // const callback = (pin, state) => {};
+    const wss = new ws.WebSocketServer({
+        port: 8080,
+        perMessageDeflate: {
+            concurrencyLimit: 2, // Limits zlib concurrency for perf.
+            threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
+        }
+    });
+    const callbackPinState = (obj) => {
+        wss.clients.forEach(client => {
+            if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
+                client.send(JSON.stringify(obj));
+            }
         });
-        const callbackPinState = (pin, state) => {
-                wss.clients.forEach(client => {
-                        if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-                                client.send(JSON.stringify({ type: 'pinState', pin, state}));
-                        }
-                });
-        };
-        const callbackSerialDebug = (direction, bytes) => {
-                wss.clients.forEach(client => {
-                        if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-                                client.send(JSON.stringify({ type: 'serialDebug', direction, bytes}));
-                        }
-                });
-        };
+    };
 
     wss.on('connection', function connection(ws) {
-            ws.on('message', function message(data) {
-                try {
-                    messageQueue.push(JSON.parse(data));
-                } catch (e) {
-                    console.log(e);
-                }
-            });
+        ws.on('message', function message(data) {
+            try {
+                messageQueue.push(JSON.parse(data));
+            } catch (e) {
+                console.log(e);
+            }
+        });
     });
 
-    runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState, callbackSerialDebug);
+    runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState);
 }
 
 if (require.main === module) {
