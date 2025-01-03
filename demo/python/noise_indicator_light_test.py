@@ -7,6 +7,7 @@ import json
 import time
 import queue
 import os
+import uuid
 
 # Constants used in the test
 REF_PIN = "A0"
@@ -122,8 +123,11 @@ def send_ws_message(listener, message=None):
     Send a WebSocket message using the listener's WebSocket instance.
     """
     if message:
+        reply_id = str(uuid.uuid4())
+        message["replyId"] = reply_id
         listener.ws.send(json.dumps(message))
         print(f"Sent WebSocket message: {json.dumps(message)}")
+        return reply_id
 
 
 def wait_for_ws_message(listener, pin, expected_state, timeout=20):
@@ -144,7 +148,7 @@ def wait_for_ws_message(listener, pin, expected_state, timeout=20):
 
     while time.time() - start_time < timeout:
         # Filter messages related to the specified pin
-        pin_messages = [msg for msg in listener.get_all_messages() if msg.get("pin") == pin]
+        pin_messages = [msg for msg in listener.get_all_messages() if msg.get("type") == "pinState" and msg.get("pin") == pin]
 
         if pin_messages:
             last_message = pin_messages[-1]
@@ -157,12 +161,28 @@ def wait_for_ws_message(listener, pin, expected_state, timeout=20):
     pytest.fail(f"No message for pin {pin} with the expected state {expected_state} received within {timeout} seconds.")
 
 
+def wait_for_reply(listener, reply_id, timeout=20):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        messages = listener.get_all_messages()
+        for msg in messages:
+            if msg.get("replyId") == reply_id and msg.get("executed"):
+                print(f"Received reply for replyId {reply_id}")
+                return
+        time.sleep(0.1)
+    raise AssertionError(f"Reply for replyId {reply_id} not received within {timeout} seconds.")
+
+
 def set_pin_mode(ws, pin, mode):
-    send_ws_message(ws, {"type": "pinMode", "pin": pin, "mode": mode})
+    reply_id = send_ws_message(ws, {"type": "pinMode", "pin": pin, "mode": mode})
+    wait_for_reply(ws, reply_id)
 
 
-def pin_state(pin, state):
-    return {"type": "pinState", "pin": pin, "state": state}
+
+def set_pin_state(ws, pin, state):
+    reply_id = send_ws_message(ws, {"type": "pinState", "pin": pin, "state": state})
+    wait_for_reply(ws, reply_id)
+
 
 def test_whenTheNoiseLevelIsWithin90PercentOfTheReferenceThenTheGreenLedIsOn(ws_listener):
     set_pin_mode(ws_listener, GREEN_LED, "digital")
@@ -170,8 +190,8 @@ def test_whenTheNoiseLevelIsWithin90PercentOfTheReferenceThenTheGreenLedIsOn(ws_
     set_pin_mode(ws_listener, RED_LED, "digital")
 
     ref = 1000
-    send_ws_message(ws_listener, pin_state(REF_PIN, ref))
-    send_ws_message(ws_listener, pin_state(VALUE_PIN, int(ref * 0.9)))
+    set_pin_state(ws_listener, REF_PIN, ref)
+    set_pin_state(ws_listener, VALUE_PIN, int(ref * 0.9))
 
     wait_for_ws_message(ws_listener, GREEN_LED, True)
     wait_for_ws_message(ws_listener, YELLOW_LED, False)
@@ -183,8 +203,8 @@ def test_whenTheNoiseLevelIsSlightlyAbove90PercentOfTheReferenceThenTheYellowLed
     set_pin_mode(ws_listener, RED_LED, "digital")
 
     ref = 1000
-    send_ws_message(ws_listener, pin_state(REF_PIN, ref))
-    send_ws_message(ws_listener, pin_state(VALUE_PIN, int(ref * 0.9 + 1)))
+    set_pin_state(ws_listener, REF_PIN, ref)
+    set_pin_state(ws_listener, VALUE_PIN, int(ref * 0.9 + 1))
 
     wait_for_ws_message(ws_listener, GREEN_LED, False)
     wait_for_ws_message(ws_listener, YELLOW_LED, True)
@@ -197,8 +217,8 @@ def test_whenThenNoiseLevelExceedsTheReferenceThenTheRedLedIsOn(ws_listener):
     set_pin_mode(ws_listener, RED_LED, "digital")
 
     someValue = 1023
-    send_ws_message(ws_listener, pin_state(REF_PIN, someValue - 1))
-    send_ws_message(ws_listener, pin_state(VALUE_PIN, someValue))
+    set_pin_state(ws_listener, REF_PIN, someValue - 1)
+    set_pin_state(ws_listener, VALUE_PIN, someValue)
 
     wait_for_ws_message(ws_listener, GREEN_LED, False)
     wait_for_ws_message(ws_listener, YELLOW_LED, False)
