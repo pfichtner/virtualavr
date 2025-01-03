@@ -30,7 +30,7 @@ var lastPublish = new Date();
 const arduinoPinOnPortB = [ 'D8', 'D9', 'D10','D11','D12', 'D13' ];
 const arduinoPinOnPortC = [ 'A0', 'A1', 'A2', 'A3', 'A4',  'A5', 'A6', 'A7' ]
 const arduinoPinOnPortD = [ 'D0', 'D1', 'D2', 'D3', 'D4',  'D5', 'D6', 'D7' ];
-const pwmFrequencies = { 'D5': 980, 'D6': 980 };
+// TODO const pwmFrequencies = { 'D5': 980, 'D6': 980 }; // others 490
 
 const args = process.argv.slice(2);
 
@@ -253,56 +253,54 @@ const runCode = async (inputFilename, portCallback) => {
 }
 
 function sendNextChar(buff, usart) {
-        const ch = buff.shift();
-        if (ch !== undefined) {
-                usart.writeByte(ch);
-        }
+    const ch = buff.shift();
+    if (ch !== undefined) {
+        usart.writeByte(ch);
+    }
 }
 
-function processMessage(obj, callbackPinState) {
+function processMessage(msg, callbackPinState) {
     // { "type": "pinMode", "pin": "D12", "mode": "analog" }
-    const avrPinB = arduinoPinOnPortB.indexOf(obj.pin);
-    const avrPinD = arduinoPinOnPortD.indexOf(obj.pin);
-    if (obj.type === 'pinMode') {
-        if (obj.mode === 'analog' || obj.mode === 'pwm') {
-            listeningModes[obj.pin] = 'analog';
-        } else if (obj.mode === 'digital') {
-            listeningModes[obj.pin] = 'digital';
+    const avrPinB = arduinoPinOnPortB.indexOf(msg.pin);
+    const avrPinC = arduinoPinOnPortC.indexOf(msg.pin);
+    const avrPinD = arduinoPinOnPortD.indexOf(msg.pin);
+    if (msg.type === 'pinMode') {
+        if (msg.mode === 'analog' || msg.mode === 'pwm') {
+            listeningModes[msg.pin] = 'analog';
+        } else if (msg.mode === 'digital') {
+            listeningModes[msg.pin] = 'digital';
             // Immediately publish the current state
             if (avrPinB >= 0) {
                 const state = portB.pinState(avrPinB) === avr8js.PinState.High;
-                callbackPinState({ type: 'pinState', pin: obj.pin, state: state });
+                callbackPinState({ type: 'pinState', pin: msg.pin, state: state });
             } else if (avrPinD >= 0) {
                 const state = portD.pinState(avrPinD) === avr8js.PinState.High;
-                callbackPinState({ type: 'pinState', pin: obj.pin, state: state });
+                callbackPinState({ type: 'pinState', pin: msg.pin, state: state });
             }
         } else {
-            listeningModes[obj.pin] = undefined;
+            listeningModes[msg.pin] = undefined;
         }
-    } else if (obj.type === 'fakePinState' || obj.type === 'pinState') {
-        if (typeof obj.state === 'boolean') {
+    } else if (msg.type === 'fakePinState' || msg.type === 'pinState') {
+        if (typeof msg.state === 'boolean') {
             // { "type": "pinState", "pin": "D12", "state": true }
             if (avrPinB >= 0) {
-                portB.setPin(avrPinB, obj.state);
+                portB.setPin(avrPinB, msg.state);
             } else if (avrPinD >= 0) {
-                portD.setPin(avrPinD, obj.state);
+                portD.setPin(avrPinD, msg.state);
             }
-        } else if (typeof obj.state === 'number') {
+        } else if (typeof msg.state === 'number') {
             // { "type": "pinState", "pin": "D12", "state": 42 }
-            const avrPinC = arduinoPinOnPortC.indexOf(obj.pin);
-            const avrPinD = arduinoPinOnPortD.indexOf(obj.pin);
-
             if (avrPinC >= 0) {
-                adc.channelValues[avrPinC] = obj.state * 5 / 1024;
+                adc.channelValues[avrPinC] = msg.state * 5 / 1024;
             } else if (avrPinD >= 0) {
-                adc.channelValues[avrPinD] = obj.state * 5 / 1024;
+                adc.channelValues[avrPinD] = msg.state * 5 / 1024;
             }
         }
-    } else if (obj.type === 'serialDebug') {
-        serialDebug = obj.state;
+    } else if (msg.type === 'serialDebug') {
+        serialDebug = msg.state;
     }
-    if (obj.replyId) {
-        callbackPinState({ ...obj, executed: true });
+    if (msg.replyId) {
+        callbackPinState({ ...msg, executed: true });
     }
 }
 
@@ -315,10 +313,10 @@ function main() {
             threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
         }
     });
-    const callbackPinState = (obj) => {
+    const callbackPinState = (msg) => {
         wss.clients.forEach(client => {
             if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-                client.send(JSON.stringify(obj));
+                client.send(JSON.stringify(msg));
             }
         });
     };
@@ -337,10 +335,9 @@ function main() {
 }
 
 if (require.main === module) {
-        main();
+    main();
 }
 
 module.exports = {
-        runCode
+    runCode
 }
-
