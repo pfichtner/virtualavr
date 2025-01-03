@@ -302,7 +302,7 @@ function processMessage(obj, callbackPinState) {
         serialDebug = obj.state;
     }
     if (obj.replyId) {
-        callbackPinState({ type: 'commandReply', replyId: obj.replyId });
+        callbackPinState({ ...obj, executed: true });
     }
 }
 

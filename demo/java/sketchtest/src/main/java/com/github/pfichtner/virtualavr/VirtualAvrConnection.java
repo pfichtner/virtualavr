@@ -242,14 +242,21 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	@Override
 	public void onMessage(String message) {
-		String type = String.valueOf(gson.fromJson(message, Map.class).get("type"));
-		if ("pinState".equals(type)) {
-			callAccept(pinStateListeners, message, PinState.class);
-		} else if ("serialDebug".equals(type)) {
-			callAccept(serialDebugListeners, message, SerialDebug.class);
-		} else if ("commandReply".equals(type)) {
+		Map<?, ?> json = gson.fromJson(message, Map.class);
+		if (isResponse(json)) {
 			callAccept(commandReplyListeners, message, CommandReply.class);
+		} else {
+			String type = String.valueOf(json.get("type"));
+			if ("pinState".equals(type)) {
+				callAccept(pinStateListeners, message, PinState.class);
+			} else if ("serialDebug".equals(type)) {
+				callAccept(serialDebugListeners, message, SerialDebug.class);
+			}
 		}
+	}
+
+	private boolean isResponse(Map<?, ?> json) {
+		return json.get("replyId") != null && json.get("executed") != null;
 	}
 
 	private <T> void callAccept(List<Listener<T>> listeners, String message, Class<T> clazz) {
