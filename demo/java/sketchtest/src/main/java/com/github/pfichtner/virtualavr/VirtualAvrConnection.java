@@ -167,12 +167,12 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 				replyReceived.set(true);
 			}
 		};
-		commandReplyListeners.add(listener);
+		addCommandReplyListener(listener);
 		try {
 			send(gson.toJson(messageToSend));
 			await().untilTrue(replyReceived);
 		} finally {
-			commandReplyListeners.remove(listener);
+			removeCommandReplyListener(listener);
 		}
 		return this;
 	}
@@ -217,6 +217,16 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	private VirtualAvrConnection serialDebugListenersChanged() {
 		return debugSerial(!serialDebugListeners.isEmpty());
+	}
+
+	public VirtualAvrConnection addCommandReplyListener(Listener<CommandReply> listener) {
+		commandReplyListeners.add(listener);
+		return this;
+	}
+
+	public VirtualAvrConnection removeCommandReplyListener(Listener<CommandReply> listener) {
+		commandReplyListeners.remove(listener);
+		return this;
 	}
 
 	public List<PinState> pinStates() {
