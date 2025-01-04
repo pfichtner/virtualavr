@@ -34,11 +34,15 @@ if [ "$SKIP_PIP_INSTALL" != "true" ]; then
 	python -m pip install --upgrade pip
 	pip install -r demo/python/requirements.txt
 fi
+
 echo "Running Python tests (ino-file)..."
+export SKETCH_FILE=test-artifacts/ino-file/noiselevelindicator/noiselevelindicator.ino
 pytest demo/python -v --junit-xml=demo/python/ino-file/test-results/pytest.xml
 echo "Running Python tests (hex-file)..."
+export SKETCH_FILE=test-artifacts/hex-file/noiselevelindicator.ino.hex 
 pytest demo/python -v --junit-xml=demo/python/hex-file/test-results/pytest.xml
 echo "Running Python tests (wokwi-zip)..."
+export SKETCH_FILE=test-artifacts/wokwi-zip/project.zip
 pytest demo/python -v --junit-xml=demo/python/wokwi-zip/test-results/pytest.xml
 
 echo "Running Gherkin tests..."
