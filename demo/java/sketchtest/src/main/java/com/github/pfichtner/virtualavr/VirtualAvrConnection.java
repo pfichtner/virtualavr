@@ -54,9 +54,11 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 				JsonObject object = json.getAsJsonObject();
 				String pin = object.get("pin").getAsString();
 				JsonPrimitive state = object.get("state").getAsJsonPrimitive();
-				return state.isBoolean() //
+				PinState pinState = state.isBoolean() //
 						? new PinState(pin, state.getAsBoolean())
 						: new PinState(pin, state.getAsInt());
+				pinState.setCpuTime(object.get("cpuTime").getAsDouble());
+				return pinState;
 			}
 		};
 	}
@@ -71,6 +73,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 		private String pin;
 		private Object state;
+		private double cpuTime;
 
 		public PinState(String pin, Object state) {
 			this.pin = pin;
@@ -83,6 +86,14 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 		public Object getState() {
 			return state;
+		}
+
+		public double getCpuTime() {
+			return cpuTime;
+		}
+
+		public void setCpuTime(double cpuTime) {
+			this.cpuTime = cpuTime;
 		}
 
 		public static PinState stateIsOn(int pin) {
@@ -111,6 +122,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 		@Override
 		public int hashCode() {
+			// ignore cpuTime
 			return Objects.hash(pin, state);
 		}
 
@@ -123,12 +135,13 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 			if (getClass() != obj.getClass())
 				return false;
 			PinState other = (PinState) obj;
+			// ignore cpuTime
 			return Objects.equals(pin, other.pin) && Objects.equals(state, other.state);
 		}
 
 		@Override
 		public String toString() {
-			return "PinState [pin=" + pin + ", state=" + state + "]";
+			return "PinState [pin=" + pin + ", state=" + state + ", cpuTime=" + cpuTime + "]";
 		}
 
 	}

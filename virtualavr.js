@@ -21,6 +21,8 @@ const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 
 let messageQueue = [];
 var portB;
+var portD;
+var cpu;
 var adc;
 const listeningModes = {};
 var serialDebug;
@@ -30,6 +32,7 @@ var lastPublish = new Date();
 const arduinoPinOnPortB = [ 'D8', 'D9', 'D10','D11','D12', 'D13' ];
 const arduinoPinOnPortC = [ 'A0', 'A1', 'A2', 'A3', 'A4',  'A5', 'A6', 'A7' ]
 const arduinoPinOnPortD = [ 'D0', 'D1', 'D2', 'D3', 'D4',  'D5', 'D6', 'D7' ];
+const clockFrequency = 16e6;  // 16 MHz
 // TODO const pwmFrequencies = { 'D5': 980, 'D6': 980 }; // others 490
 
 const args = process.argv.slice(2);
@@ -138,7 +141,7 @@ const runCode = async (inputFilename, portCallback) => {
     const progData = new Uint8Array(data);
 
     // Set up the simulation
-    const cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
+    cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
     // Attach the virtual hardware
     portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
     portD = new avr8js.AVRIOPort(cpu, avr8js.portDConfig);
@@ -165,7 +168,8 @@ const runCode = async (inputFilename, portCallback) => {
                     if (listeningModes[arduinoPin] === 'digital') {
                         // TODO: Should we move all publishes out of the callback (also the digitals)?
                         // TODO: Throttle if there are too many messages (see lastStateCycles)
-                        portCallback({ type: 'pinState', pin: arduinoPin, state: state });
+                        const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
+                        portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
                         entry.lastStatePublished = state;
                     }
                 }
@@ -175,7 +179,7 @@ const runCode = async (inputFilename, portCallback) => {
     handlePort(portB, arduinoPinOnPortB, portCallback);
     handlePort(portD, arduinoPinOnPortD, portCallback);
 
-    const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, 16e6);
+    const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, clockFrequency);
     usart.onByteTransmit = data => {
             const arrBuff = new Uint8Array(1);
             arrBuff[0] = data;
@@ -234,7 +238,8 @@ const runCode = async (inputFilename, portCallback) => {
                                 // TODO fix pwmFrequencies
                                 const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
                                 if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
-                                    portCallback({ type: 'pinState', pin: arduinoPin, state: state });
+                                    const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
+                                    portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
                                     entry.lastStatePublished = state;
                                 }
                             }
@@ -269,13 +274,14 @@ function processMessage(msg, callbackPinState) {
             listeningModes[msg.pin] = 'analog';
         } else if (msg.mode === 'digital') {
             listeningModes[msg.pin] = 'digital';
+            const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
             // Immediately publish the current state
             if (avrPinB >= 0) {
                 const state = portB.pinState(avrPinB) === avr8js.PinState.High;
-                callbackPinState({ type: 'pinState', pin: msg.pin, state: state });
+                callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
             } else if (avrPinD >= 0) {
                 const state = portD.pinState(avrPinD) === avr8js.PinState.High;
-                callbackPinState({ type: 'pinState', pin: msg.pin, state: state });
+                callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
             }
         } else {
             listeningModes[msg.pin] = undefined;
