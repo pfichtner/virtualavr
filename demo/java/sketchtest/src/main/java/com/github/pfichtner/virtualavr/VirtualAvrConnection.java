@@ -2,6 +2,7 @@ package com.github.pfichtner.virtualavr;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
@@ -141,7 +142,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 		@Override
 		public String toString() {
-			return "PinState [pin=" + pin + ", state=" + state + ", cpuTime=" + cpuTime + "]";
+			return format("PinState [pin=%s, state=%s, cpuTime=%f]", pin, state, cpuTime);
 		}
 
 	}
@@ -193,8 +194,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
 		VirtualAvrConnection connection = new VirtualAvrConnection(
 				URI.create("ws://localhost:" + container.getFirstMappedPort()));
-		connection.addPinStateListener(
-				pinState -> System.out.println("Pin " + pinState.getPin() + " = " + pinState.getState()));
+		connection.addPinStateListener(p -> System.out.format("Pin %s = %s\n", p.getPin(), p.getState()));
 		return connection;
 	}
 
