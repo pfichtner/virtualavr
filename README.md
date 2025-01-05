@@ -49,7 +49,7 @@ The screencast is not uptodate!!!
 - When data is received via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'RX', 'bytes': (bytes received) }```
 - When data is send via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'TX', 'bytes': (bytes send) }```
 - All messages have a "cpuTime" attribute that contains the seconds (floating point number) the microcontroller cpu is running. 
-- Messages to virtualavr which included a "replyId" are replied by virtualavr after they have been processed. The reply message  is the original message send to virtualavr complemented by an "executed" attribute that is "true". 
+- Messages to virtualavr which include a "replyId" are replied by virtualavr after they have been processed. The reply message  is the original message send to virtualavr complemented by an "executed" attribute that is "true". So clients know when their async message has been processed, e.g. when a pin state/value was changed actually. 
 
 ## Accepted by virtualavr
 - Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }``` (supported modes: analog (or alternative pwm), digital, any other value means off)
