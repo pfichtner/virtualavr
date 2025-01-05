@@ -56,7 +56,7 @@ The screencast is not uptodate!!!
 - Set a pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
 - Set a (PWM) pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
 - Enable/disable serial debug ```{ "type": "serialDebug", "state": true|false }```
-- Any message that has an "replyId" gets replied by virtualavr (see [Sent by virtualavr](#Sent by virtualavr))
+- Any message that has an "replyId" gets replied by virtualavr (see [Sent by virtualavr](#sent-by-virtualavr))
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
