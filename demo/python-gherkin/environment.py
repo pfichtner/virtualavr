@@ -4,7 +4,7 @@ from websocket import create_connection
 from websocket_listener import WebSocketListener
 import os
 
-def before_all(context):
+def before_scenario(context, scenario):
     # Start Docker container
     client = docker.from_env()
 
@@ -46,7 +46,7 @@ def before_all(context):
     context.listener = WebSocketListener(context.ws)
     context.listener.start()
 
-def after_all(context):
+def after_scenario(context, scenario):
     # Clean up WebSocket connection and Docker container
     if context.listener:
         context.listener.stop()
