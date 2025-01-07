@@ -2,10 +2,6 @@
 #define TRY_ME_TO_OVERWRITE "failed to overwrite"
 #endif
 
-#ifndef SLEEP_MILLIS
-#define SLEEP_MILLIS -1
-#endif
-
 void setup() {
     Serial.begin(115200);
     while (!Serial);
