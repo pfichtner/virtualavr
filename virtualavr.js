@@ -83,6 +83,9 @@ const compileArduinoSketch = async (inputFilename, sketchContent, libraryContent
         const sketchFilePath = path.join(sketchDir, inputFilename);
         await fsp.writeFile(sketchFilePath, sketchContent);
 
+        const fqbn = process.env.BUILD_FQBN
+            ? process.env.BUILD_FQBN
+            : "arduino:avr:uno";
         const buildExtraFlags = process.env.BUILD_EXTRA_FLAGS
             ? process.env.BUILD_EXTRA_FLAGS
                 .split(/\s+(?=-D)/)
@@ -93,7 +96,7 @@ const compileArduinoSketch = async (inputFilename, sketchContent, libraryContent
         const buildPropertyFlag = buildExtraFlags
             ? `--build-property "build.extra_flags=${buildExtraFlags}"`
             : "";
-        const compileCommand = `arduino-cli compile --fqbn arduino:avr:uno ${buildPropertyFlag} --output-dir ${tempDir} ${sketchDir}`;
+        const compileCommand = `arduino-cli compile --fqbn ${fqbn} ${buildPropertyFlag} --output-dir ${tempDir} ${sketchDir}`;
         const { stdout, stderr } = await execAsync(compileCommand);
 
         if (stderr) {
