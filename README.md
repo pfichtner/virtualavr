@@ -6,7 +6,7 @@
 
 ### virtualavr
 
-An AVR/Arduino Simulator based on [avr8js](https://github.com/wokwi/avr8js) with focus on automated tests. 
+An AVR/Arduino Simulator based on [avr8js](https://github.com/wokwi/avr8js) to enable automated tests.
 - You want to test your microcontroller program on an integration level without flashing a real microprocessor every time? 
 - You want to test some code that interacts with a microprocessor but you want to test without having real hardware connected and flashed (e.g. on a ci server)?
 
