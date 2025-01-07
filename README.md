@@ -117,6 +117,20 @@ def test_can_switch_digital_pin_on_and_off(docker_container):
 For a complete python example see https://github.com/pfichtner/virtualavr/tree/main/demo/python
 
 
+```Cucumber
+  Scenario: Noise level is within 90% of the reference, green led is on
+    Given the pin of D10 is monitored
+    And the pin of D11 is monitored
+    And the pin of D12 is monitored
+    When the A0 is set to 1000
+    And the A1 is set to 900
+    Then the D10 should be on
+    And the D11 should be off
+    And the D12 should be off
+```
+For a complete python gherkin example see https://github.com/pfichtner/virtualavr/tree/main/demo/python-gherkin
+
+
 # What's inside? How does it work? 
 - The heart is [avr8js](https://github.com/wokwi/avr8js)
 - virtualavr.js runs inside a node process, and links nodejs' stdin/stdout to avr8js' virtual serial port
