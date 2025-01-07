@@ -4,6 +4,8 @@
 #define DIGITAL_INPUT 11
 #define ANALOG_INPUT A0
 
+boolean digitalInputState;
+int analogInputState;
 
 void setup() {
         Serial.begin(115200);
@@ -14,30 +16,27 @@ void setup() {
         Serial.println("Welcome virtualavr!");
 }
 
-boolean digitalInputState;
-int analogInputState;
-
 void loop() {
-        if (Serial.available()) {
-                Serial.print("Echo response: ");
-                while (Serial.available()) {
-                        char in = (char) Serial.read();
-                        Serial.print(in);
-                }
-                Serial.println();
-        }
-        Serial.println("Loop");
-
-		readDigital();        
-		readAnalog();        
-
-        analogWrite(ANALOG_OUTPUT, 0);
-        digitalWrite(DIGITAL_OUTPUT, HIGH);
-        delay(100);
-
-        analogWrite(ANALOG_OUTPUT, 42);
-        digitalWrite(DIGITAL_OUTPUT, LOW);
-        delay(100);
+	if (Serial.available()) {
+	    Serial.print("Echo response: ");
+	    while (Serial.available()) {
+	            char in = (char) Serial.read();
+	            Serial.print(in);
+	    }
+	    Serial.println();
+	}
+	Serial.println("Loop");
+	
+	readDigital();        
+	readAnalog();        
+	
+	analogWrite(ANALOG_OUTPUT, 0);
+	digitalWrite(DIGITAL_OUTPUT, HIGH);
+	delay(100);
+	
+	analogWrite(ANALOG_OUTPUT, 42);
+	digitalWrite(DIGITAL_OUTPUT, LOW);
+	delay(100);
 }
 
 void readDigital() {
