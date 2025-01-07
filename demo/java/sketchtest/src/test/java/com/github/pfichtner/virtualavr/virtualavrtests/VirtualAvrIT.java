@@ -140,14 +140,7 @@ class VirtualAvrIT {
 		long timeToTogglePinThreeTimes = waitForToggles(INTERNAL_LED, 3);
 
 		virtualAvr.pinReportMode(INTERNAL_LED, NONE);
-		// Test could fail because "pinReportMode" is async and there are some messages
-		// sent even after #clearStates call. To prevent we should implement an
-		// non-async "pause" command to halt/pause the simulator
-		await().until(() -> {
-			virtualAvr.clearStates();
-			MILLISECONDS.sleep(500);
-			return virtualAvr.pinStates().isEmpty();
-		});
+		virtualAvr.clearStates();
 
 		MILLISECONDS.sleep(timeToTogglePinThreeTimes * 2);
 		assertThat(virtualAvr.pinStates().stream()).noneMatch(s -> INTERNAL_LED.equals(s.getPin()));
