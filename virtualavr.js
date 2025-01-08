@@ -20,21 +20,47 @@ const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 
 let messageQueue = [];
-var portB;
-var portD;
 var cpu;
 var adc;
+const ports = {};
 const listeningModes = {};
 var serialDebug;
 var lastPublish = new Date();
 
-// TODO Is there a define in avr8js's boards? 
-const arduinoPinOnPortB = [ '8', '9', '10','11','12', '13' ];
-const arduinoPinOnPortC = [ 'A0', 'A1', 'A2', 'A3', 'A4',  'A5', 'A6', 'A7' ]
-const arduinoPinOnPortD = [ '0', '1', '2', '3', '4',  '5', '6', '7' ];
-const clockFrequency = 16e6;  // 16 MHz
-// TODO const pwmFrequencies = { 'D5': 980, 'D6': 980 }; // others 490
+const unoPinMappings = {
+     '0': { port: 'D', pin: 0 },
+     '1': { port: 'D', pin: 1 },
+     '2': { port: 'D', pin: 2 },
+     '3': { port: 'D', pin: 3, pwmFrequency: 490 }, // PWM (Timer 2)
+     '4': { port: 'D', pin: 4 },
+     '5': { port: 'D', pin: 5, pwmFrequency: 980 }, // PWM (Timer 0)
+     '6': { port: 'D', pin: 6, pwmFrequency: 980 }, // PWM (Timer 0)
+     '7': { port: 'D', pin: 7 },
+     '8': { port: 'B', pin: 0 },
+     '9': { port: 'B', pin: 1, pwmFrequency: 490 }, // PWM (Timer 1)
+    '10': { port: 'B', pin: 2, pwmFrequency: 490 }, // PWM (Timer 1)
+    '11': { port: 'B', pin: 3, pwmFrequency: 490 }, // PWM (Timer 2)
+    '12': { port: 'B', pin: 4 },
+    '13': { port: 'B', pin: 5 },
+    'A0': { port: 'C', pin: 0 },
+    'A1': { port: 'C', pin: 1 },
+    'A2': { port: 'C', pin: 2 },
+    'A3': { port: 'C', pin: 3 },
+    'A4': { port: 'C', pin: 4 },
+    'A5': { port: 'C', pin: 5 },
+};
+// TODO use pwmFrequency
 
+
+const arduinoPinOnPort = {};
+const uniquePorts = Array.from(new Set(Object.values(unoPinMappings).map(pinObj => pinObj.port)));
+uniquePorts.forEach(port => {
+    arduinoPinOnPort[port] = Object.keys(unoPinMappings)
+        .filter(pin => unoPinMappings[pin].port === port)
+        .sort((a, b) => unoPinMappings[a].pin - unoPinMappings[b].pin);
+});
+
+const clockFrequency = 16e6;  // 16 MHz
 const args = process.argv.slice(2);
 
 
@@ -145,17 +171,29 @@ const runCode = async (inputFilename, portCallback) => {
 
     // Set up the simulation
     cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
-    // Attach the virtual hardware
-    portB = new avr8js.AVRIOPort(cpu, avr8js.portBConfig);
-    portD = new avr8js.AVRIOPort(cpu, avr8js.portDConfig);
     adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
 
+    const portConfigs = {
+        'B': avr8js.portBConfig,
+        'C': avr8js.portCConfig,
+        'D': avr8js.portDConfig
+    };
+
+    for (const mapping of Object.values(unoPinMappings)) {
+        const portName = mapping.port;
+        if (!ports[portName]) {
+            ports[portName] = new avr8js.AVRIOPort(cpu, portConfigs[portName]);
+        }
+    }
+
     const portStates = {};
-    const handlePort = (port, arduinoPins, portCallback) => {
+    const handlePort = (portName, portCallback) => {        
+        const port = ports[portName];
+        const arduinoPins = arduinoPinOnPort[portName];
         port.addListener(() => {
-            for (let pin = 0; pin < arduinoPins.length; pin++) {
-                const arduinoPin = arduinoPins[pin];
-                const state = port.pinState(pin) === avr8js.PinState.High;
+            for (let i = 0; i < arduinoPins.length; i++) {
+                const arduinoPin = arduinoPins[i];
+                const state = port.pinState(i) === avr8js.PinState.High;
 
                 let entry = portStates[arduinoPin];
                 if (entry === undefined) {
@@ -180,8 +218,8 @@ const runCode = async (inputFilename, portCallback) => {
             }
         });
     };
-    handlePort(portB, arduinoPinOnPortB, portCallback);
-    handlePort(portD, arduinoPinOnPortD, portCallback);
+    handlePort('B', portCallback);
+    handlePort('D', portCallback);
 
     const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, clockFrequency);
     usart.onByteTransmit = data => {
@@ -227,7 +265,9 @@ const runCode = async (inputFilename, portCallback) => {
             lastPublish = now;
 
             // Function to process a port's state
-            const processPortState = (port, arduinoPins) => {
+            const processPortState = (portName) => {
+                const port = ports[portName];
+                const arduinoPins = arduinoPinOnPort[portName];
                 for (const arduinoPin in portStates) {
                     const entry = portStates[arduinoPin];
                     const avrPin = arduinoPins.indexOf(arduinoPin) >= 0 ? arduinoPins.indexOf(arduinoPin) : arduinoPins.indexOf('D' + arduinoPin);
@@ -256,8 +296,8 @@ const runCode = async (inputFilename, portCallback) => {
                 }
             };
 
-            processPortState(portB, arduinoPinOnPortB);
-            processPortState(portD, arduinoPinOnPortD);
+            processPortState('B');
+            processPortState('D');
         }
     }
 }
@@ -272,9 +312,9 @@ function sendNextChar(buff, usart) {
 function processMessage(msg, callbackPinState) {
     // { "type": "pinMode", "pin": "12", "mode": "analog" }
     if (msg.pin && msg.pin.startsWith('D')) msg.pin = msg.pin.substring(1); // deprecated
-    const avrPinB = arduinoPinOnPortB.indexOf(msg.pin);
-    const avrPinC = arduinoPinOnPortC.indexOf(msg.pin);
-    const avrPinD = arduinoPinOnPortD.indexOf(msg.pin);
+    const avrPinB = arduinoPinOnPort['B'].indexOf(msg.pin);
+    const avrPinC = arduinoPinOnPort['C'].indexOf(msg.pin);
+    const avrPinD = arduinoPinOnPort['D'].indexOf(msg.pin);
     if (msg.type === 'pinMode') {
         if (msg.mode === 'analog' || msg.mode === 'pwm') {
             listeningModes[msg.pin] = 'analog';
@@ -283,11 +323,11 @@ function processMessage(msg, callbackPinState) {
             const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
             // Immediately publish the current state
             if (avrPinB >= 0) {
-                const state = portB.pinState(avrPinB) === avr8js.PinState.High;
+                const state = ports['B'].pinState(avrPinB) === avr8js.PinState.High;
                 callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
                 callbackPinState({ type: 'pinState', pin: 'D' + msg.pin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
             } else if (avrPinD >= 0) {
-                const state = portD.pinState(avrPinD) === avr8js.PinState.High;
+                const state = ports['D'].pinState(avrPinD) === avr8js.PinState.High;
                 callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
                 callbackPinState({ type: 'pinState', pin: 'D' + msg.pin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
             }
@@ -298,9 +338,9 @@ function processMessage(msg, callbackPinState) {
         if (typeof msg.state === 'boolean') {
             // { "type": "pinState", "pin": "12", "state": true }
             if (avrPinB >= 0) {
-                portB.setPin(avrPinB, msg.state);
+                ports['B'].setPin(avrPinB, msg.state);
             } else if (avrPinD >= 0) {
-                portD.setPin(avrPinD, msg.state);
+                ports['D'].setPin(avrPinD, msg.state);
             }
         } else if (typeof msg.state === 'number') {
             // { "type": "pinState", "pin": "12", "state": 42 }
