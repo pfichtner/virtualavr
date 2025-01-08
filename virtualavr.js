@@ -29,9 +29,9 @@ var serialDebug;
 var lastPublish = new Date();
 
 // TODO Is there a define in avr8js's boards? 
-const arduinoPinOnPortB = [ 'D8', 'D9', 'D10','D11','D12', 'D13' ];
+const arduinoPinOnPortB = [ '8', '9', '10','11','12', '13' ];
 const arduinoPinOnPortC = [ 'A0', 'A1', 'A2', 'A3', 'A4',  'A5', 'A6', 'A7' ]
-const arduinoPinOnPortD = [ 'D0', 'D1', 'D2', 'D3', 'D4',  'D5', 'D6', 'D7' ];
+const arduinoPinOnPortD = [ '0', '1', '2', '3', '4',  '5', '6', '7' ];
 const clockFrequency = 16e6;  // 16 MHz
 // TODO const pwmFrequencies = { 'D5': 980, 'D6': 980 }; // others 490
 
@@ -173,6 +173,7 @@ const runCode = async (inputFilename, portCallback) => {
                         // TODO: Throttle if there are too many messages (see lastStateCycles)
                         const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
                         portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
+                        portCallback({ type: 'pinState', pin: 'D' + arduinoPin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
                         entry.lastStatePublished = state;
                     }
                 }
@@ -229,7 +230,7 @@ const runCode = async (inputFilename, portCallback) => {
             const processPortState = (port, arduinoPins) => {
                 for (const arduinoPin in portStates) {
                     const entry = portStates[arduinoPin];
-                    const avrPin = arduinoPins.indexOf(arduinoPin);
+                    const avrPin = arduinoPins.indexOf(arduinoPin) >= 0 ? arduinoPins.indexOf(arduinoPin) : arduinoPins.indexOf('D' + arduinoPin);
 
                     if (avrPin >= 0) {
                         if (port.pinState(avrPin) === avr8js.PinState.High) {
@@ -243,6 +244,7 @@ const runCode = async (inputFilename, portCallback) => {
                                 if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
                                     const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
                                     portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
+                                    portCallback({ type: 'pinState', pin: 'D' + arduinoPin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
                                     entry.lastStatePublished = state;
                                 }
                             }
@@ -268,7 +270,8 @@ function sendNextChar(buff, usart) {
 }
 
 function processMessage(msg, callbackPinState) {
-    // { "type": "pinMode", "pin": "D12", "mode": "analog" }
+    // { "type": "pinMode", "pin": "12", "mode": "analog" }
+    if (msg.pin && msg.pin.startsWith('D')) msg.pin = msg.pin.substring(1); // deprecated
     const avrPinB = arduinoPinOnPortB.indexOf(msg.pin);
     const avrPinC = arduinoPinOnPortC.indexOf(msg.pin);
     const avrPinD = arduinoPinOnPortD.indexOf(msg.pin);
@@ -282,23 +285,25 @@ function processMessage(msg, callbackPinState) {
             if (avrPinB >= 0) {
                 const state = portB.pinState(avrPinB) === avr8js.PinState.High;
                 callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
+                callbackPinState({ type: 'pinState', pin: 'D' + msg.pin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
             } else if (avrPinD >= 0) {
                 const state = portD.pinState(avrPinD) === avr8js.PinState.High;
                 callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
+                callbackPinState({ type: 'pinState', pin: 'D' + msg.pin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
             }
         } else {
             listeningModes[msg.pin] = undefined;
         }
     } else if (msg.type === 'fakePinState' || msg.type === 'pinState') {
         if (typeof msg.state === 'boolean') {
-            // { "type": "pinState", "pin": "D12", "state": true }
+            // { "type": "pinState", "pin": "12", "state": true }
             if (avrPinB >= 0) {
                 portB.setPin(avrPinB, msg.state);
             } else if (avrPinD >= 0) {
                 portD.setPin(avrPinD, msg.state);
             }
         } else if (typeof msg.state === 'number') {
-            // { "type": "pinState", "pin": "D12", "state": 42 }
+            // { "type": "pinState", "pin": "12", "state": 42 }
             if (avrPinC >= 0) {
                 adc.channelValues[avrPinC] = msg.state * 5 / 1024;
             } else if (avrPinD >= 0) {
