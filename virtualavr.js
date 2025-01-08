@@ -173,16 +173,10 @@ const runCode = async (inputFilename, portCallback) => {
     cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
     adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
 
-    const portConfigs = {
-        'B': avr8js.portBConfig,
-        'C': avr8js.portCConfig,
-        'D': avr8js.portDConfig
-    };
-
     for (const mapping of Object.values(unoPinMappings)) {
         const portName = mapping.port;
         if (!ports[portName]) {
-            ports[portName] = new avr8js.AVRIOPort(cpu, portConfigs[portName]);
+            ports[portName] = new avr8js.AVRIOPort(cpu, avr8js[`port${portName}Config`]);
         }
     }
 
