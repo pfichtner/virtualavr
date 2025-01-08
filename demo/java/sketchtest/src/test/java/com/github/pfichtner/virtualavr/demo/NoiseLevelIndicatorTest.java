@@ -27,9 +27,9 @@ class NoiseLevelIndicatorTest {
 	private static final String REF_PIN = "A0";
 	private static final String VALUE_PIN = "A1";
 
-	private static final String GREEN_LED = "D10";
-	private static final String YELLOW_LED = "D11";
-	private static final String RED_LED = "D12";
+	private static final String GREEN_LED = "10";
+	private static final String YELLOW_LED = "11";
+	private static final String RED_LED = "12";
 
 	@Container
 	static VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(property("virtualavr.sketchfile"));

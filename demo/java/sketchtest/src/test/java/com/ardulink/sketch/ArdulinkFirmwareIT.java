@@ -76,16 +76,16 @@ class ArdulinkFirmwareIT {
 		try (SerialConnection serial = virtualAvrContainer.serialConnection()) {
 			awaiter(serial).waitReceivedAnything();
 			VirtualAvrConnection avr = virtualAvrContainer.avr();
-			avr.pinReportMode("D" + pin, DIGITAL);
+			avr.pinReportMode(String.valueOf(pin), DIGITAL);
 			{
 				boolean state = true;
 				serial.send(powerDigitalMessage(pin, state));
-				await().until(() -> stateOfPinIs(avr, "D" + pin, state));
+				await().until(() -> stateOfPinIs(avr, String.valueOf(pin), state));
 			}
 			{
 				boolean state = false;
 				serial.send(powerDigitalMessage(pin, state));
-				await().until(() -> stateOfPinIs(avr, "D" + pin, state));
+				await().until(() -> stateOfPinIs(avr, String.valueOf(pin), state));
 			}
 		}
 	}
@@ -96,16 +96,16 @@ class ArdulinkFirmwareIT {
 		try (SerialConnection serial = virtualAvrContainer.serialConnection()) {
 			awaiter(serial).waitReceivedAnything();
 			VirtualAvrConnection avr = virtualAvrContainer.avr();
-			avr.pinReportMode("D" + pin, ANALOG);
+			avr.pinReportMode(String.valueOf(pin), ANALOG);
 			{
 				int value = 42;
 				serial.send(powerAnalogMessage(pin, value));
-				await().until(() -> stateOfPinIs(avr, "D" + pin, value));
+				await().until(() -> stateOfPinIs(avr, String.valueOf(pin), value));
 			}
 			{
 				int value = 0;
 				serial.send(powerAnalogMessage(pin, value));
-				await().until(() -> stateOfPinIs(avr, "D" + pin, value));
+				await().until(() -> stateOfPinIs(avr, String.valueOf(pin), value));
 			}
 		}
 	}
@@ -118,11 +118,11 @@ class ArdulinkFirmwareIT {
 			awaiter.waitReceivedAnything();
 			serial.send(startListeningDigitalMessage(pin));
 			{
-				virtualAvrContainer.avr().pinState("D" + pin, true);
+				virtualAvrContainer.avr().pinState(String.valueOf(pin), true);
 				awaiter.awaitReceived(s -> s.contains(ardulinkMessage("dred", pin, 1)));
 			}
 			{
-				virtualAvrContainer.avr().pinState("D" + pin, false);
+				virtualAvrContainer.avr().pinState(String.valueOf(pin), false);
 				awaiter.awaitReceived(s -> s.contains(ardulinkMessage("dred", pin, 0)));
 			}
 		}

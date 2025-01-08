@@ -41,36 +41,33 @@ class SwitchAllPortsViaArdulinkTest {
 	@ParameterizedTest
 	@ValueSource(ints = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 })
 	void canSwitchDigitalPinOnAndOff(int pinNumber) throws Exception {
-		String digitalPort = "D" + pinNumber;
-		virtualAvrContainer.avr().pinReportMode(digitalPort, DIGITAL);
+		virtualAvrContainer.avr().pinReportMode(String.valueOf(pinNumber), DIGITAL);
 		SerialConnectionAwait awaiter = awaiter(virtualAvrContainer.serialConnection());
 		try {
 			awaiter.sendAwait(format(ALP_PPSW, pinNumber, 1, 42), r -> r.contains(okRplyReceived(42)));
-			awaitUntil(stateIsOn(digitalPort));
+			awaitUntil(stateIsOn(String.valueOf(pinNumber)));
 
 			awaiter.sendAwait(format(ALP_PPSW, pinNumber, 0, 43), r -> r.contains(okRplyReceived(43)));
-			awaitUntil(stateIsOff(digitalPort));
+			awaitUntil(stateIsOff(String.valueOf(pinNumber)));
 		} finally {
-			virtualAvrContainer.avr().pinReportMode(digitalPort, NONE);
+			virtualAvrContainer.avr().pinReportMode(String.valueOf(pinNumber), NONE);
 		}
 	}
 
 	@Timeout(value = 30, unit = SECONDS)
 	@ParameterizedTest
-	@ValueSource(ints = { 3, 9, 10, 11 })
-//	@ValueSource(ints = { 3, 5, 6, 9, 10, 11 }) // TODO 5 and 6 have PWM frequency: ~980 Hz (others ~490 Hz) and are not yet correct handled by virtualavr.js
+	@ValueSource(ints = { 3, 5, 6, 9, 10, 11 })
 	void canSetPwmPinToSomeValue(int pinNumber) throws Exception {
-		String analogPort = "D" + pinNumber;
-		virtualAvrContainer.avr().pinReportMode(analogPort, ANALOG);
+		virtualAvrContainer.avr().pinReportMode(String.valueOf(pinNumber), ANALOG);
 		SerialConnectionAwait awaiter = awaiter(virtualAvrContainer.serialConnection());
 		try {
 			awaiter.sendAwait(format(ALP_PPIN, pinNumber, 127, 44), r -> r.contains(okRplyReceived(44)));
-			awaitUntil(stateOfPinIs(analogPort, 127));
+			awaitUntil(stateOfPinIs(String.valueOf(pinNumber), 127));
 
 			awaiter.sendAwait(format(ALP_PPIN, pinNumber, 0, 45), r -> r.contains(okRplyReceived(45)));
-			awaitUntil(stateOfPinIs(analogPort, 0));
+			awaitUntil(stateOfPinIs(String.valueOf(pinNumber), 0));
 		} finally {
-			virtualAvrContainer.avr().pinReportMode(analogPort, NONE);
+			virtualAvrContainer.avr().pinReportMode(String.valueOf(pinNumber), NONE);
 		}
 	}
 

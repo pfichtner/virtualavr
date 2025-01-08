@@ -25,7 +25,7 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 @Testcontainers
 class VirtualAvrTest {
 
-	private static final String INTERNAL_LED = "D13";
+	private static final String INTERNAL_LED = "13";
 
 	@Container
 	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(loadClasspath("/blink.ino"));

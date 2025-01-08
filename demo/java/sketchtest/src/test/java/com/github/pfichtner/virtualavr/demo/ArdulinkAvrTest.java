@@ -38,67 +38,63 @@ class ArdulinkAvrTest {
 	@Test
 	void canTurnOnAndOffDigital() throws Exception {
 		int pinNumber = 12;
-		String pin = format("D%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
-		avr.pinReportMode(pin, DIGITAL);
+		avr.pinReportMode(String.valueOf(pinNumber), DIGITAL);
 		try (SerialConnection serial = steadyConnection()) {
 			serial.send(format("alp://ppsw/%d/1\n", pinNumber));
-			awaitState(s -> s.contains(stateIsOn(pin)));
+			awaitState(s -> s.contains(stateIsOn(String.valueOf(pinNumber))));
 
 			serial.send(format("alp://ppsw/%d/0\n", pinNumber));
-			awaitState(s -> s.contains(stateIsOff(pin)));
+			awaitState(s -> s.contains(stateIsOff(String.valueOf(pinNumber))));
 		}
 	}
 
 	@Test
 	void canSetValueOnAnalog() throws Exception {
 		int pinNumber = 9;
-		String pin = format("D%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
-		avr.pinReportMode(pin, ANALOG);
+		avr.pinReportMode(String.valueOf(pinNumber), ANALOG);
 		try (SerialConnection serial = steadyConnection()) {
 			virtualAvrContainer.avr().clearStates();
 			serial.send(format("alp://ppin/%d/123\n", pinNumber));
-			awaitState(s -> s.contains(stateOfPinIs(pin, 123)));
+			awaitState(s -> s.contains(stateOfPinIs(String.valueOf(pinNumber), 123)));
 
 			serial.send(format("alp://ppin/%d/0\n", pinNumber));
-			awaitState(s -> s.contains(stateOfPinIs(pin, 0)));
+			awaitState(s -> s.contains(stateOfPinIs(String.valueOf(pinNumber), 0)));
 		}
 	}
 
 	@Test
 	void toneWithoutRplyMessage() throws Exception {
 		int pinNumber = 9;
-		String pin = format("D%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
-		avr.pinReportMode(pin, ANALOG);
+		avr.pinReportMode(String.valueOf(pinNumber), ANALOG);
 		try (SerialConnection serial = steadyConnection()) {
 			virtualAvrContainer.avr().clearStates();
 			serial.send(format("alp://tone/%d/123/-1\n", pinNumber));
-			awaitState(s -> s.contains(stateOfPinIs(pin, 127)));
+			awaitState(s -> s.contains(stateOfPinIs(String.valueOf(pinNumber), 127)));
 
 			virtualAvrContainer.avr().clearStates();
 			serial.send(format("alp://notn/%d\n", pinNumber));
-			awaitState(s -> s.contains(stateOfPinIs(pin, 0)));
+			awaitState(s -> s.contains(stateOfPinIs(String.valueOf(pinNumber), 0)));
 		}
 	}
 
 	@Test
 	void toneWithRplyMessage() throws Exception {
 		int pinNumber = 9;
-		String pin = format("D%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
-		avr.pinReportMode(pin, ANALOG);
+		avr.pinReportMode(String.valueOf(pinNumber), ANALOG);
 		try (SerialConnection serial = steadyConnection()) {
 			virtualAvrContainer.avr().clearStates();
 			serial.send(format("alp://tone/%d/123/-1?id=42\n", pinNumber));
-			awaitState(s -> s.contains(stateOfPinIs(pin, 127)));
+			awaitState(s -> s.contains(stateOfPinIs(String.valueOf(pinNumber), 127)));
 			awaitOkRply(42);
 
 			virtualAvrContainer.avr().clearStates();
 			serial.send(format("alp://notn/%d?id=43\n", pinNumber));
 			awaitOkRply(43);
-			awaitState(s -> s.contains(stateOfPinIs(pin, 0)));
+			awaitState(s -> s.contains(stateOfPinIs(String.valueOf(pinNumber), 0)));
 		}
 	}
 
@@ -125,7 +121,6 @@ class ArdulinkAvrTest {
 	@Test
 	void canReadAnalogPinStateWithoutInitialValue() throws Exception {
 		int pinNumber = 5;
-		String pin = format("A%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
 		try (SerialConnection serial = steadyConnection()) {
 			avr.clearStates();
@@ -133,7 +128,7 @@ class ArdulinkAvrTest {
 			serialAwait(r -> r.contains("alp://rply/ok?id=42\n"));
 
 			avr.clearStates();
-			avr.pinState(pin, 987);
+			avr.pinState("A" + pinNumber, 987);
 			serialAwait(r -> r.contains(format("alp://ared/%d/987\n", pinNumber)));
 
 			serial.send(format("alp://spla/%d?id=43\n", pinNumber));
@@ -144,10 +139,9 @@ class ArdulinkAvrTest {
 	@Test
 	void canReadAnalogPinStateWithInitialValue() throws Exception {
 		int pinNumber = 5;
-		String pin = format("A%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
 		try (SerialConnection serial = steadyConnection()) {
-			avr.pinState(pin, 987);
+			avr.pinState("A" + pinNumber, 987);
 			avr.clearStates();
 			serial.send(format("alp://srla/%d?id=42\n", pinNumber));
 			serialAwait(r -> r.contains("alp://rply/ok?id=42\n"));
@@ -163,7 +157,6 @@ class ArdulinkAvrTest {
 	@Test
 	void canReadDigitalPinStateWithoutInitialValue() throws Exception {
 		int pinNumber = 12;
-		String pin = format("D%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
 		try (SerialConnection serial = steadyConnection()) {
 			avr.clearStates();
@@ -171,7 +164,7 @@ class ArdulinkAvrTest {
 			awaitOkRply(42);
 
 			avr.clearStates();
-			avr.pinState(pin, true);
+			avr.pinState(String.valueOf(pinNumber), true);
 			serialAwait(r -> r.contains(format("alp://dred/%d/1\n", pinNumber)));
 
 			serial.send(format("alp://spld/%d?id=43\n", pinNumber));
@@ -182,10 +175,9 @@ class ArdulinkAvrTest {
 	@Test
 	void canReadDigitalPinStateWithInitialValue() throws Exception {
 		int pinNumber = 12;
-		String pin = format("D%d", pinNumber);
 		VirtualAvrConnection avr = enableSerialDebug(virtualAvrContainer.avr());
 		try (SerialConnection serial = steadyConnection()) {
-			avr.pinState(pin, true);
+			avr.pinState(String.valueOf(pinNumber), true);
 			avr.clearStates();
 			serial.send(format("alp://srld/%d?id=42\n", pinNumber));
 			awaitOkRply(42);

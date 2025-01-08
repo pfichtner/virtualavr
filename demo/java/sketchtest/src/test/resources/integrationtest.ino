@@ -43,7 +43,7 @@ void readDigital() {
 	boolean tmp = digitalRead(DIGITAL_INPUT);
 	if (tmp != digitalInputState) {
 		digitalInputState = tmp;
-		Serial.print("State-Change-D11: ");        	
+		Serial.print("State-Change-11: ");        	
 		Serial.println(tmp ? "ON" : "OFF");        	
 	}
 }

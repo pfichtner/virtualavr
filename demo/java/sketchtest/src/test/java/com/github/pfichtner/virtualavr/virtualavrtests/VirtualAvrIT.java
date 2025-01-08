@@ -86,8 +86,8 @@ class VirtualAvrIT {
 
 	}
 
-	private static final String INTERNAL_LED = "D13";
-	private static final String PWM_PIN = "D10";
+	private static final String INTERNAL_LED = "13";
+	private static final String PWM_PIN = "10";
 
 	// since integrationtest.ino toggles each 100ms between 0 and 42 we have to
 	// measure at least each 100ms / 3
@@ -161,14 +161,14 @@ class VirtualAvrIT {
 
 		// TODO make side-affect-free
 		awaiter.awaitReceived(s -> {
-			virtualAvr.pinState("D11", true);
-			return s.contains("State-Change-D11: ON");
+			virtualAvr.pinState("11", true);
+			return s.contains("State-Change-11: ON");
 		});
 
 		// TODO make side-affect-free
 		awaiter.awaitReceived(s -> {
-			virtualAvr.pinState("D11", false);
-			return s.contains("State-Change-D11: OFF");
+			virtualAvr.pinState("11", false);
+			return s.contains("State-Change-11: OFF");
 		});
 	}
 
