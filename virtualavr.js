@@ -14,8 +14,6 @@ const streamZip = require('node-stream-zip');
 
 const ws = require('ws');
 
-// import { CPU, avrInstruction, AVRIOPort, portDConfig, PinState, AVRTimer, timer0Config } from 'avr8js';
-
 const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 
@@ -27,6 +25,7 @@ const listeningModes = {};
 var serialDebug;
 var lastPublish = new Date();
 
+const clockFrequency = 16e6;  // 16 MHz
 const unoPinMappings = {
      '0': { port: 'D', pin: 0 },
      '1': { port: 'D', pin: 1 },
@@ -60,7 +59,6 @@ uniquePorts.forEach(port => {
         .sort((a, b) => unoPinMappings[a].pin - unoPinMappings[b].pin);
 });
 
-const clockFrequency = 16e6;  // 16 MHz
 const args = process.argv.slice(2);
 
 
