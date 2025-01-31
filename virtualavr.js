@@ -16,6 +16,7 @@ const ws = require('ws');
 
 const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
+let isPaused = !!process.env.PAUSE_ON_START;
 
 let messageQueue = [];
 var cpu;
@@ -238,9 +239,11 @@ const runCode = async (inputFilename, portCallback) => {
     new avr8js.AVRTimer(cpu, avr8js.timer1Config);
     new avr8js.AVRTimer(cpu, avr8js.timer2Config);
     while (true) {
-        for (let i = 0; i < 500000; i++) {
-            avr8js.avrInstruction(cpu);
-            cpu.tick();
+        if (!isPaused) {
+            for (let i = 0; i < 500000; i++) {
+                avr8js.avrInstruction(cpu);
+                cpu.tick();
+            }
         }
         await new Promise(resolve => setTimeout(resolve));
 
@@ -341,6 +344,12 @@ function processMessage(msg, callbackPinState) {
             } else if (avrPinD >= 0) {
                 adc.channelValues[avrPinD] = msg.state * 5 / 1024;
             }
+        }
+    } else if (msg.type === 'control') {
+        if (msg.action === 'play' || msg.action === 'unpause') {
+            isPaused = false;
+        } else if (msg.action === 'pause') {
+            isPaused = true;
         }
     } else if (msg.type === 'serialDebug') {
         serialDebug = msg.state;

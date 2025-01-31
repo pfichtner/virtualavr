@@ -302,6 +302,21 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	}
 
 	@SuppressWarnings("unused")
+	private static class Control extends WithReplyId {
+
+		private static final Control PAUSE = new Control("pause");
+		private static final Control UNPAUSE = new Control("unpause");
+
+		private final String type = "control";
+		private final String action;
+
+		private Control(String action) {
+			this.action = action;
+		}
+
+	}
+
+	@SuppressWarnings("unused")
 	private static class SetPinState extends WithReplyId {
 
 		private SetPinState(String pin, Object state) {
@@ -309,9 +324,9 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 			this.state = state;
 		}
 
-		private String type = "pinState";
-		private String pin;
-		private Object state;
+		private final String type = "pinState";
+		private final String pin;
+		private final Object state;
 	}
 
 	public VirtualAvrConnection pinState(String pin, boolean state) {
@@ -350,6 +365,14 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	public VirtualAvrConnection pinReportMode(String pin, PinReportMode mode) {
 		return sendAndWaitForReply(new SetPinReportMode(pin, mode));
+	}
+
+	public VirtualAvrConnection pause() {
+		return sendAndWaitForReply(Control.PAUSE);
+	}
+
+	public VirtualAvrConnection unpause() {
+		return sendAndWaitForReply(Control.UNPAUSE);
 	}
 
 	private VirtualAvrConnection debugSerial(boolean state) {

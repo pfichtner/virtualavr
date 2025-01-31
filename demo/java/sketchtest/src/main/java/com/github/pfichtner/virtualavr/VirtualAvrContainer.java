@@ -68,6 +68,11 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
+	public VirtualAvrContainer<?> withPausedStartup() {
+		withEnv("PAUSE_ON_START", String.valueOf(true));
+		return self();
+	}
+
 	public VirtualAvrContainer<?> withBuildExtraFlags(Map<String, Object> cFlags) {
 		return withBuildExtraFlags(cFlags.entrySet() //
 				.stream() //

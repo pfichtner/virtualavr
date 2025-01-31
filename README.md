@@ -32,6 +32,7 @@ Environment variables supported
 - FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
 - BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
+- PAUSE_ON_START virtualavr will start in pause mode. See commands for pausing/unpausing
 - PUBLISH_MILLIS analog values gets published each millis on change (default 250)
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
 - BUILD_FQBN Fully Qualified Board Name to use for compile (default "arduino:avr:uno")
@@ -56,6 +57,7 @@ The screencast is not uptodate!!!
 - Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }``` (supported modes: analog (or alternative pwm), digital, any other value means off)
 - Set a pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
 - Set a (PWM) pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
+- Pause or unpause virtualavr ```{ "type": "control", "action": "pause|unpause" }```
 - Enable/disable serial debug ```{ "type": "serialDebug", "state": true|false }```
 - Any message that has an "replyId" gets replied by virtualavr (see [Sent by virtualavr](#sent-by-virtualavr))
 
