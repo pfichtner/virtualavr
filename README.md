@@ -144,7 +144,6 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 ![virtualavr.png](docs/images/virtualavr.png)
 
 # Todos
-- Add support for running simulator without VIRTUALDEVICE (VIRTUALDEVICE="")
 - Provide Java Bindings as maven artefacts
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
 - We could use WS also to load firmware
