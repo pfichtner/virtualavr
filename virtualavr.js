@@ -18,6 +18,10 @@ const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 let isPaused = !!process.env.PAUSE_ON_START;
 
+// Open custom file descriptors
+const input = fs.createReadStream(null, { fd: 3 });
+const output = fs.createWriteStream(null, { fd: 4 });
+
 let messageQueue = [];
 var cpu;
 var adc;
@@ -218,15 +222,14 @@ const runCode = async (inputFilename, portCallback) => {
     usart.onByteTransmit = data => {
             const arrBuff = new Uint8Array(1);
             arrBuff[0] = data;
-            process.stdout.write(arrBuff);
+            output.write(arrBuff);
             if (serialDebug) {
                 portCallback({ type: 'serialDebug', direction: 'TX', bytes: [data] });
             }
     }
     const buff = [];
     usart.onRxComplete = () => sendNextChar(buff, usart);
-    process.stdin.setRawMode(true);
-    process.stdin.on('data', data => {
+    input.on('data', data => {
             var bytes = Array.prototype.slice.call(data, 0);
             for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
             sendNextChar(buff, usart);

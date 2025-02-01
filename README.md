@@ -145,15 +145,13 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 
 # Todos
 - Add support for running simulator without VIRTUALDEVICE (VIRTUALDEVICE="")
-- Add time/cpu-cycles to ws messages
 - Provide Java Bindings as maven artefacts
-- Can we connect other handles than stdin/stdout so that we still ca write to stdout from within nodejs/virtualavr.js?
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
-- We could use WS to interact with the simulator: "loadFirmware", "start", "stop", ...
+- We could use WS also to load firmware
 - Possibility to define component layout, e.g. add a DHT22
 - JS Callbacks for pin states/Components, e.g. DHT22
 - Java-Bindings for pin states/Components, e.g. DHT22 (IPC, using websockets?)
 - Watch support: Recompile/reload firmware when changed on filesystem
-- Could we implement upload? So that you can upload the compiled firmware to runniner container / /dev/virtualdevice?
+- Could we implement upload? So that you can upload the compiled firmware to running container / /dev/virtualdevice?
   Could we use arduino firmware? https://github.com/arduino/ArduinoCore-avr/tree/master/bootloaders/atmega : If this works? Do we have to upload elf binaries?
 
