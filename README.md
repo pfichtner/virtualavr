@@ -1,7 +1,7 @@
 [![Publish Docker image](https://github.com/pfichtner/virtualavr/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pfichtner/virtualavr/actions/workflows/docker-publish.yml)
 [![Docker Image CI](https://github.com/pfichtner/virtualavr/actions/workflows/docker-image.yml/badge.svg)](https://github.com/pfichtner/virtualavr/actions/workflows/docker-image.yml)
-![Docker Image Size](https://img.shields.io/docker/image-size/pfichtner/virtualavr)
-![Docker Image Version](https://img.shields.io/docker/v/pfichtner/virtualavr)
+[![Docker Image Size](https://img.shields.io/docker/image-size/pfichtner/virtualavr)](https://hub.docker.com/r/pfichtner/virtualavr/)
+[![Docker Image Version](https://img.shields.io/docker/v/pfichtner/virtualavr)](https://hub.docker.com/r/pfichtner/virtualavr/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/pfichtner/virtualavr.svg?maxAge=604800)](https://hub.docker.com/r/pfichtner/virtualavr/)
 
 ### virtualavr
