@@ -29,6 +29,7 @@ Environment variables supported
 - DEVICEUSER user the VIRTUALDEVICE belongs to (default root)
 - DEVICEGROUP group the VIRTUALDEVICE belongs to (default dialout)
 - DEVICEMODE file mode of the VIRTUALDEVICE (default 660)
+- OVERWRITE_VIRTUALDEVICE set to something not empty if and already existing device (e.g. /dev/ttyUSB0) should be overwritten/replaced). If the device gets overwritten it does not get restored by the container! So this should be used if you created the device/file for the purpose of providing it for the use with a virtualavr instance)
 - FILENAME the name of the ino/hex/zip file (defaults to sketch.ino). Zipfile content is wokwi structure (sketch.ino, libraries.txt). If the filename ends with '.hex' it gets passed to virtualavr directly
 - BAUDRATE baudrate to use (defaults to 9600). Hint: If haven't seen problems when baudrate differs from the really used one
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
