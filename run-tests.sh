@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit immediately if any command exits with a non-zero status
 
-# 1. Set Docker Image Tag
+# Set Docker Image Tag
 export DOCKER_IMAGE_TAG=$(date +'%s-snapshot')
 echo "Docker image tag: $DOCKER_IMAGE_TAG"
 
