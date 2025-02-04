@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+IFS=',' read -ra ARGS <<< "$@"
+# Extract the "link" argument
+for arg in "${ARGS[@]}"; do
+  if [[ "$arg" == link=* ]]; then
+    DEVICE_FILE="${arg#link=}"
+    touch "$DEVICE_FILE" || { echo "Failed to create device file at $DEVICE_FILE"; exit 1; }
+  fi
+done
+
+# sleep forever
+while true; do
+  sleep 1 &
+  wait $!
+done
