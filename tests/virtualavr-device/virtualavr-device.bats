@@ -1,14 +1,14 @@
 #!/usr/bin/env bats
 
+# Why test the entrypoint separately and not within the container? The better test would actually be to start the entrypoint within the container, but the whole container creates files in /dev and /tmp and this normally with root rights. This makes at least simple testing more difficult, so it was preferred to test the entrypoint before the image build and outside the image/container. 
+
 setup() {
   export PATH="$PWD:$PWD/tests/mocks:$PATH" # Ensure socat mock is found
   export TEMP_ENTRYPOINT=$(mktemp)          # Temporary entrypoint with adjusted ROOTDIR
   export TEST_ROOTDIR=$(mktemp -d)          # Dynamic test root directory
-  export TEST_DEV_DIR="$TEST_ROOTDIR/dev"   # Simulated /dev inside $TEST_ROOTDIR
-  export TEST_TMP_DIR="$TEST_ROOTDIR/tmp"   # Simulated /tmp inside $TEST_ROOTDIR
 
   # Create necessary directories for the test
-  mkdir -p "$TEST_DEV_DIR" "$TEST_TMP_DIR"
+  mkdir -p "$TEST_ROOTDIR/dev" "$TEST_ROOTDIR/tmp"
 
   # Create a modified version of entrypoint.sh for testing
   sed "s|ROOTDIR=\"\"|ROOTDIR=\"$TEST_ROOTDIR\"|g" entrypoint.sh > "$TEMP_ENTRYPOINT"
@@ -30,22 +30,20 @@ teardown() {
   ENTRYPOINT_PID=$!
 
   sleep 1
-
-  # Debug: Show the contents of $TEST_ROOTDIR/dev
-  echo "Contents of $TEST_DEV_DIR after entrypoint execution:"
-  ls "$TEST_DEV_DIR" || echo "No files in $TEST_DEV_DIR"
+  
+  VIRTUALDEVICE="/dev/virtualavr0"
 
   # Verify the device was created in /dev
-  echo "Checking if device $TEST_DEV_DIR/virtualavr0 exists..."
-  [ -e "$TEST_DEV_DIR/virtualavr0" ] || { echo "Device $TEST_DEV_DIR/virtualavr0 not found."; exit 1; }
+  echo "Checking if device $TEST_ROOTDIR$VIRTUALDEVICE exists..."
+  [ -e "$TEST_ROOTDIR$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR$VIRTUALDEVICE not found."; exit 1; }
 
   echo "Kill entrypoint to trigger cleanup..."
   kill "$ENTRYPOINT_PID"
   sleep 1
 
   # Ensure the device was removed
-  echo "Checking if device $TEST_DEV_DIR/virtualavr0 was removed..."
-  [ ! -e "$TEST_DEV_DIR/virtualavr0" ] || { echo "Device $TEST_DEV_DIR/virtualavr0 still exists."; exit 1; }
+  echo "Checking if device $TEST_ROOTDIR$VIRTUALDEVICE was removed..."
+  [ ! -e "$TEST_ROOTDIR$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR$VIRTUALDEVICE still exists."; exit 1; }
 }
 
 @test "entrypoint creates device in /tmp if VIRTUALDEVICE is an empty string, then removes it" {
@@ -57,17 +55,17 @@ teardown() {
 
   sleep 1
 
-  GENERATED_DEVICE=$(find "$TEST_TMP_DIR" -name "virtualavr*" -type f)
+  GENERATED_DEVICE=$(find "$TEST_ROOTDIR/tmp" -name "virtualavr*" -type f)
   echo "Generated device path in /tmp: $GENERATED_DEVICE"
 
   # Verify that a file matching the pattern was created
   if [[ -z "$GENERATED_DEVICE" ]]; then
-    echo "No device matching pattern virtualavrXXXXXXXXXX found in $TEST_TMP_DIR."
+    echo "No device matching pattern virtualavrXXXXXXXXXX found in $TEST_ROOTDIR/tmp."
     exit 1
   fi
   
   # Verify that a file matching the pattern was created
-  [[ ! "$GENERATED_DEVICE" =~ ^$TEST_TMP_DIR/virtualavr[a-zA-Z0-9]{10}$ ]] && { echo "No device matching pattern virtualavrXXXXXXXXXX found in $TEST_TMP_DIR."; exit 1; }
+  [[ ! "$GENERATED_DEVICE" =~ ^$TEST_ROOTDIR/tmp/virtualavr[a-zA-Z0-9]{10}$ ]] && { echo "No device matching pattern virtualavrXXXXXXXXXX found in $TEST_ROOTDIR/tmp."; exit 1; }
 
   # Kill entrypoint to trigger cleanup
   echo "Killing entrypoint to trigger cleanup..."
@@ -109,13 +107,13 @@ teardown() {
 
   # Ensure the device file still exists during entrypoint execution
   echo "Checking if device $TEST_ROOTDIR/$VIRTUALDEVICE still exists during entrypoint execution..."
-  [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR/$VIRTUALDEVICE not found."; exit 1; }
+  [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."; exit 1; }
 
   echo "Kill entrypoint to trigger cleanup..."
   kill "$ENTRYPOINT_PID"
   sleep 1
 
-  # Ensure the device was not removed after exit
+  # Ensure the device file still exists after entrypoint execution
   echo "Checking if device $TEST_ROOTDIR/$VIRTUALDEVICE was not removed after entrypoint stopped..."
   [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."; exit 1; }
 }
