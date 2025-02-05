@@ -5,7 +5,7 @@ IFS=',' read -ra ARGS <<< "$@"
 for arg in "${ARGS[@]}"; do
   if [[ "$arg" == link=* ]]; then
     DEVICE_FILE="${arg#link=}"
-    touch "$DEVICE_FILE" || { echo "Failed to create device file at $DEVICE_FILE"; exit 1; }
+    echo "socat $!! was here" > "$DEVICE_FILE" || { echo "Failed to create device file at $DEVICE_FILE"; exit 1; }
   fi
 done
 
