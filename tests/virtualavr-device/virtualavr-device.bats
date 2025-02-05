@@ -58,14 +58,11 @@ teardown() {
   GENERATED_DEVICE=$(find "$TEST_ROOTDIR/tmp" -name "virtualavr*" -type f)
   echo "Generated device path in /tmp: $GENERATED_DEVICE"
 
-  # Verify that a file matching the pattern was created
-  if [[ -z "$GENERATED_DEVICE" ]]; then
-    echo "No device matching pattern virtualavrXXXXXXXXXX found in $TEST_ROOTDIR/tmp."
+  # Verify that a file matching the pattern was created and matches the expected format
+  if [[ -z "$GENERATED_DEVICE" || ! "$GENERATED_DEVICE" =~ ^$TEST_ROOTDIR/tmp/virtualavr[a-zA-Z0-9]{10}$ ]]; then
+    echo "No device matching pattern virtualavr[a-zA-Z0-9]{10}$ found in $TEST_ROOTDIR/tmp."
     exit 1
   fi
-  
-  # Verify that a file matching the pattern was created
-  [[ ! "$GENERATED_DEVICE" =~ ^$TEST_ROOTDIR/tmp/virtualavr[a-zA-Z0-9]{10}$ ]] && { echo "No device matching pattern virtualavrXXXXXXXXXX found in $TEST_ROOTDIR/tmp."; exit 1; }
 
   # Kill entrypoint to trigger cleanup
   echo "Killing entrypoint to trigger cleanup..."
