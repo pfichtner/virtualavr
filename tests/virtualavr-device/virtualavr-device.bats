@@ -2,12 +2,12 @@
 
 # Why test the entrypoint separately and not within the container? The better test would actually be to start the entrypoint within the container, but the whole container creates files in /dev and /tmp and this normally with root rights. This makes at least simple testing more difficult, so it was preferred to test the entrypoint before the image build and outside the image/container. 
 
-ENTRYPOINT_PID=""
 
 setup() {
-  export PATH="$PWD:$PWD/tests/mocks:$PATH" # Ensure socat mock is found
-  export TEMP_ENTRYPOINT=$(mktemp)          # Temporary entrypoint with adjusted ROOTDIR
-  export TEST_ROOTDIR=$(mktemp -d)          # Dynamic test root directory
+  ENTRYPOINT_PID=""
+  PATH="$PWD:$PWD/tests/mocks:$PATH" # Ensure socat mock is found
+  TEMP_ENTRYPOINT=$(mktemp)          # Temporary entrypoint with adjusted ROOTDIR
+  TEST_ROOTDIR=$(mktemp -d)          # Dynamic test root directory
 
   # Create necessary directories for the test
   mkdir -p "$TEST_ROOTDIR/dev" "$TEST_ROOTDIR/tmp"
