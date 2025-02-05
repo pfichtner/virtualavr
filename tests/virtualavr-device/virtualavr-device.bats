@@ -22,6 +22,11 @@ teardown() {
   rm -rf "$TEST_ROOTDIR" "$TEMP_ENTRYPOINT"
 }
 
+fail() {
+  echo "$1" >&2
+  exit 1
+}
+
 @test "entrypoint creates /dev/virtualavr0 if VIRTUALDEVICE is unset, then removes it" {
   unset VIRTUALDEVICE
 
@@ -35,7 +40,7 @@ teardown() {
 
   # Verify the device was created in /dev
   echo "Checking if device $TEST_ROOTDIR$VIRTUALDEVICE exists..."
-  [ -e "$TEST_ROOTDIR$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR$VIRTUALDEVICE not found."; exit 1; }
+  [ -e "$TEST_ROOTDIR$VIRTUALDEVICE" ] || fail "Device $TEST_ROOTDIR$VIRTUALDEVICE not found."
 
   echo "Kill entrypoint to trigger cleanup..."
   kill "$ENTRYPOINT_PID"
@@ -43,7 +48,7 @@ teardown() {
 
   # Ensure the device was removed
   echo "Checking if device $TEST_ROOTDIR$VIRTUALDEVICE was removed..."
-  [ ! -e "$TEST_ROOTDIR$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR$VIRTUALDEVICE still exists."; exit 1; }
+  [ ! -e "$TEST_ROOTDIR$VIRTUALDEVICE" ] || fail "Device $TEST_ROOTDIR$VIRTUALDEVICE still exists."
 }
 
 @test "entrypoint creates device in /tmp if VIRTUALDEVICE is an empty string, then removes it" {
@@ -59,10 +64,7 @@ teardown() {
   echo "Generated device path in /tmp: $GENERATED_DEVICE"
 
   # Verify that a file matching the pattern was created and matches the expected format
-  if [[ -z "$GENERATED_DEVICE" || ! "$GENERATED_DEVICE" =~ ^$TEST_ROOTDIR/tmp/virtualavr[a-zA-Z0-9]{10}$ ]]; then
-    echo "No device matching pattern virtualavr[a-zA-Z0-9]{10}$ found in $TEST_ROOTDIR/tmp."
-    exit 1
-  fi
+  [[ -z "$GENERATED_DEVICE" || ! "$GENERATED_DEVICE" =~ ^$TEST_ROOTDIR/tmp/virtualavr[a-zA-Z0-9]{10}$ ]] && fail "No device matching pattern virtualavr[a-zA-Z0-9]{10}$ found in $TEST_ROOTDIR/tmp."
 
   # Kill entrypoint to trigger cleanup
   echo "Killing entrypoint to trigger cleanup..."
@@ -72,7 +74,7 @@ teardown() {
 
   # Ensure the dynamically created device was removed
   echo "Checking if device $GENERATED_DEVICE was removed..."
-  [ ! -e "$GENERATED_DEVICE" ] || { echo "Device $GENERATED_DEVICE still exists."; exit 1; }
+  [ ! -e "$GENERATED_DEVICE" ] || fail "Device $GENERATED_DEVICE still exists."
 }
 
 @test "entrypoint fails if VIRTUALDEVICE exists and OVERWRITE_VIRTUALDEVICE is not set" {
@@ -86,8 +88,8 @@ teardown() {
   
   # Verify that the entrypoint fails and the appropriate message is output
   echo "Checking if entrypoint failed with the correct error message..."
-  [ "$status" -ne 0 ] || { echo "Entry point did not fail as expected."; exit 1; }
-  [[ "$output" == *"set OVERWRITE_VIRTUALDEVICE if it should get overwritten"* ]] || { echo "Expected error message not found."; exit 1; }
+  [ "$status" -ne 0 ] || fail "Entry point did not fail as expected."
+  [[ "$output" == *"set OVERWRITE_VIRTUALDEVICE if it should get overwritten"* ]] || fail "Expected error message not found."
 }
 
 @test "entrypoint does not remove existing device if OVERWRITE_VIRTUALDEVICE is set" {
@@ -104,7 +106,7 @@ teardown() {
 
   # Ensure the device file still exists during entrypoint execution
   echo "Checking if device $TEST_ROOTDIR/$VIRTUALDEVICE still exists during entrypoint execution..."
-  [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."; exit 1; }
+  [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || fail "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."
 
   echo "Kill entrypoint to trigger cleanup..."
   kill "$ENTRYPOINT_PID"
@@ -112,5 +114,5 @@ teardown() {
 
   # Ensure the device file still exists after entrypoint execution
   echo "Checking if device $TEST_ROOTDIR/$VIRTUALDEVICE was not removed after entrypoint stopped..."
-  [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || { echo "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."; exit 1; }
+  [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || fail "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."
 }
