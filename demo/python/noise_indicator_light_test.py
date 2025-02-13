@@ -72,7 +72,7 @@ def docker_container():
     container = client.containers.run(
 	f"pfichtner/virtualavr:{docker_image_tag}",
         detach=True,
-        auto_remove=True,
+        auto_remove=False,
         ports={"8080/tcp": None},  # Map container port to a random free port on the host
         volumes={os.path.abspath(sketch_dir): {"bind": "/sketch", "mode": "ro"}},
         environment={"FILENAME": sketch_file}
@@ -86,6 +86,11 @@ def docker_container():
     ws_url = f"ws://localhost:{host_port}"
     yield ws_url
 
+    print("\n--- Container Logs ---")
+    logs = container.logs().decode('utf-8')
+    print(logs)
+
+    container.stop()
     container.remove(force=True)
 
 @pytest.fixture
