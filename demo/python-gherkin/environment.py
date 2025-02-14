@@ -62,6 +62,9 @@ def after_scenario(context, scenario):
 
     # Stop and remove the container after tests are done
     if hasattr(context, 'container') and context.container:
+        logs = context.container.logs().decode('utf-8')
+        if logs:
+            logger.info(f"Container Logs\n{logs}")
         context.container.stop()
         context.container.remove(force=True)
-        print("Docker container stopped and removed successfully.")
+        logger.info("Docker container stopped and removed successfully.")

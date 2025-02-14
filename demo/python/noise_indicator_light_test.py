@@ -86,9 +86,9 @@ def docker_container():
     ws_url = f"ws://localhost:{host_port}"
     yield ws_url
 
-    print("\n--- Container Logs ---")
     logs = container.logs().decode('utf-8')
-    print(logs)
+    if logs:
+        print(f"Container Logs\n{logs}")
 
     container.stop()
     container.remove(force=True)
