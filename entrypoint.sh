@@ -4,7 +4,7 @@ set -Eeuo pipefail
 ROOTDIR="" # used to replace the ROOTDIR for tests
 
 cleanup() {
-    [ -n "${PID:-}" ] && kill "$PID"
+    [ -n "${PID:-}" ] && kill "$PID" 2>/dev/null
     [ "$CLEANUP_VIRTUALDEVICE" == 'true' ] && rm -f "${ROOTDIR}${VIRTUALDEVICE}"
 }
 
