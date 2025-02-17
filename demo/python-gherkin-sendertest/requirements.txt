@@ -1,6 +1,0 @@
-pytest
-pytest-asyncio
-pytest-timeout
-docker
-websocket-client
-behave
