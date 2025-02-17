@@ -1,6 +1,7 @@
 FROM node:16
 
 RUN apt-get update && apt-get install -y socat && rm -rf /var/lib/apt/lists/*
+RUN curl -Lo /usr/local/bin/websocat https://github.com/vi/websocat/releases/latest/download/websocat.x86_64-unknown-linux-musl && chmod +x /usr/local/bin/websocat
 RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
 RUN arduino-cli core install arduino:avr
 
@@ -17,4 +18,4 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 EXPOSE 8080
 HEALTHCHECK --start-period=3s --timeout=3s \
-  CMD nc -z localhost 8080 || exit 1
+  CMD echo '{}' | websocat ws://localhost:8080 || exit 1
