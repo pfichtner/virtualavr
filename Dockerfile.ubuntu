@@ -15,3 +15,6 @@ ADD virtualavr.js /app/
 ADD entrypoint.sh /usr/local/bin
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
+EXPOSE 8080
+HEALTHCHECK --start-period=3s --timeout=3s \
+  CMD nc -z localhost 8080 || exit 1
