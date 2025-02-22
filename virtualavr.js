@@ -381,7 +381,7 @@ function main() {
 
     wss.on('connection', function connection(ws) {
         ws.on('message', function message(data) {
-            if (data.trim()) {
+            if (data) {
                 try {
                     messageQueue.push(JSON.parse(data));
                 } catch (e) {
