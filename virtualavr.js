@@ -384,7 +384,7 @@ function main() {
             try {
                 messageQueue.push(JSON.parse(data));
             } catch (e) {
-                console.log(e);
+                console.error(`Failed to parse JSON: ${data}, Error: ${e.message}`);
             }
         });
     });
