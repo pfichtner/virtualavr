@@ -381,10 +381,12 @@ function main() {
 
     wss.on('connection', function connection(ws) {
         ws.on('message', function message(data) {
-            try {
-                messageQueue.push(JSON.parse(data));
-            } catch (e) {
-                console.error(`Failed to parse JSON: ${data}, Error: ${e.message}`);
+            if (data.trim()) {
+                try {
+                    messageQueue.push(JSON.parse(data));
+                } catch (e) {
+                    console.error(`Failed to parse JSON: ${data}, Error: ${e.message}`);
+                }
             }
         });
     });
