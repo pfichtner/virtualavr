@@ -42,12 +42,12 @@ Environment variables supported
 # Screencast of usage
 The screencast is not uptodate!!!
 - The prefered way of setting pin states is no more "fakePinState" but "pinState"
-- You now have to enable the reporting of pin states by sending a websocket message ```{ "type": "pinMode", "pin": "D13", "mode": "digital" }```
+- You now have to enable the reporting of pin states by sending a websocket message ```{ "type": "pinMode", "pin": "13", "mode": "digital" }```
 <a href="http://pfichtner.github.io/virtualavr-asciinema/"><img src="https://pfichtner.github.io/virtualavr-asciinema/asciinema-poster.png" /></a>
 
 # Websocket messages
 ## Sent by virtualavr
-- Changes when listening for digital pin state changes ```{ 'type': 'pinState', 'pin': 'D13', 'state': true }```
+- Changes when listening for digital pin state changes ```{ 'type': 'pinState', 'pin': '13', 'state': true }```
 - Changes when listening for analog pin state changes ```{ 'type': 'pinState', 'pin': 'A0', 'state': 42 }```
 - When data is received via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'RX', 'bytes': (bytes received) }```
 - When data is send via serial line and serial debug is enabled ```{ 'type': 'serialDebug', 'direction': 'TX', 'bytes': (bytes send) }```
@@ -55,9 +55,9 @@ The screencast is not uptodate!!!
 - Messages to virtualavr which include a "replyId" are replied by virtualavr after they have been processed. The reply message  is the original message send to virtualavr complemented by an "executed" attribute that is "true". So clients know when their async message has been processed, e.g. when a pin state/value was changed actually. 
 
 ## Accepted by virtualavr
-- Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "D12", "mode": "analog" }``` (supported modes: analog (or alternative pwm), digital, any other value means off)
-- Set a pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": true }```
-- Set a (PWM) pin to the passed state/value ```{ "type": "pinState", "pin": "D12", "state": 42 }```
+- Set the mode for which pin what messages should be send: ```{ "type": "pinMode", "pin": "12", "mode": "analog" }``` (supported modes: analog (or alternative pwm), digital, any other value means off)
+- Set a pin to the passed state/value ```{ "type": "pinState", "pin": "12", "state": true }```
+- Set a (PWM) pin to the passed state/value ```{ "type": "pinState", "pin": "12", "state": 42 }```
 - Pause or unpause virtualavr ```{ "type": "control", "action": "pause|unpause" }```
 - Enable/disable serial debug ```{ "type": "serialDebug", "state": true|false }```
 - Any message that has an "replyId" gets replied by virtualavr (see [Sent by virtualavr](#sent-by-virtualavr))
@@ -67,7 +67,7 @@ Because virtualavr offers a websocket server to interact with you can write your
 So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/VirtualAvrTest.java)
 
 ```java
-private static final String INTERNAL_LED = "D13";
+private static final String INTERNAL_LED = "13";
 
 @Container
 VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>() //
@@ -110,11 +110,11 @@ def docker_container():
 def test_can_switch_digital_pin_on_and_off(docker_container):
     container, ws_url = docker_container
     ws = websocket.create_connection(ws_url, timeout=WS_TIMEOUT)
-    send_ws_message(ws, {"type": "pinMode", "pin": "D12", "mode": "digital"})
+    send_ws_message(ws, {"type": "pinMode", "pin": "12", "mode": "digital"})
 
     with serial.Serial(SERIAL_PORT, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
         send_serial_message(ser, "alp://ppsw/12/1")
-        wait_for_ws_message(ws, {"type": "pinState", "pin": "D12", "state": True})
+        wait_for_ws_message(ws, {"type": "pinState", "pin": "12", "state": True})
 
     ws.close()
 ```
@@ -123,14 +123,14 @@ For a complete python example see https://github.com/pfichtner/virtualavr/tree/m
 
 ```Cucumber
 Scenario: Noise level is within 90% of the reference, green led is on
-  Given the pin of D10 is monitored
-  And the pin of D11 is monitored
-  And the pin of D12 is monitored
-  When the A0 is set to 1000
-  And the A1 is set to 900
-  Then the D10 should be on
-  And the D11 should be off
-  And the D12 should be off
+  Given the pin 10 is monitored
+  And the pin 11 is monitored
+  And the pin 12 is monitored
+  When pin A0 is set to 1000
+  And pin A1 is set to 900
+  Then pin 10 should be on
+  And pin 11 should be off
+  And pin 12 should be off
 ```
 For a complete python gherkin example see https://github.com/pfichtner/virtualavr/tree/main/demo/python-gherkin
 
