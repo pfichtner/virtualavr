@@ -1,5 +1,10 @@
 name: Docker Image CI
 
+permissions:
+  id-token: write
+  contents: read
+  checks: write
+
 on:
   workflow_dispatch:
   schedule:
