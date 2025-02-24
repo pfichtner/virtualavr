@@ -92,7 +92,11 @@ const compileArduinoSketch = async (inputFilename, sketchContent, libraryContent
                 .filter(line => line !== '' && !line.startsWith('#'));
 
             for (const library of libraryList) {
-                const installCommand = `arduino-cli lib install "${library}"`;
+                // const installCommand = library.includes("://")
+                const installCommand = false // TODO introduce some FLAG if unsage ops should be enabled
+                    ? `arduino-cli config set library.enable_unsafe_install true; arduino-cli lib install --git-url "${library}"`
+                    : `arduino-cli lib install "${library}"`;
+
                 const { stdout, stderr } = await execAsync(installCommand);
 
                 if (stderr) {
