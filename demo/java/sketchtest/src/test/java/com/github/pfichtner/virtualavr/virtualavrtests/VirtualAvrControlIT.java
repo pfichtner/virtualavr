@@ -30,8 +30,8 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 class VirtualAvrControlIT {
 
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/integrationtest.ino"))
-			.withPausedStartup();
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(
+			withSketchFromClasspath("/integrationtest/integrationtest.ino")).withPausedStartup();
 
 	@Test
 	void withoutExecutionNoStartupMessageGetsSent() throws Exception {

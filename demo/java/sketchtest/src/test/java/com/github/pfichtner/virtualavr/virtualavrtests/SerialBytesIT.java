@@ -17,7 +17,7 @@ import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 class SerialBytesIT {
 
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/byteecho.ino")) //
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/byteecho/byteecho.ino")) //
 			.withBaudrate(115200);
 
 	@Test

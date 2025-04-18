@@ -94,8 +94,8 @@ class VirtualAvrIT {
 	private static final int PUBLISH_MILLIS = 100 / 3;
 
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(withSketchFromClasspath("/integrationtest.ino"))
-			.withPublishMillis(PUBLISH_MILLIS);
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(
+			withSketchFromClasspath("/integrationtest/integrationtest.ino")).withPublishMillis(PUBLISH_MILLIS);
 
 	@Test
 	void canReadSerial() throws Exception {
