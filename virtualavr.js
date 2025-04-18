@@ -141,12 +141,13 @@ async function compileArduinoSketch(sketchDir) {
 const runCode = async (inputFilename, portCallback) => {
     let hexContent = "";
 
+    const fullPath = path.join('/sketch', inputFilename);
     if (inputFilename.endsWith('.hex')) {
         hexContent = fs.readFileSync(inputFilename);
     } else if (inputFilename.endsWith('.zip')) {
         const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'arduino-sketch-'));
         const copyTarget = path.join(tmpDir, 'sketch');
-        await extract(path.join('/sketch', inputFilename), { dir: copyTarget });
+        await extract(fullPath, { dir: copyTarget });
         hexContent = await compileArduinoSketch(copyTarget);
         fs.rmSync(tmpDir, { recursive: true, force: true });
     } else if (inputFilename.endsWith('.ino')) {
@@ -160,6 +161,18 @@ const runCode = async (inputFilename, portCallback) => {
         fs.mkdirSync(copyTarget);
 
         fs.cpSync(path.join('/sketch', path.dirname(inputFilename)), copyTarget, { recursive: true });
+
+        hexContent = await compileArduinoSketch(copyTarget);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    } else if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'arduino-sketch-'));
+
+        const baseName = path.basename(inputFilename);
+
+        const copyTarget = path.join(tmpDir, baseName);
+        fs.mkdirSync(copyTarget);
+
+        fs.cpSync(path.join('/sketch', inputFilename), copyTarget, { recursive: true });
 
         hexContent = await compileArduinoSketch(copyTarget);
         fs.rmSync(tmpDir, { recursive: true, force: true });
