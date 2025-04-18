@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "avr8js": "^0.20.1",
+    "extract-zip": "^2.0.1",
     "intel-hex": "^0.2.0",
     "mkdirp": "^3.0.1",
     "node-fetch": "^2.7.0",
