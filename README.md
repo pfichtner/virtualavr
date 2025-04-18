@@ -145,7 +145,7 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 ![virtualavr.png](docs/images/virtualavr.png)
 
 # Todos
-- Provide Java Bindings as maven artefacts
+- Provide Java Bindings as maven artifacts
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
 - We could use WS also to load firmware
 - Possibility to define component layout, e.g. add a DHT22
