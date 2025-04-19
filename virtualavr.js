@@ -28,6 +28,7 @@ var cpu;
 var adc;
 const ports = {};
 const listeningModes = {};
+let sending = false;
 var serialDebug;
 var lastPublish = new Date();
 
@@ -248,7 +249,10 @@ const runCode = async (inputFilename, portCallback) => {
     input.on('data', data => {
             var bytes = Array.prototype.slice.call(data, 0);
             for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
-            sendNextChar(buff, usart);
+            if (!sending) {
+                sending = true;
+                sendNextChar(buff, usart);
+            }
             if (serialDebug) {
                 portCallback({ type: 'serialDebug', direction: 'RX', bytes: bytes });
             }
@@ -317,9 +321,11 @@ const runCode = async (inputFilename, portCallback) => {
 }
 
 function sendNextChar(buff, usart) {
-    const ch = buff.shift();
-    if (ch !== undefined) {
+    if (buff.length > 0) {
+        const ch = buff.shift();
         usart.writeByte(ch);
+    } else {
+        sending = false;
     }
 }
 
