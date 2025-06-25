@@ -11,7 +11,7 @@
     "tmp": "^0.2.3"
   },
   "devDependencies": {
-    "jest": "^30.0.2",
+    "jest": "^30.0.3",
     "node-stream-zip": "^1.15.0",
     "wait-for-expect": "^3.0.2",
     "ws": "^8.18.2"
