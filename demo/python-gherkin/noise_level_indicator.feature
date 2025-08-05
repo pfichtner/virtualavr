@@ -1,7 +1,7 @@
 Feature: Noise Level Indicator Led Behavior
 
   Background: Alias defined and pins monitored
-    Given the following pins are assigned:
+    Given the following pins are assigned
       | alias       | pin  | description                          |
       | REFERENCE   | A0   | Reference noise level threshold      |
       | VALUE       | A1   | Current noise level                  |
