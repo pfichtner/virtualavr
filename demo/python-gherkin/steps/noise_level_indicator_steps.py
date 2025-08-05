@@ -4,6 +4,8 @@ import time
 import uuid
 from websocket_listener import WebSocketListener
 
+print(">> pin_alias_steps.py LOADED")
+
 def resolve_alias(context, alias):
     return context.aliases.get(alias, alias)
 
