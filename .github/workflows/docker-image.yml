@@ -46,13 +46,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Debug Python Path and Files
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -l demo/python-gherkin/
-          ls -l demo/python-gherkin/steps/
-          cat demo/python-gherkin/steps/pin_alias_steps.py | head -n 20
-
       - name: Run All Tests
         run: ./run-tests.sh
 
