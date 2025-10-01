@@ -111,7 +111,7 @@ async function compileArduinoSketch(sketchDir) {
         const fqbn = process.env.BUILD_FQBN || "arduino:avr:uno";
         const buildExtraFlags = process.env.BUILD_EXTRA_FLAGS
             ? process.env.BUILD_EXTRA_FLAGS
-                .split(/\s+(?=-D)/)
+                .split(/\s+(?=-)/)
                 .map(flag => flag.replace(/\\/g, "\\\\").replace(/"/g, '\\"'))
                 .map(flag => `"${flag}"`)
                 .join(" ")
