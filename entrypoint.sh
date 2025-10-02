@@ -14,6 +14,16 @@ BAUDRATE=${BAUDRATE:-9600}
 
 trap 'cleanup' EXIT
 
+### Handle optional core installation
+if [ -n "${ADDITIONAL_URLS:-}" ]; then
+    echo "Updating core index with additional URLs: $ADDITIONAL_URLS"
+    arduino-cli core update-index --additional-urls "$ADDITIONAL_URLS"
+fi
+
+if [ -n "${INSTALL_CORES:-}" ]; then
+    echo "Installing additional cores: $INSTALL_CORES"
+    arduino-cli core install $INSTALL_CORES ${ADDITIONAL_URLS:+--additional-urls "$ADDITIONAL_URLS"}
+fi
 
 [ -z "${VIRTUALDEVICE+x}" ] && VIRTUALDEVICE="/dev/virtualavr0"
 

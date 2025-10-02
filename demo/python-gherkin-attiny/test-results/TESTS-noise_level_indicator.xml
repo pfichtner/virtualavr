@@ -1,0 +1,253 @@
+<testsuite name="noise_level_indicator.Noise Level Indicator Led Behavior" tests="3" errors="0" failures="3" skipped="0" time="64.372731" timestamp="2025-10-02T23:42:15.397733" hostname="c0337ce7"><testcase classname="noise_level_indicator.Noise Level Indicator Led Behavior" name="Noise level is within 90% of the reference, green led is on" status="failed" time="21.827333"><failure type="AssertionError" message="Expected state True for pin 0 not received within 20 seconds.">
+<![CDATA[
+Failing step: Then the GREEN_LED should be on ... failed in 20.020s
+Location: demo/python-gherkin-attiny/noise_level_indicator.feature:18
+Assertion Failed: Expected state True for pin 0 not received within 20 seconds.
+Captured stdout:
+Defined aliases: {'REFERENCE': 'A1', 'VALUE': 'A3', 'GREEN_LED': '0', 'YELLOW_LED': '1', 'RED_LED': '4'}
+Sent WebSocket message: {"type": "pinMode", "pin": "0", "mode": "digital", "replyId": "3bc21210-d36c-4aba-ba5a-47629890a4d4"}
+Background listener received: {'type': 'pinState', 'pin': '0', 'state': False, 'cpuTime': '0.047851'}
+Background listener received: {'type': 'pinState', 'pin': 'D0', 'state': False, 'cpuTime': '0.047851', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '0', 'mode': 'digital', 'replyId': '3bc21210-d36c-4aba-ba5a-47629890a4d4', 'executed': True}
+Received reply for replyId 3bc21210-d36c-4aba-ba5a-47629890a4d4
+Sent WebSocket message: {"type": "pinMode", "pin": "1", "mode": "digital", "replyId": "c1627af0-d78c-4900-a1e0-ab84e48ba212"}
+Background listener received: {'type': 'pinState', 'pin': '1', 'state': False, 'cpuTime': '0.095703'}
+Background listener received: {'type': 'pinState', 'pin': 'D1', 'state': False, 'cpuTime': '0.095703', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '1', 'mode': 'digital', 'replyId': 'c1627af0-d78c-4900-a1e0-ab84e48ba212', 'executed': True}
+Received reply for replyId c1627af0-d78c-4900-a1e0-ab84e48ba212
+Sent WebSocket message: {"type": "pinMode", "pin": "4", "mode": "digital", "replyId": "d369be08-1457-461a-92d9-dc1b465788b2"}
+Background listener received: {'type': 'pinState', 'pin': '4', 'state': False, 'cpuTime': '0.143555'}
+Background listener received: {'type': 'pinState', 'pin': 'D4', 'state': False, 'cpuTime': '0.143555', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '4', 'mode': 'digital', 'replyId': 'd369be08-1457-461a-92d9-dc1b465788b2', 'executed': True}
+Received reply for replyId d369be08-1457-461a-92d9-dc1b465788b2
+Sent WebSocket message: {"type": "pinState", "pin": "A1", "state": 1000, "replyId": "97aa3789-9674-4103-8803-9c13e1709547"}
+Background listener received: {'type': 'pinState', 'pin': 'A1', 'state': 1000, 'replyId': '97aa3789-9674-4103-8803-9c13e1709547', 'executed': True}
+Received reply for replyId 97aa3789-9674-4103-8803-9c13e1709547
+Sent WebSocket message: {"type": "pinState", "pin": "A3", "state": 900, "replyId": "bbdaadbb-be1e-4059-bf9b-7f9308dbd526"}
+Background listener received: {'type': 'pinState', 'pin': 'A3', 'state': 900, 'replyId': 'bbdaadbb-be1e-4059-bf9b-7f9308dbd526', 'executed': True}
+Received reply for replyId bbdaadbb-be1e-4059-bf9b-7f9308dbd526
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.]]>
+</failure><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Noise level is within 90% of the reference, green led is on
+    Given the following pins are assigned ... passed in 0.001s
+      | alias      | pin | description                      |
+      | REFERENCE  | A1  | Reference noise level threshold  |
+      | VALUE      | A3  | Current noise level              |
+      | GREEN_LED  | 0   | Indicates acceptable noise level |
+      | YELLOW_LED | 1   | Indicates moderate noise level   |
+      | RED_LED    | 4   | Indicates excessive noise level  |
+    And the pin of GREEN_LED is monitored ... passed in 1.405s
+    And the pin of YELLOW_LED is monitored ... passed in 0.101s
+    And the pin of RED_LED is monitored ... passed in 0.100s
+    When the REFERENCE is set to 1000 ... passed in 0.100s
+    And the VALUE is set to 900 ... passed in 0.100s
+    Then the GREEN_LED should be on ... failed in 20.020s
+    And the YELLOW_LED should be off ... skipped in 0.000s
+    And the RED_LED should be off ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+
+Captured stdout:
+Defined aliases: {'REFERENCE': 'A1', 'VALUE': 'A3', 'GREEN_LED': '0', 'YELLOW_LED': '1', 'RED_LED': '4'}
+Sent WebSocket message: {"type": "pinMode", "pin": "0", "mode": "digital", "replyId": "3bc21210-d36c-4aba-ba5a-47629890a4d4"}
+Background listener received: {'type': 'pinState', 'pin': '0', 'state': False, 'cpuTime': '0.047851'}
+Background listener received: {'type': 'pinState', 'pin': 'D0', 'state': False, 'cpuTime': '0.047851', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '0', 'mode': 'digital', 'replyId': '3bc21210-d36c-4aba-ba5a-47629890a4d4', 'executed': True}
+Received reply for replyId 3bc21210-d36c-4aba-ba5a-47629890a4d4
+Sent WebSocket message: {"type": "pinMode", "pin": "1", "mode": "digital", "replyId": "c1627af0-d78c-4900-a1e0-ab84e48ba212"}
+Background listener received: {'type': 'pinState', 'pin': '1', 'state': False, 'cpuTime': '0.095703'}
+Background listener received: {'type': 'pinState', 'pin': 'D1', 'state': False, 'cpuTime': '0.095703', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '1', 'mode': 'digital', 'replyId': 'c1627af0-d78c-4900-a1e0-ab84e48ba212', 'executed': True}
+Received reply for replyId c1627af0-d78c-4900-a1e0-ab84e48ba212
+Sent WebSocket message: {"type": "pinMode", "pin": "4", "mode": "digital", "replyId": "d369be08-1457-461a-92d9-dc1b465788b2"}
+Background listener received: {'type': 'pinState', 'pin': '4', 'state': False, 'cpuTime': '0.143555'}
+Background listener received: {'type': 'pinState', 'pin': 'D4', 'state': False, 'cpuTime': '0.143555', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '4', 'mode': 'digital', 'replyId': 'd369be08-1457-461a-92d9-dc1b465788b2', 'executed': True}
+Received reply for replyId d369be08-1457-461a-92d9-dc1b465788b2
+Sent WebSocket message: {"type": "pinState", "pin": "A1", "state": 1000, "replyId": "97aa3789-9674-4103-8803-9c13e1709547"}
+Background listener received: {'type': 'pinState', 'pin': 'A1', 'state': 1000, 'replyId': '97aa3789-9674-4103-8803-9c13e1709547', 'executed': True}
+Received reply for replyId 97aa3789-9674-4103-8803-9c13e1709547
+Sent WebSocket message: {"type": "pinState", "pin": "A3", "state": 900, "replyId": "bbdaadbb-be1e-4059-bf9b-7f9308dbd526"}
+Background listener received: {'type': 'pinState', 'pin': 'A3', 'state': 900, 'replyId': 'bbdaadbb-be1e-4059-bf9b-7f9308dbd526', 'executed': True}
+Received reply for replyId bbdaadbb-be1e-4059-bf9b-7f9308dbd526
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+
+]]>
+</system-out></testcase><testcase classname="noise_level_indicator.Noise Level Indicator Led Behavior" name="Noise level is slightly above 90% of the reference, yellow led is on" status="failed" time="21.122025"><failure type="AssertionError" message="Expected state True for pin 1 not received within 20 seconds.">
+<![CDATA[
+Failing step: And the YELLOW_LED should be on ... failed in 20.019s
+Location: demo/python-gherkin-attiny/noise_level_indicator.feature:26
+Assertion Failed: Expected state True for pin 1 not received within 20 seconds.
+Captured stdout:
+Defined aliases: {'REFERENCE': 'A1', 'VALUE': 'A3', 'GREEN_LED': '0', 'YELLOW_LED': '1', 'RED_LED': '4'}
+Sent WebSocket message: {"type": "pinMode", "pin": "0", "mode": "digital", "replyId": "8f2dee77-fba3-4c16-972d-d0d3472dd621"}
+Background listener received: {'type': 'pinState', 'pin': '0', 'state': False, 'cpuTime': '0.047851'}
+Background listener received: {'type': 'pinState', 'pin': 'D0', 'state': False, 'cpuTime': '0.047851', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '0', 'mode': 'digital', 'replyId': '8f2dee77-fba3-4c16-972d-d0d3472dd621', 'executed': True}
+Received reply for replyId 8f2dee77-fba3-4c16-972d-d0d3472dd621
+Sent WebSocket message: {"type": "pinMode", "pin": "1", "mode": "digital", "replyId": "b8915f5b-f87f-44f9-adae-791c95e9a0dc"}
+Background listener received: {'type': 'pinState', 'pin': '1', 'state': False, 'cpuTime': '0.095703'}
+Background listener received: {'type': 'pinState', 'pin': 'D1', 'state': False, 'cpuTime': '0.095703', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '1', 'mode': 'digital', 'replyId': 'b8915f5b-f87f-44f9-adae-791c95e9a0dc', 'executed': True}
+Received reply for replyId b8915f5b-f87f-44f9-adae-791c95e9a0dc
+Sent WebSocket message: {"type": "pinMode", "pin": "4", "mode": "digital", "replyId": "dd1dec21-2e70-4b39-ad48-eca7010c9927"}
+Background listener received: {'type': 'pinState', 'pin': '4', 'state': False, 'cpuTime': '0.191407'}
+Background listener received: {'type': 'pinState', 'pin': 'D4', 'state': False, 'cpuTime': '0.191407', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '4', 'mode': 'digital', 'replyId': 'dd1dec21-2e70-4b39-ad48-eca7010c9927', 'executed': True}
+Received reply for replyId dd1dec21-2e70-4b39-ad48-eca7010c9927
+Sent WebSocket message: {"type": "pinState", "pin": "A1", "state": 1000, "replyId": "92be2a4d-134e-46f0-9454-e877ffb9c0ba"}
+Background listener received: {'type': 'pinState', 'pin': 'A1', 'state': 1000, 'replyId': '92be2a4d-134e-46f0-9454-e877ffb9c0ba', 'executed': True}
+Received reply for replyId 92be2a4d-134e-46f0-9454-e877ffb9c0ba
+Sent WebSocket message: {"type": "pinState", "pin": "A3", "state": 901, "replyId": "f3ebc260-a7d6-4089-8af8-8c658276172a"}
+Background listener received: {'type': 'pinState', 'pin': 'A3', 'state': 901, 'replyId': 'f3ebc260-a7d6-4089-8af8-8c658276172a', 'executed': True}
+Received reply for replyId f3ebc260-a7d6-4089-8af8-8c658276172a
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.]]>
+</failure><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Noise level is slightly above 90% of the reference, yellow led is on
+    Given the following pins are assigned ... passed in 0.000s
+      | alias      | pin | description                      |
+      | REFERENCE  | A1  | Reference noise level threshold  |
+      | VALUE      | A3  | Current noise level              |
+      | GREEN_LED  | 0   | Indicates acceptable noise level |
+      | YELLOW_LED | 1   | Indicates moderate noise level   |
+      | RED_LED    | 4   | Indicates excessive noise level  |
+    And the pin of GREEN_LED is monitored ... passed in 0.701s
+    And the pin of YELLOW_LED is monitored ... passed in 0.100s
+    And the pin of RED_LED is monitored ... passed in 0.100s
+    When the REFERENCE is set to 1000 ... passed in 0.100s
+    And the VALUE is set to 901 ... passed in 0.100s
+    Then the GREEN_LED should be off ... passed in 0.000s
+    And the YELLOW_LED should be on ... failed in 20.019s
+    And the RED_LED should be off ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+
+Captured stdout:
+Defined aliases: {'REFERENCE': 'A1', 'VALUE': 'A3', 'GREEN_LED': '0', 'YELLOW_LED': '1', 'RED_LED': '4'}
+Sent WebSocket message: {"type": "pinMode", "pin": "0", "mode": "digital", "replyId": "8f2dee77-fba3-4c16-972d-d0d3472dd621"}
+Background listener received: {'type': 'pinState', 'pin': '0', 'state': False, 'cpuTime': '0.047851'}
+Background listener received: {'type': 'pinState', 'pin': 'D0', 'state': False, 'cpuTime': '0.047851', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '0', 'mode': 'digital', 'replyId': '8f2dee77-fba3-4c16-972d-d0d3472dd621', 'executed': True}
+Received reply for replyId 8f2dee77-fba3-4c16-972d-d0d3472dd621
+Sent WebSocket message: {"type": "pinMode", "pin": "1", "mode": "digital", "replyId": "b8915f5b-f87f-44f9-adae-791c95e9a0dc"}
+Background listener received: {'type': 'pinState', 'pin': '1', 'state': False, 'cpuTime': '0.095703'}
+Background listener received: {'type': 'pinState', 'pin': 'D1', 'state': False, 'cpuTime': '0.095703', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '1', 'mode': 'digital', 'replyId': 'b8915f5b-f87f-44f9-adae-791c95e9a0dc', 'executed': True}
+Received reply for replyId b8915f5b-f87f-44f9-adae-791c95e9a0dc
+Sent WebSocket message: {"type": "pinMode", "pin": "4", "mode": "digital", "replyId": "dd1dec21-2e70-4b39-ad48-eca7010c9927"}
+Background listener received: {'type': 'pinState', 'pin': '4', 'state': False, 'cpuTime': '0.191407'}
+Background listener received: {'type': 'pinState', 'pin': 'D4', 'state': False, 'cpuTime': '0.191407', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '4', 'mode': 'digital', 'replyId': 'dd1dec21-2e70-4b39-ad48-eca7010c9927', 'executed': True}
+Received reply for replyId dd1dec21-2e70-4b39-ad48-eca7010c9927
+Sent WebSocket message: {"type": "pinState", "pin": "A1", "state": 1000, "replyId": "92be2a4d-134e-46f0-9454-e877ffb9c0ba"}
+Background listener received: {'type': 'pinState', 'pin': 'A1', 'state': 1000, 'replyId': '92be2a4d-134e-46f0-9454-e877ffb9c0ba', 'executed': True}
+Received reply for replyId 92be2a4d-134e-46f0-9454-e877ffb9c0ba
+Sent WebSocket message: {"type": "pinState", "pin": "A3", "state": 901, "replyId": "f3ebc260-a7d6-4089-8af8-8c658276172a"}
+Background listener received: {'type': 'pinState', 'pin': 'A3', 'state': 901, 'replyId': 'f3ebc260-a7d6-4089-8af8-8c658276172a', 'executed': True}
+Received reply for replyId f3ebc260-a7d6-4089-8af8-8c658276172a
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+
+]]>
+</system-out></testcase><testcase classname="noise_level_indicator.Noise Level Indicator Led Behavior" name="Noise level exceeds the reference, red led is on" status="failed" time="21.423373"><failure type="AssertionError" message="Expected state True for pin 4 not received within 20 seconds.">
+<![CDATA[
+Failing step: And the RED_LED should be on ... failed in 20.020s
+Location: demo/python-gherkin-attiny/noise_level_indicator.feature:34
+Assertion Failed: Expected state True for pin 4 not received within 20 seconds.
+Captured stdout:
+Defined aliases: {'REFERENCE': 'A1', 'VALUE': 'A3', 'GREEN_LED': '0', 'YELLOW_LED': '1', 'RED_LED': '4'}
+Sent WebSocket message: {"type": "pinMode", "pin": "0", "mode": "digital", "replyId": "2fa21d76-cc9e-408d-92ac-416993fb7b59"}
+Background listener received: {'type': 'pinState', 'pin': '0', 'state': False, 'cpuTime': '0.047851'}
+Background listener received: {'type': 'pinState', 'pin': 'D0', 'state': False, 'cpuTime': '0.047851', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '0', 'mode': 'digital', 'replyId': '2fa21d76-cc9e-408d-92ac-416993fb7b59', 'executed': True}
+Received reply for replyId 2fa21d76-cc9e-408d-92ac-416993fb7b59
+Sent WebSocket message: {"type": "pinMode", "pin": "1", "mode": "digital", "replyId": "054976e4-9c09-440d-b486-50927b3d0b0f"}
+Background listener received: {'type': 'pinState', 'pin': '1', 'state': False, 'cpuTime': '0.191407'}
+Background listener received: {'type': 'pinState', 'pin': 'D1', 'state': False, 'cpuTime': '0.191407', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '1', 'mode': 'digital', 'replyId': '054976e4-9c09-440d-b486-50927b3d0b0f', 'executed': True}
+Received reply for replyId 054976e4-9c09-440d-b486-50927b3d0b0f
+Sent WebSocket message: {"type": "pinMode", "pin": "4", "mode": "digital", "replyId": "18876a11-a843-4be6-83c6-45e047ac4c70"}
+Background listener received: {'type': 'pinState', 'pin': '4', 'state': False, 'cpuTime': '0.334961'}
+Background listener received: {'type': 'pinState', 'pin': 'D4', 'state': False, 'cpuTime': '0.334961', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '4', 'mode': 'digital', 'replyId': '18876a11-a843-4be6-83c6-45e047ac4c70', 'executed': True}
+Received reply for replyId 18876a11-a843-4be6-83c6-45e047ac4c70
+Sent WebSocket message: {"type": "pinState", "pin": "A1", "state": 1022, "replyId": "8add1b18-2bd6-4f73-9cda-145a3b2344bc"}
+Background listener received: {'type': 'pinState', 'pin': 'A1', 'state': 1022, 'replyId': '8add1b18-2bd6-4f73-9cda-145a3b2344bc', 'executed': True}
+Received reply for replyId 8add1b18-2bd6-4f73-9cda-145a3b2344bc
+Sent WebSocket message: {"type": "pinState", "pin": "A3", "state": 1023, "replyId": "d160e260-f4f5-4935-bcbd-94a785767592"}
+Background listener received: {'type': 'pinState', 'pin': 'A3', 'state': 1023, 'replyId': 'd160e260-f4f5-4935-bcbd-94a785767592', 'executed': True}
+Received reply for replyId d160e260-f4f5-4935-bcbd-94a785767592
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.]]>
+</failure><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: Noise level exceeds the reference, red led is on
+    Given the following pins are assigned ... passed in 0.000s
+      | alias      | pin | description                      |
+      | REFERENCE  | A1  | Reference noise level threshold  |
+      | VALUE      | A3  | Current noise level              |
+      | GREEN_LED  | 0   | Indicates acceptable noise level |
+      | YELLOW_LED | 1   | Indicates moderate noise level   |
+      | RED_LED    | 4   | Indicates excessive noise level  |
+    And the pin of GREEN_LED is monitored ... passed in 1.002s
+    And the pin of YELLOW_LED is monitored ... passed in 0.100s
+    And the pin of RED_LED is monitored ... passed in 0.100s
+    When the REFERENCE is set to 1022 ... passed in 0.100s
+    And the VALUE is set to 1023 ... passed in 0.100s
+    Then the GREEN_LED should be off ... passed in 0.000s
+    And the YELLOW_LED should be off ... passed in 0.000s
+    And the RED_LED should be on ... failed in 20.020s
+
+@scenario.end
+--------------------------------------------------------------------------------
+
+Captured stdout:
+Defined aliases: {'REFERENCE': 'A1', 'VALUE': 'A3', 'GREEN_LED': '0', 'YELLOW_LED': '1', 'RED_LED': '4'}
+Sent WebSocket message: {"type": "pinMode", "pin": "0", "mode": "digital", "replyId": "2fa21d76-cc9e-408d-92ac-416993fb7b59"}
+Background listener received: {'type': 'pinState', 'pin': '0', 'state': False, 'cpuTime': '0.047851'}
+Background listener received: {'type': 'pinState', 'pin': 'D0', 'state': False, 'cpuTime': '0.047851', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '0', 'mode': 'digital', 'replyId': '2fa21d76-cc9e-408d-92ac-416993fb7b59', 'executed': True}
+Received reply for replyId 2fa21d76-cc9e-408d-92ac-416993fb7b59
+Sent WebSocket message: {"type": "pinMode", "pin": "1", "mode": "digital", "replyId": "054976e4-9c09-440d-b486-50927b3d0b0f"}
+Background listener received: {'type': 'pinState', 'pin': '1', 'state': False, 'cpuTime': '0.191407'}
+Background listener received: {'type': 'pinState', 'pin': 'D1', 'state': False, 'cpuTime': '0.191407', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '1', 'mode': 'digital', 'replyId': '054976e4-9c09-440d-b486-50927b3d0b0f', 'executed': True}
+Received reply for replyId 054976e4-9c09-440d-b486-50927b3d0b0f
+Sent WebSocket message: {"type": "pinMode", "pin": "4", "mode": "digital", "replyId": "18876a11-a843-4be6-83c6-45e047ac4c70"}
+Background listener received: {'type': 'pinState', 'pin': '4', 'state': False, 'cpuTime': '0.334961'}
+Background listener received: {'type': 'pinState', 'pin': 'D4', 'state': False, 'cpuTime': '0.334961', 'deprecated': True, 'note': 'pins with D-prefix are deprecated'}
+Background listener received: {'type': 'pinMode', 'pin': '4', 'mode': 'digital', 'replyId': '18876a11-a843-4be6-83c6-45e047ac4c70', 'executed': True}
+Received reply for replyId 18876a11-a843-4be6-83c6-45e047ac4c70
+Sent WebSocket message: {"type": "pinState", "pin": "A1", "state": 1022, "replyId": "8add1b18-2bd6-4f73-9cda-145a3b2344bc"}
+Background listener received: {'type': 'pinState', 'pin': 'A1', 'state': 1022, 'replyId': '8add1b18-2bd6-4f73-9cda-145a3b2344bc', 'executed': True}
+Received reply for replyId 8add1b18-2bd6-4f73-9cda-145a3b2344bc
+Sent WebSocket message: {"type": "pinState", "pin": "A3", "state": 1023, "replyId": "d160e260-f4f5-4935-bcbd-94a785767592"}
+Background listener received: {'type': 'pinState', 'pin': 'A3', 'state': 1023, 'replyId': 'd160e260-f4f5-4935-bcbd-94a785767592', 'executed': True}
+Received reply for replyId d160e260-f4f5-4935-bcbd-94a785767592
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+WebSocket recv timed out.
+
+]]>
+</system-out></testcase></testsuite>

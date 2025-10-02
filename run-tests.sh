@@ -53,5 +53,16 @@ if [ "$SKIP_PIP_INSTALL" != "true" ]; then
 fi
 behave --junit --junit-directory demo/python-gherkin/test-results demo/python-gherkin
 
+echo "Running Gherkin (attiny) tests..."
+if [ "$SKIP_PIP_INSTALL" != "true" ]; then
+	pip install -r demo/python-gherkin-attiny/requirements.txt
+fi
+SKETCH_FILE="test-artifacts/ino-file/noiselevelindicator/noiselevelindicator.ino" \
+   BUILD_EXTRA_FLAGS="-DREF_PIN=A1 -DVALUE_PIN=A3 -DRED_LED=0 -DYELLOW_LED=1 -DGREEN_LED=4" \
+   ADDITIONAL_URLS="http://drazzy.com/package_drazzy.com_index.json" \
+   INSTALL_CORES="ATTinyCore:avr" \
+   BUILD_FQBN="ATTinyCore:avr:attinyx5:chip=85,clock=8internal" \
+   behave --junit --junit-directory demo/python-gherkin-attiny/test-results demo/python-gherkin-attiny
+
 echo "All tests completed successfully."
 

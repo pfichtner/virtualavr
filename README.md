@@ -37,7 +37,38 @@ Environment variables supported
 - PUBLISH_MILLIS analog values gets published each millis on change (default 250)
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
 - BUILD_FQBN Fully Qualified Board Name to use for compile (default "arduino:avr:uno")
+- ENABLE_UNSAFE_LIB_INSTALL: Set to true to allow installing libraries from Git URLs listed in libraries.txt
+- ADDITIONAL_URLS comma-separated list of Arduino board manager URLs for additional cores (optional)
+- INSTALL_CORES space-separated list of cores to install at container startup (optional)
 - BUILD_EXTRA_FLAGS to set/overwrite defines, e.g. '-DSLEEP_MILLIS=100 -DMESSAGE_TEXT="Hello World"'
+
+### Installing additional Arduino cores/boards
+
+By default, the container includes `arduino-cli` with the standard `arduino:avr:uno` core.
+If you want to compile for other boards (e.g. attiny, chipKIT, ESP32, STM32), you can install them dynamically at container startup using environment variables.
+
+**Example: attiny**
+```bash
+docker run --rm \
+  -e ADDITIONAL_URLS="http://drazzy.com/package_drazzy.com_index.json" \
+  -e INSTALL_CORES="ATTinyCore:avr" \
+  -e BUILD_FQBN=ATTinyCore:avr:attinyx5:chip=85,clock=8internal \
+  -v /dev:/dev \
+  pfichtner/virtualavr
+```
+
+**Example: ESP32**
+```bash
+docker run --rm \
+  -e ADDITIONAL_URLS=https://espressif.github.io/arduino-esp32/package_esp32_index.json \
+  -e INSTALL_CORES="esp32:esp32" \
+  -e BUILD_FQBN=esp32:esp32:esp32 \
+  -v /dev:/dev \
+  pfichtner/virtualavr
+```
+
+If you don’t set these variables, only the default `arduino:avr:uno` will be available, and startup will be faster.
+
 
 # Screencast of usage
 The screencast is not uptodate!!!
