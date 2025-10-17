@@ -43,7 +43,7 @@ Environment variables supported
 The screencast is not uptodate!!!
 - The prefered way of setting pin states is no more "fakePinState" but "pinState"
 - You now have to enable the reporting of pin states by sending a websocket message ```{ "type": "pinMode", "pin": "13", "mode": "digital" }```
-<a href="http://pfichtner.github.io/virtualavr-asciinema/"><img src="https://pfichtner.github.io/virtualavr-asciinema/asciinema-poster.png" /></a>
+<a href="http://pfichtner.github.io/assets/virtualavr-asciinema/"><img src="https://pfichtner.github.io/assets/virtualavr-asciinema/asciinema-poster.png" /></a>
 
 # Websocket messages
 ## Sent by virtualavr
