@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
 RUN apk add --no-cache bash socat curl gcc-avr g++ gcompat libc6-compat websocat
 RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
