@@ -15,19 +15,27 @@ BAUDRATE=${BAUDRATE:-9600}
 trap 'cleanup' EXIT
 
 
-[ -z "${VIRTUALDEVICE+x}" ] && VIRTUALDEVICE="/dev/virtualavr0"
-
-if [ -n "$VIRTUALDEVICE" -a -e "${ROOTDIR}$VIRTUALDEVICE" ]; then
-    if [ ! -v OVERWRITE_VIRTUALDEVICE ]; then
-        echo "$VIRTUALDEVICE already exists, set OVERWRITE_VIRTUALDEVICE if it should get overwritten" >&2
-        exit 1
-    fi
+# TCP serial mode: connect to a TCP port on the host instead of creating a local PTY
+# This allows the serial port to work on macOS/Windows with Docker Desktop
+if [ -n "${SERIAL_TCP_HOST:-}" ] && [ -n "${SERIAL_TCP_PORT:-}" ]; then
+    echo "Using TCP serial mode: connecting to ${SERIAL_TCP_HOST}:${SERIAL_TCP_PORT}"
+    socat ${VERBOSITY:-} tcp:${SERIAL_TCP_HOST}:${SERIAL_TCP_PORT} EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
 else
-    [ -z "$VIRTUALDEVICE" ] && VIRTUALDEVICE=$(mktemp "${ROOTDIR}/tmp/virtualavrXXXXXXXXXX") && VIRTUALDEVICE="${VIRTUALDEVICE#$ROOTDIR}"
-    CLEANUP_VIRTUALDEVICE=true
-fi
+    # Standard PTY mode: create a local virtual serial device
+    [ -z "${VIRTUALDEVICE+x}" ] && VIRTUALDEVICE="/dev/virtualavr0"
 
-socat ${VERBOSITY:-} pty,rawer,link="${ROOTDIR}${VIRTUALDEVICE}",user=${DEVICEUSER:-'root'},group=${DEVICEGROUP:-'dialout'},mode=${DEVICEMODE:-660},b$BAUDRATE EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
+    if [ -n "$VIRTUALDEVICE" -a -e "${ROOTDIR}$VIRTUALDEVICE" ]; then
+        if [ ! -v OVERWRITE_VIRTUALDEVICE ]; then
+            echo "$VIRTUALDEVICE already exists, set OVERWRITE_VIRTUALDEVICE if it should get overwritten" >&2
+            exit 1
+        fi
+    else
+        [ -z "$VIRTUALDEVICE" ] && VIRTUALDEVICE=$(mktemp "${ROOTDIR}/tmp/virtualavrXXXXXXXXXX") && VIRTUALDEVICE="${VIRTUALDEVICE#$ROOTDIR}"
+        CLEANUP_VIRTUALDEVICE=true
+    fi
+
+    socat ${VERBOSITY:-} pty,rawer,link="${ROOTDIR}${VIRTUALDEVICE}",user=${DEVICEUSER:-'root'},group=${DEVICEGROUP:-'dialout'},mode=${DEVICEMODE:-660},b$BAUDRATE EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
+fi
 
 PID=$!
 wait $PID
