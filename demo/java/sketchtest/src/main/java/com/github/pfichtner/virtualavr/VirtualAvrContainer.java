@@ -3,8 +3,8 @@ package com.github.pfichtner.virtualavr;
 import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
-import static jssc.SerialPort.BAUDRATE_115200;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
+import static org.testcontainers.containers.BindMode.READ_WRITE;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,18 +17,20 @@ import org.testcontainers.utility.DockerImageName;
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
 
 	private static final String BAUDRATE = "BAUDRATE";
+	private static final int DEFAULT_BAUDRATE = 115200;
 
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
 
-	private static final String hostDev = "/dev";
-	private static final String containerDev = "/dev";
-	private static final int WEBSOCKET_PORT = 8080;
+	protected static final String hostDev = "/dev";
+	protected static final String containerDev = "/dev";
+	protected static final int WEBSOCKET_PORT = 8080;
 
-	private String ttyDevice = "ttyUSB0";
+	protected String ttyDevice = "ttyUSB0";
 
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
+	private TcpSerialModeSupport tcpSerialModeSupport;
 
 	public VirtualAvrContainer() {
 		this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_TAG));
@@ -38,8 +40,21 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		super(dockerImageName);
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
 		withDeviceName(ttyDevice) //
-				.withFileSystemBind(hostDev, containerDev) //
+				.withFileSystemBind(hostDev, containerDev, READ_WRITE) //
 				.addExposedPort(WEBSOCKET_PORT);
+	}
+
+	/**
+	 * Enables TCP serial mode for use on macOS/Windows with Docker Desktop. In this
+	 * mode, a socat process is started on the host that creates a PTY and listens
+	 * on TCP. The container connects to this TCP port instead of creating a local
+	 * PTY device.
+	 *
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withTcpSerialMode() {
+		tcpSerialModeSupport = new TcpSerialModeSupport(this);
+		return self();
 	}
 
 	public VirtualAvrContainer<?> withDeviceName(String ttyDevice) {
@@ -116,11 +131,23 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	public SerialConnection newSerialConnection() throws IOException {
-		return new SerialConnection(hostDev + "/" + ttyDevice, baudrate());
+		return new SerialConnection(format("%s/%s", hostDev, ttyDevice), baudrate());
 	}
 
-	private int baudrate() {
-		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt).orElse(BAUDRATE_115200);
+	protected int baudrate() {
+		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt).orElse(DEFAULT_BAUDRATE);
+	}
+
+	@Override
+	public void start() {
+		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::start);
+		super.start();
+	}
+
+	@Override
+	public void stop() {
+		super.stop();
+		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::stop);
 	}
 
 }

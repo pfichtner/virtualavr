@@ -119,3 +119,37 @@ fail() {
   echo "Checking if device $TEST_ROOTDIR/$VIRTUALDEVICE was not removed after entrypoint stopped..."
   [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || fail "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."
 }
+
+@test "entrypoint uses TCP serial mode when SERIAL_TCP is set" {
+  export SERIAL_TCP="host.example.com:12345"
+
+  # Prepare mock socat to capture arguments and PID
+  SOCAT_CALLED_FILE="$TEST_ROOTDIR/socat_called.txt"
+  SOCAT_PID_FILE="$TEST_ROOTDIR/socat.pid"
+  mkdir -p "$TEST_ROOTDIR/mocks"
+  echo -e '#!/usr/bin/env bash\n'\
+'echo "$*" > '"$SOCAT_CALLED_FILE"'\n'\
+'sleep 60 &\necho $! > '"$SOCAT_PID_FILE" > "$TEST_ROOTDIR/mocks/socat"
+  chmod +x "$TEST_ROOTDIR/mocks/socat"
+
+  PATH="$TEST_ROOTDIR/mocks:$PATH"
+
+  # Run entrypoint
+  bash "$TEMP_ENTRYPOINT" &
+  ENTRYPOINT_PID=$!
+  sleep 1
+
+  # Verify TCP host and port are passed to socat
+  SOCAT_CALLED=$(cat "$SOCAT_CALLED_FILE")
+  [[ "$SOCAT_CALLED" == *"tcp:host.example.com:12345"* ]] || fail "socat did not get correct TCP host:port"
+
+  # Verify no PTY device created
+  [ ! -e "$TEST_ROOTDIR/dev/virtualavr0" ] || fail "/dev/virtualavr0 should not exist in TCP mode"
+  TMP_DEVICE=$(find "$TEST_ROOTDIR/tmp" -name "virtualavr*" -type f)
+  [ -z "$TMP_DEVICE" ] || fail "No temporary device should be created in TCP mode"
+
+  # Kill socat process manually
+  SOCAT_PID=$(cat "$SOCAT_PID_FILE")
+  kill "$SOCAT_PID"
+  wait "$ENTRYPOINT_PID" 2>/dev/null || true
+}

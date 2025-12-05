@@ -38,6 +38,14 @@ Environment variables supported
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
 - BUILD_FQBN Fully Qualified Board Name to use for compile (default "arduino:avr:uno")
 - BUILD_EXTRA_FLAGS to set/overwrite defines, e.g. '-DSLEEP_MILLIS=100 -DMESSAGE_TEXT="Hello World"'
+- SERIAL_TCP – enables TCP serial mode by specifying both the host and port in a single string:
+  SERIAL_TCP=<host>:<port>
+  For example:
+  ```export SERIAL_TCP=host.docker.internal:12345```
+  This tells the container to connect to host:port for serial communication instead of creating a local PTY.
+  Notes:
+  Typically used on macOS or Windows with Docker Desktop, where local PTYs may not be available.
+  If SERIAL_TCP is empty or unset, the container falls back to standard PTY mode (local virtual device).
 
 # Screencast of usage
 The screencast is not uptodate!!!
