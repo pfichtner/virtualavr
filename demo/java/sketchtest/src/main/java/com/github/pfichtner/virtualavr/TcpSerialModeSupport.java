@@ -86,7 +86,7 @@ public class TcpSerialModeSupport {
 			int intervalMs = 50; // polling interval
 			int waited = 0;
 			while (!new File(tcpSerialDevicePath).exists()) {
-				if (waited >= 2000) {
+				if (waited >= 5000) {
 					throw new RuntimeException(format("Timeout waiting for PTY creation: %s", tcpSerialDevicePath));
 				}
 				TimeUnit.MILLISECONDS.sleep(intervalMs);
@@ -94,9 +94,7 @@ public class TcpSerialModeSupport {
 			}
 
 			// Configure the container to connect to the host
-			delegate //
-					.withEnv("SERIAL_TCP_HOST", "host.docker.internal") //
-					.withEnv("SERIAL_TCP_PORT", String.valueOf(tcpSerialPort));
+			delegate.withEnv("SERIAL_TCP", format("host.docker.internal:%d", tcpSerialPort));
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Failed to start host socat process", e);
 		}
