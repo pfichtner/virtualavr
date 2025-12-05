@@ -1,10 +1,9 @@
 package com.github.pfichtner.virtualavr;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-import static java.lang.String.format;
-import static java.util.stream.Collectors.toMap;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+import com.google.gson.*;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+import org.testcontainers.containers.GenericContainer;
 
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -16,20 +15,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BinaryOperator;
 
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
-import org.testcontainers.containers.GenericContainer;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toMap;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class VirtualAvrConnection extends WebSocketClient implements AutoCloseable {
+
+	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(VirtualAvrConnection.class);
+
+	// Flag to track if we're closing gracefully (to suppress exceptions during shutdown)
+	private volatile boolean closingGracefully = false;
 
 	private static final class PinStateJsonDeserializer implements JsonDeserializer<PinState> {
 		@Override
@@ -53,7 +50,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 		private String modeName;
 
-		private PinReportMode(String message) {
+		PinReportMode(String message) {
 			this.modeName = message;
 		}
 	}
@@ -155,7 +152,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	public static class SerialDebug {
 
-		public static enum Direction {
+		public enum Direction {
 			RX, TX;
 		}
 
@@ -191,6 +188,11 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	}
 
 	private VirtualAvrConnection sendAndWaitForReply(WithReplyId messageToSend) {
+		// Guard against sending when connection is closing or closed
+		if (closingGracefully || !isOpen()) {
+			LOG.debug("Skipping send - connection is closing or closed");
+			return this;
+		}
 		AtomicBoolean replyReceived = new AtomicBoolean();
 		Listener<CommandReply> listener = r -> {
 			if (Objects.equals(messageToSend.replyId(), r.replyId())) {
@@ -201,6 +203,12 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		try {
 			send(gson.toJson(messageToSend));
 			await().untilTrue(replyReceived);
+		} catch (Exception e) {
+			// Suppress exceptions when connection is closing
+			if (!closingGracefully) {
+				throw e;
+			}
+			LOG.debug("Exception during send (ignored, connection closing): {}", e.getMessage());
 		} finally {
 			removeCommandReplyListener(listener);
 		}
@@ -410,10 +418,37 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	@Override
 	public void onError(Exception ex) {
+		// Suppress WebSocketNotConnectedException during graceful shutdown
+		if (closingGracefully) {
+			LOG.debug("Ignoring error during graceful shutdown: {}", ex.getMessage());
+			return;
+		}
+		LOG.warn("WebSocket error: {}", ex.getMessage());
 	}
 
 	@Override
 	public void onClose(int code, String reason, boolean remote) {
+		LOG.debug("WebSocket closed: code={}, reason={}, remote={}", code, reason, remote);
+	}
+
+	/**
+	 * Closes the WebSocket connection gracefully, suppressing any exceptions
+	 * that may occur during shutdown (e.g., WebSocketNotConnectedException).
+	 */
+	public void closeGracefully() {
+		if (closingGracefully) {
+			return; // Already closing, prevent re-entry
+		}
+		closingGracefully = true;
+		try {
+			if (isOpen()) {
+				// Use close() with code and message - don't use closeBlocking()
+				// as it calls close() internally which would cause recursion
+				super.close();
+			}
+		} catch (Exception e) {
+			LOG.debug("Exception during graceful close (ignored): {}", e.getMessage());
+		}
 	}
 
 }

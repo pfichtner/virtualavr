@@ -1,15 +1,13 @@
 package com.github.pfichtner.virtualavr;
 
-import static jssc.SerialPort.DATABITS_8;
-import static jssc.SerialPort.PARITY_NONE;
-import static jssc.SerialPort.STOPBITS_1;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
-import jssc.SerialPort;
-import jssc.SerialPortEvent;
-import jssc.SerialPortException;
+import com.fazecast.jSerialComm.SerialPort;
+import com.fazecast.jSerialComm.SerialPortDataListener;
+import com.fazecast.jSerialComm.SerialPortEvent;
+import com.fazecast.jSerialComm.SerialPortInvalidPortException;
 
 public class SerialConnection implements AutoCloseable {
 
@@ -17,42 +15,54 @@ public class SerialConnection implements AutoCloseable {
 	private final ByteArrayOutputStream received = new ByteArrayOutputStream();
 
 	public SerialConnection(String name, int baudrate) throws IOException {
-		port = new SerialPort(name);
 		try {
-			port.openPort();
-			port.setParams(baudrate, DATABITS_8, STOPBITS_1, PARITY_NONE);
-			// port.setEventsMask(SerialPort.MASK_RXCHAR);
-			port.addEventListener(this::eventReceived);
-		} catch (SerialPortException e) {
-			throw new IOException(e);
+			port = SerialPort.getCommPort(name);
+		} catch (SerialPortInvalidPortException e) {
+			throw new IOException("Failed to open port (port may not exist): " + name, e);
 		}
-	}
-
-	private void eventReceived(SerialPortEvent event) {
-		if (event.isRXCHAR() && event.getEventValue() > 0) {
-			try {
-				received.write(port.readBytes(event.getEventValue()));
-			} catch (SerialPortException e) {
-				throw new RuntimeException(e);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+		port.setBaudRate(baudrate);
+		port.setNumDataBits(8);
+		port.setNumStopBits(SerialPort.ONE_STOP_BIT);
+		port.setParity(SerialPort.NO_PARITY);
+		if (!port.openPort()) {
+			throw new IOException("Failed to open port: " + name);
+		}
+		port.addDataListener(new SerialPortDataListener() {
+			@Override
+			public int getListeningEvents() {
+				return SerialPort.LISTENING_EVENT_DATA_RECEIVED;
 			}
-		}
+
+			@Override
+			public void serialEvent(SerialPortEvent event) {
+				if (event.getEventType() == SerialPort.LISTENING_EVENT_DATA_RECEIVED) {
+					byte[] data = event.getReceivedData();
+					if (data != null && data.length > 0) {
+						synchronized (received) {
+							try {
+								received.write(data);
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+						}
+					}
+				}
+			}
+		});
 	}
 
 	public void send(String string) throws IOException {
-		try {
-			port.writeString(string);
-		} catch (SerialPortException e) {
-			throw new IOException(e);
+		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+		int written = port.writeBytes(bytes, bytes.length);
+		if (written < 0) {
+			throw new IOException("Failed to write to serial port");
 		}
 	}
 
 	public void send(byte[] bytes) throws IOException {
-		try {
-			port.writeBytes(bytes);
-		} catch (SerialPortException e) {
-			throw new IOException(e);
+		int written = port.writeBytes(bytes, bytes.length);
+		if (written < 0) {
+			throw new IOException("Failed to write to serial port");
 		}
 	}
 
@@ -61,16 +71,20 @@ public class SerialConnection implements AutoCloseable {
 	}
 
 	public byte[] receivedBytes() {
-		return received.toByteArray();
+		synchronized (received) {
+			return received.toByteArray();
+		}
 	}
 
 	public SerialConnection clearReceived() {
-		received.reset();
+		synchronized (received) {
+			received.reset();
+		}
 		return this;
 	}
-	
+
 	public boolean isClosed() {
-		return !port.isOpened();
+		return !port.isOpen();
 	}
 
 	@Override
