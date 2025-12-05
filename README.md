@@ -155,3 +155,13 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 - Could we implement upload? So that you can upload the compiled firmware to running container / /dev/virtualdevice?
   Could we use arduino firmware? https://github.com/arduino/ArduinoCore-avr/tree/master/bootloaders/atmega : If this works? Do we have to upload elf binaries?
 
+# License
+
+This project is dual-licensed:
+
+- **Apache License 2.0** — for open-source use and compatibility with Apache projects.
+- **Commercial License** — for proprietary/commercial use not permitted by the Apache License.
+
+If you want to use this software commercially without complying with Apache 2.0,
+please contact: virtualavr@public-files.de for a commercial license.
+
