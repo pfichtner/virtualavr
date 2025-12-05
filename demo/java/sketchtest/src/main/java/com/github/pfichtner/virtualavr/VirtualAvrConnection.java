@@ -155,7 +155,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	public static class SerialDebug {
 
-		public static enum Direction {
+		public enum Direction {
 			RX, TX;
 		}
 
