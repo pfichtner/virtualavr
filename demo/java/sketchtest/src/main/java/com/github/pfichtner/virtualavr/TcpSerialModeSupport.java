@@ -1,9 +1,11 @@
 package com.github.pfichtner.virtualavr;
 
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -107,23 +109,35 @@ public class TcpSerialModeSupport {
 	}
 
 	public void stop() {
-		Optional.ofNullable(socatProcess).ifPresent(Process::destroy);
+		Optional.ofNullable(socatProcess).ifPresent(this::stopSocat);
 		Optional.ofNullable(tcpSerialDevicePath).map(File::new).ifPresent(File::delete);
 		socatProcess = null;
 		tcpSerialDevicePath = null;
 	}
 
-	public SerialConnection newSerialConnection() throws IOException {
-		return new SerialConnection(devicePath(), delegate.baudrate());
+	private void stopSocat(Process process) {
+		process.destroy();
+		try {
+			if (!process.waitFor(5, SECONDS)) {
+				process.destroyForcibly();
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			process.destroyForcibly();
+		}
 	}
 
-	private String devicePath() throws IOException {
+	protected String devicePath() {
 		// Resolve the symlink to get the actual PTY device path
 		// jSerialComm on macOS can open /dev/ttysXXX directly
 		Path symlinkPath = Paths.get(tcpSerialDevicePath);
-		return Files.isSymbolicLink(symlinkPath) //
-				? Files.readSymbolicLink(symlinkPath).toString() //
-				: tcpSerialDevicePath;
+		try {
+			return Files.isSymbolicLink(symlinkPath) //
+					? Files.readSymbolicLink(symlinkPath).toString() //
+					: tcpSerialDevicePath;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to resolve TCP serial device path", e);
+		}
 	}
 
 }

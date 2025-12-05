@@ -112,7 +112,7 @@ class VirtualAvrIT {
 	void serialConnectionCanBeReestablished() throws Exception {
 		String send = "Echo Test!";
 		for (int i = 0; i < 3; i++) {
-			try (SerialConnection serialConnection = virtualAvrContainer.newSerialConnection()) {
+			try (SerialConnection serialConnection = virtualAvrContainer.serialConnection()) {
 				awaiter(serialConnection).sendAwait(send, r -> r.contains("Echo response: " + send));
 			}
 		}

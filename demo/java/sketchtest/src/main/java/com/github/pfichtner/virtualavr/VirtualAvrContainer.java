@@ -130,11 +130,13 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return serialConnection;
 	}
 
-	public SerialConnection newSerialConnection() throws IOException {
-		return new SerialConnection(format("%s/%s", hostDev, ttyDevice), baudrate());
+	private SerialConnection newSerialConnection() throws IOException {
+		String name = Optional.ofNullable(tcpSerialModeSupport).map(TcpSerialModeSupport::devicePath)
+				.orElseGet(() -> format("%s/%s", hostDev, ttyDevice));
+		return new SerialConnection(name, baudrate());
 	}
 
-	protected int baudrate() {
+	private int baudrate() {
 		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt).orElse(DEFAULT_BAUDRATE);
 	}
 
@@ -147,7 +149,9 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	@Override
 	public void stop() {
 		super.stop();
+		Optional.ofNullable(avr).ifPresent(VirtualAvrConnection::close);
 		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::stop);
+		avr = null;
 	}
 
 }
