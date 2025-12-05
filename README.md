@@ -170,6 +170,5 @@ This project is dual-licensed:
 - **Apache License 2.0** — for open-source use and compatibility with Apache projects.
 - **Commercial License** — for proprietary/commercial use not permitted by the Apache License.
 
-If you want to use this software commercially without complying with Apache 2.0,
-please contact: virtualavr@public-files.de for a commercial license.
+You are free to use, modify, and distribute this software—including for commercial purposes—under the terms of the Apache License 2.0. If you want to do something beyond what the license allows, you must obtain a separate license from the copyright holder. Please contact us at virtualavr@public-files.de
 
