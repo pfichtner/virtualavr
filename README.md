@@ -152,6 +152,57 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 
 ![virtualavr.png](docs/images/virtualavr.png)
 
+
+# Testcontainers Java Binding (Maven Central)
+
+A dedicated testcontainers module for virtualavr is available on Maven Central.
+This allows you to write Java integration tests that automatically start a virtual AVR simulator inside a Testcontainers-managed Docker container.
+```
+<dependency>
+    <groupId>io.github.pfichtner</groupId>
+    <artifactId>testcontainers-virtualavr</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+The library provides:
+- a VirtualAvrContainer Testcontainers module
+- a typed VirtualAvrConnection API for interacting with the simulator
+- convenience helpers for pin states, reporting modes, and timing
+
+This makes full end-to-end integration testing of Arduino/AVR sketches possible directly from Java, without physical hardware.
+
+### Example
+
+```
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.*;
+import static java.util.function.Predicate.isEqual;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
+@Testcontainers
+class VirtualAvrTest {
+
+	private static final String INTERNAL_LED = "13";
+
+	@Container
+	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(new File("blink.ino"));
+
+	@Test
+	void awaitHasBlinkedAtLeastFiveTimesAndCpuTimesAreOk() {
+		VirtualAvrConnection virtualAvr = virtualavr.avr();
+		virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
+		await().until(() -> count(virtualAvr.pinStates(), isEqual(stateIsOn(INTERNAL_LED))) >= 5
+				&& count(virtualAvr.pinStates(), isEqual(stateIsOff(INTERNAL_LED))) >= 5);
+	}
+
+	long count(List<PinState> pinStates, Predicate<PinState> pinState) {
+		return pinStates.stream().filter(pinState).count();
+	}
+
+}
+```
+
 # Todos
 - Provide Java Bindings as maven artifacts
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
