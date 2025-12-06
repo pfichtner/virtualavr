@@ -1,4 +1,4 @@
-package com.ardulink.sketch;
+package com.github.pfichtner.virtualavr.demo;
 
 import static com.github.pfichtner.virtualavr.IOUtil.downloadTo;
 import static com.github.pfichtner.virtualavr.IOUtil.filename;

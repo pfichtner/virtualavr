@@ -1,4 +1,4 @@
-package com.github.pfichtner.virtualavr.virtualavrtests;
+package com.github.pfichtner.virtualavr.demo;
 
 import static com.github.pfichtner.virtualavr.IOUtil.withSketchFromClasspath;
 import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
@@ -98,13 +98,7 @@ class FirmataVirtualAvrIT {
 	static void printBytes(byte[] bytes) {
 		for (int i = 0; i < bytes.length; i++) {
 			byte b = bytes[i];
-			System.out.print(String.format("%04d", i));
-			System.out.print(": ");
-			System.out.print(String.format("%08d", parseInt(toBinaryString(b & 0xFF))));
-			System.out.print(" ");
-			System.out.print(String.format("%02x", b));
-			System.out.print(" ");
-			System.out.println(b);
+			System.out.printf("%04d: %08d %02x %d%n", i, parseInt(toBinaryString(b & 0xFF)), b, b);
 		}
 	}
 
