@@ -20,16 +20,8 @@ trap 'cleanup' EXIT
 SERIAL_TCP=${SERIAL_TCP:-}
 
 if [ -n "$SERIAL_TCP" ]; then
-    if [[ "$SERIAL_TCP" != *:* ]]; then
-        echo "SERIAL_TCP must be in the format <host>:<port>" >&2
-        exit 1
-    fi
-    # Split into host and port
-    TCP_HOST="${SERIAL_TCP%%:*}"
-    TCP_PORT="${SERIAL_TCP##*:}"
-
-    echo "Using TCP serial mode: connecting to $TCP_HOST:$TCP_PORT"
-    socat ${VERBOSITY:-} tcp:"$TCP_HOST":"$TCP_PORT" EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
+    echo "Using TCP serial mode: connecting to $SERIAL_TCP"
+    socat ${VERBOSITY:-} tcp:"$SERIAL_TCP" EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
 else
     # Standard PTY mode: create a local virtual serial device
     [ -z "${VIRTUALDEVICE+x}" ] && VIRTUALDEVICE="/dev/virtualavr0"

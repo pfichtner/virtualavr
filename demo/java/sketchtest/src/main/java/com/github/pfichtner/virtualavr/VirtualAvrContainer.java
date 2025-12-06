@@ -22,8 +22,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
 
-	protected static final String hostDev = "/dev";
-	protected static final String containerDev = "/dev";
+	public static final String hostDev = "/dev";
+	public static final String containerDev = "/dev";
 	protected static final int WEBSOCKET_PORT = 8080;
 
 	protected String ttyDevice = "ttyUSB0";
@@ -59,7 +59,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	public VirtualAvrContainer<?> withDeviceName(String ttyDevice) {
 		this.ttyDevice = ttyDevice;
-		withEnv("VIRTUALDEVICE", containerDev + "/" + ttyDevice);
+		withEnv("VIRTUALDEVICE", format("%s/%s", containerDev, ttyDevice));
 		return self();
 	}
 
@@ -131,7 +131,9 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	private SerialConnection newSerialConnection() throws IOException {
-		String name = Optional.ofNullable(tcpSerialModeSupport).map(TcpSerialModeSupport::devicePath)
+		String name = Optional.ofNullable(tcpSerialModeSupport) //
+				.map(TcpSerialModeSupport::devicePath) //
+				.map(Object::toString) //
 				.orElseGet(() -> format("%s/%s", hostDev, ttyDevice));
 		return new SerialConnection(name, baudrate());
 	}
@@ -142,7 +144,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	@Override
 	public void start() {
-		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::start);
+		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);
 		super.start();
 	}
 
@@ -150,7 +152,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public void stop() {
 		super.stop();
 		Optional.ofNullable(avr).ifPresent(VirtualAvrConnection::close);
-		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::stop);
+		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStop);
 		avr = null;
 	}
 
