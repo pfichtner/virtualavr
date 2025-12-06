@@ -3,7 +3,7 @@
 
 	<groupId>io.github.pfichtner</groupId>
 	<artifactId>testcontainers-virtualavr</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>Testcontainers VirtualAVR</name>
 	<description>Java Testcontainers module providing a Virtual AVR/Arduino simulator for integration testing microcontroller programs without real hardware.</description>
 	<url>https://github.com/pfichtner/virtualavr</url>
