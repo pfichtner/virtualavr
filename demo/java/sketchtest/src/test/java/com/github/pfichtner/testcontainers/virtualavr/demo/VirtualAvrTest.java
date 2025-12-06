@@ -1,8 +1,8 @@
-package com.github.pfichtner.virtualavr.demo;
+package com.github.pfichtner.testcontainers.virtualavr.demo;
 
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
 import static java.lang.Math.abs;
 import static java.util.function.Predicate.isEqual;
 import static java.util.stream.IntStream.range;
@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState;
 
 @Testcontainers
 class VirtualAvrTest {

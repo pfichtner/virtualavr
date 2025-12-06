@@ -1,4 +1,4 @@
-package com.github.pfichtner.virtualavr;
+package com.github.pfichtner.testcontainers.virtualavr;
 
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
@@ -7,6 +7,8 @@ import java.time.Duration;
 import java.util.function.Predicate;
 
 import org.testcontainers.shaded.org.awaitility.core.ConditionFactory;
+
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
 
 public class SerialConnectionAwait {
 

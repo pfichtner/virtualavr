@@ -1,11 +1,11 @@
-package com.github.pfichtner.virtualavr.demo;
+package com.github.pfichtner.testcontainers.virtualavr.demo;
 
-import static com.github.pfichtner.virtualavr.IOUtil.downloadTo;
-import static com.github.pfichtner.virtualavr.IOUtil.filename;
-import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
+import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.downloadTo;
+import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.filename;
+import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static java.util.stream.Collectors.joining;
 import static org.awaitility.Awaitility.await;
 import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
@@ -22,10 +22,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.virtualavr.SerialConnection;
-import com.github.pfichtner.virtualavr.SerialConnectionAwait;
-import com.github.pfichtner.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 /**
  * Downloads Ardulink firmware and run some virtualavr tests on it. This way the

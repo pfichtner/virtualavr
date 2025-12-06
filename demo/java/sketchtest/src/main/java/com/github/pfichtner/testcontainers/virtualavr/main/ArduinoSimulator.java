@@ -1,4 +1,4 @@
-package com.ardulink.sketch;
+package com.github.pfichtner.testcontainers.virtualavr.main;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -7,8 +7,8 @@ import java.io.InputStreamReader;
 import java.text.NumberFormat;
 import java.text.ParseException;
 
-import com.github.pfichtner.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 /**
  * Creates a virtual arduino that exposes a serial device whose port states can

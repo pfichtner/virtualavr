@@ -1,6 +1,6 @@
-package com.github.pfichtner.virtualavr;
+package com.github.pfichtner.testcontainers.virtualavr;
 
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.testcontainers.containers.BindMode.READ_ONLY;

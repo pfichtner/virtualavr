@@ -1,4 +1,4 @@
-package com.github.pfichtner.virtualavr;
+package com.github.pfichtner.testcontainers.virtualavr;
 
 import static java.lang.String.format;
 import static java.nio.file.Files.isSymbolicLink;

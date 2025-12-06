@@ -1,4 +1,4 @@
-package com.github.pfichtner.virtualavr;
+package com.github.pfichtner.testcontainers.virtualavr;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;

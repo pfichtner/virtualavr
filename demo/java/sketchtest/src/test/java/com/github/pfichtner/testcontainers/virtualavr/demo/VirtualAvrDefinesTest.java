@@ -1,6 +1,6 @@
-package com.github.pfichtner.virtualavr.demo;
+package com.github.pfichtner.testcontainers.virtualavr.demo;
 
-import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
 
 import java.io.File;
 import java.util.Map;
@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class VirtualAvrDefinesTest {

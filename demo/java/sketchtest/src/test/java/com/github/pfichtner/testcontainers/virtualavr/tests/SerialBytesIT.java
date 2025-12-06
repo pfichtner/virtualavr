@@ -1,8 +1,8 @@
-package com.github.pfichtner.virtualavr.virtualavrtests;
+package com.github.pfichtner.testcontainers.virtualavr.tests;
 
-import static com.github.pfichtner.virtualavr.IOUtil.withSketchFromClasspath;
-import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.withSketchFromClasspath;
+import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
 
 import java.util.Arrays;
 
@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.virtualavr.SerialConnectionAwait;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class SerialBytesIT {

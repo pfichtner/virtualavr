@@ -1,4 +1,4 @@
-package com.github.pfichtner.virtualavr;
+package com.github.pfichtner.testcontainers.virtualavr;
 
 import static java.lang.String.format;
 
@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import org.testcontainers.images.ImagePullPolicy;
 import org.testcontainers.utility.DockerImageName;
+
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 public final class TestcontainerSupport {
 

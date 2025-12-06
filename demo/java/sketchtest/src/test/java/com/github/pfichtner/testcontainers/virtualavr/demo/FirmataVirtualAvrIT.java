@@ -1,8 +1,8 @@
-package com.github.pfichtner.virtualavr.demo;
+package com.github.pfichtner.testcontainers.virtualavr.demo;
 
-import static com.github.pfichtner.virtualavr.IOUtil.withSketchFromClasspath;
-import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.withSketchFromClasspath;
+import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
 import static java.lang.Integer.parseInt;
 import static java.lang.Integer.toBinaryString;
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -20,9 +20,9 @@ import org.junit.jupiter.api.TestInfo;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.virtualavr.SerialConnection;
-import com.github.pfichtner.virtualavr.SerialConnectionAwait;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class FirmataVirtualAvrIT {

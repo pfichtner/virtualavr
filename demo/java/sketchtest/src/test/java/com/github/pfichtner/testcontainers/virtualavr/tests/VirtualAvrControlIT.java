@@ -1,8 +1,8 @@
-package com.github.pfichtner.virtualavr.virtualavrtests;
+package com.github.pfichtner.testcontainers.virtualavr.tests;
 
-import static com.github.pfichtner.virtualavr.IOUtil.withSketchFromClasspath;
-import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.withSketchFromClasspath;
+import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.virtualavr.SerialConnection;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 /**
  * Integration test for virtualavr. Fires up the docker container and runs

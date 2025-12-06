@@ -1,4 +1,4 @@
-package com.github.pfichtner.virtualavr;
+package com.github.pfichtner.testcontainers.virtualavr;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

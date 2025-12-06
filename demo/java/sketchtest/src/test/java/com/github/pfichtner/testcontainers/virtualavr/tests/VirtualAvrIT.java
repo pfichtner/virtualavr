@@ -1,16 +1,16 @@
-package com.github.pfichtner.virtualavr.virtualavrtests;
+package com.github.pfichtner.testcontainers.virtualavr.tests;
 
-import static com.github.pfichtner.virtualavr.IOUtil.withSketchFromClasspath;
-import static com.github.pfichtner.virtualavr.SerialConnectionAwait.awaiter;
-import static com.github.pfichtner.virtualavr.TestcontainerSupport.virtualAvrContainer;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinReportMode.NONE;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction.RX;
-import static com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction.TX;
+import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.withSketchFromClasspath;
+import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
+import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.ANALOG;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.NONE;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateOfPinIs;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.SerialDebug.Direction.RX;
+import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.SerialDebug.Direction.TX;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.Predicate.isEqual;
@@ -28,14 +28,14 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.virtualavr.SerialConnection;
-import com.github.pfichtner.virtualavr.SerialConnectionAwait;
-import com.github.pfichtner.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.virtualavr.VirtualAvrConnection.Listener;
-import com.github.pfichtner.virtualavr.VirtualAvrConnection.PinState;
-import com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug;
-import com.github.pfichtner.virtualavr.VirtualAvrConnection.SerialDebug.Direction;
-import com.github.pfichtner.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.Listener;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.SerialDebug;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.SerialDebug.Direction;
 
 /**
  * Integration test for virtualavr. Fires up the docker container and runs
