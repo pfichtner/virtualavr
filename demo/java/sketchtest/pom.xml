@@ -127,15 +127,6 @@
 
 	<profiles>
 		<profile>
-			<id>default</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<modules>
-				<module>vaadoo-bytebuddy-tests</module>
-			</modules>
-		</profile>
-		<profile>
 			<id>sonatype</id>
 			<properties>
 				<skipTests>true</skipTests>
