@@ -177,12 +177,16 @@
 		</profile>
 	</profiles>
 
-	<distributionManagement>                        
-                <snapshotRepository>                            
-                        <id>central-ossrh</id>                          
-                        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-                </snapshotRepository>
-        </distributionManagement>                                       
+	<distributionManagement>
+	    <repository>
+		<id>central</id>
+		<url>https://central.sonatype.com/api/publish/maven</url>
+	    </repository>
+	    <snapshotRepository>
+		<id>central-ossrh</id>
+		<url>https://central.sonatype.com/repository/maven-snapshots/</url>
+	    </snapshotRepository>
+	</distributionManagement>
                                                                 
         <repositories>                                  
                 <repository>                    
