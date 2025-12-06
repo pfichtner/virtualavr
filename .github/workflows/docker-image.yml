@@ -43,6 +43,10 @@ jobs:
       with:
         python-version: '3.x'
 
+    # Needed to run the tcp-mode test
+    - name: Install socat
+      run: sudo apt-get update && sudo apt-get install -y socat
+
     # Run your test script
     - name: Run All Tests
       run: ./run-tests.sh
@@ -54,4 +58,3 @@ jobs:
         name: Test report
         path: demo/java/sketchtest/target/surefire-reports/*.xml,demo/python/*/test-results/pytest.xml,demo/python-gherkin/test-results/TESTS-*_behavior.xml
         reporter: java-junit
-
