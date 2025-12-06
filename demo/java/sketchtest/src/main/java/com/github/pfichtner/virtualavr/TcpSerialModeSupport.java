@@ -103,7 +103,7 @@ class TcpSerialModeSupport {
 		}
 	}
 
-	public void prepareStop() {
+	public void finalizeStop() {
 		Optional.ofNullable(socatProcess).ifPresent(this::stopSocat);
 		Optional.ofNullable(tcpSerialDevicePath).ifPresent(this::delete);
 		socatProcess = null;

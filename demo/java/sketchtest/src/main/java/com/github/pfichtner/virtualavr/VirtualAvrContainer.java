@@ -152,7 +152,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public void stop() {
 		super.stop();
 		Optional.ofNullable(avr).ifPresent(VirtualAvrConnection::close);
-		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStop);
+		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::finalizeStop);
 		avr = null;
 	}
 
