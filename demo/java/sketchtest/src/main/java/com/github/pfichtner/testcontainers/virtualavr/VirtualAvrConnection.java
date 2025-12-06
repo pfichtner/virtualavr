@@ -51,9 +51,9 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	public enum PinReportMode {
 		ANALOG("analog"), DIGITAL("digital"), NONE("none");
 
-		private String modeName;
+		private final String modeName;
 
-		private PinReportMode(String message) {
+		PinReportMode(String message) {
 			this.modeName = message;
 		}
 	}
@@ -104,7 +104,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		}
 
 		public static PinState stateIsOn(int pin) {
-			return stateIsOn(pin);
+			return stateIsOn(String.valueOf(pin));
 		}
 
 		public static PinState stateIsOn(String pin) {
@@ -112,7 +112,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		}
 
 		public static PinState stateIsOff(int pin) {
-			return stateIsOff(pin);
+			return stateIsOff(String.valueOf(pin));
 		}
 
 		public static PinState stateIsOff(String pin) {
@@ -156,8 +156,8 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 	public static class SerialDebug {
 
 		public enum Direction {
-			RX, TX;
-		}
+			RX, TX
+        }
 
 		private final Direction direction;
 		private final byte[] bytes;

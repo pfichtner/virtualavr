@@ -4,6 +4,7 @@ import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnectio
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
 import static java.lang.Math.abs;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.isEqual;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,8 +20,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class VirtualAvrTest {
@@ -32,7 +33,7 @@ class VirtualAvrTest {
 
 	static File loadClasspath(String name) {
 		try {
-			return new File(VirtualAvrTest.class.getResource(name).toURI());
+			return new File(requireNonNull(VirtualAvrTest.class.getResource(name)).toURI());
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException(e);
 		}

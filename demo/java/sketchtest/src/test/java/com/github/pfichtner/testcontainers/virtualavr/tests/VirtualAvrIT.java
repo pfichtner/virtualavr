@@ -64,7 +64,7 @@ class VirtualAvrIT {
 		}
 
 		public String text(Direction direction) {
-			return new String(outputStream(direction).toByteArray());
+			return outputStream(direction).toString();
 		}
 
 		private ByteArrayOutputStream outputStream(Direction direction) {
@@ -129,8 +129,8 @@ class VirtualAvrIT {
 	void canReadAnalogAndDoesPublishStateChangesViaWebsocket() {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
 		virtualAvr.pinReportMode(PWM_PIN, ANALOG);
-		await().untilAsserted(() -> assertThat(virtualAvr.pinStates()).contains(stateOfPinIs(PWM_PIN, 42))
-				.describedAs(virtualAvr.pinStates().toString()));
+		await().untilAsserted(() -> assertThat(virtualAvr.pinStates()).describedAs(virtualAvr.pinStates().toString())
+				.contains(stateOfPinIs(PWM_PIN, 42)));
 	}
 
 	@Test
@@ -197,7 +197,7 @@ class VirtualAvrIT {
 	}
 
 	@Test
-	void doesPublishRxTxWhenEnabled() throws Exception {
+	void doesPublishRxTxWhenEnabled() {
 		String send = "Echo Test!";
 		try (RxTxListener rxTx = new RxTxListener(virtualAvrContainer.avr())) {
 			String expectedResponse = "Echo response: " + send;

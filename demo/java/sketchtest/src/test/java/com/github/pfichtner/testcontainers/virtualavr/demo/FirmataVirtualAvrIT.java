@@ -66,7 +66,7 @@ class FirmataVirtualAvrIT {
 	}
 
 	@Test
-	void doesReceiveInformationOnStartup() throws Exception {
+	void doesReceiveInformationOnStartup() {
 		waitForStartupInfoReceived();
 	}
 

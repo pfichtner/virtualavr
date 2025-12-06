@@ -35,7 +35,7 @@ class TcpSerialModeSupportIT {
 	;
 
 	@Test
-	void startRemovesDevBind() throws Exception {
+	void startRemovesDevBind() {
 		assertThat(virtualAvrContainer.getBinds().stream().map(Object::toString))
 				.doesNotContain(VirtualAvrContainer.containerDev);
 	}

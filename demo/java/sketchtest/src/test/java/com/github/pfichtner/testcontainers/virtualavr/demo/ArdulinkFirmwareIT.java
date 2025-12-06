@@ -12,7 +12,6 @@ import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 
@@ -31,9 +30,9 @@ import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
  * Downloads Ardulink firmware and run some virtualavr tests on it. This way the
  * Arduino based Ardulink firmware behavior can be tested without having real
  * hardware/flashing real hardware.
- * 
+ * <p>
  * This test should become part of Ardulink itself (to test the local/internal
- * sketch file not the one uploaded to github).
+ * sketch file not the one uploaded to GitHub).
  * 
  * @author Peter Fichtner
  */
@@ -46,7 +45,7 @@ class ArdulinkFirmwareIT {
 	static File inoFile;
 
 	@BeforeAll
-	static void loadFromNet(@TempDir File tmpDir) throws MalformedURLException, IOException {
+	static void loadFromNet(@TempDir File tmpDir) throws IOException {
 		URL source = new URL(REMOTE_INO_FILE);
 		inoFile = downloadTo(source, new File(tmpDir, filename(source)));
 	}

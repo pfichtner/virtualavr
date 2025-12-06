@@ -3,6 +3,7 @@ package com.github.pfichtner.testcontainers.virtualavr.demo;
 import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class VirtualAvrDefinesTest {
 			.withBaudrate(115200);
 
 	@Test
-	void canSetAndOverwriteDefine() throws Exception {
+	void canSetAndOverwriteDefine() throws IOException {
 		awaiter(virtualavr.serialConnection()).awaitReceived(s -> s.contains(SUCCESS_OVERWRITING_DEFINE_REPLACEMENT));
 	}
 

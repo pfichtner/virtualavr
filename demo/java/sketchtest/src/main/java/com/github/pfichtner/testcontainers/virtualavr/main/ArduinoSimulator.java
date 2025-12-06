@@ -16,7 +16,7 @@ import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
  */
 public class ArduinoSimulator {
 
-	public ArduinoSimulator(String... args) throws InterruptedException {
+	public ArduinoSimulator(String... args) {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Pass .ino/.hex/.zip file as argument");
 		}
@@ -61,7 +61,7 @@ public class ArduinoSimulator {
 		}
 	}
 
-	public static void main(String... args) throws InterruptedException {
+	public static void main(String... args) {
 		new ArduinoSimulator(args);
 	}
 
