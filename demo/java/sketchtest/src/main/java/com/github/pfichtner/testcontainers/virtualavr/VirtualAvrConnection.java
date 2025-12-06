@@ -157,7 +157,7 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 		public enum Direction {
 			RX, TX
-        }
+		}
 
 		private final Direction direction;
 		private final byte[] bytes;
@@ -209,8 +209,8 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
 		VirtualAvrConnection connection = new VirtualAvrConnection(
-				URI.create("ws://localhost:" + container.getFirstMappedPort()));
-		connection.addPinStateListener(p -> System.out.format("Pin %s = %s\n", p.getPin(), p.getState()));
+				URI.create(format("ws://%s:%s", "localhost", container.getFirstMappedPort())));
+		connection.addPinStateListener(p -> System.out.printf("Pin %s = %s\n", p.getPin(), p.getState()));
 		return connection;
 	}
 
