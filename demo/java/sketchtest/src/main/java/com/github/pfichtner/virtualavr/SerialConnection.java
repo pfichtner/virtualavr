@@ -51,6 +51,10 @@ public class SerialConnection implements AutoCloseable {
 		});
 	}
 
+	public String portDescription() {
+		return port.getPortDescription();
+	}
+
 	public void send(String string) throws IOException {
 		byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
 		int written = port.writeBytes(bytes, bytes.length);

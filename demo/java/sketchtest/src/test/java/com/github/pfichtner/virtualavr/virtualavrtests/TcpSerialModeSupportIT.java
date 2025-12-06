@@ -7,6 +7,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -15,16 +16,19 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.pfichtner.virtualavr.SerialConnection;
+import com.github.pfichtner.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 @EnabledIf("isSocatAvailable")
 class TcpSerialModeSupportIT {
 
+	private static final String SOME_NOT_USED_TTY_NAME = "someUnusedTTYName";
+
 	@Container
-	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(
-			withSketchFromClasspath("/integrationtest/integrationtest.ino")) //
-			.withPausedStartup() //
+	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer( //
+			withSketchFromClasspath("/byteecho/byteecho.ino")) //
+			.withDeviceName(SOME_NOT_USED_TTY_NAME) //
 			// force tcp serial mode for test even on linux hosts
 			.withTcpSerialMode() //
 			// on linux, host.docker.internal is not available by default
@@ -38,13 +42,19 @@ class TcpSerialModeSupportIT {
 	}
 
 	@Test
-	void serialWorksViaSocatWrapperOnHost() throws Exception {
-		SerialConnection serialConnection = virtualAvrContainer.serialConnection();
-		TimeUnit.SECONDS.sleep(10);
-		assertThat(serialConnection.received()).isEmpty();
+	void canReadAndWriteViaSocatBridge() throws Exception {
+		SerialConnectionAwait awaiter = awaiter(
+				verifyConnectionIsNotDefaultTTY(virtualAvrContainer.serialConnection()));
+		for (int i = 0; i < 255; i++) {
+			byte[] arr = new byte[] { (byte) i };
+			awaiter.sendAwait(arr, b -> Arrays.equals(b, arr));
+		}
+		awaiter.sendAwait(new byte[] { (byte) 255 }, b -> Arrays.equals(b, new byte[] { (byte) 255, 0 }));
+	}
 
-		virtualAvrContainer.avr().unpause();
-		awaiter(serialConnection).awaitReceived(r -> r.contains("Welcome virtualavr!"));
+	static SerialConnection verifyConnectionIsNotDefaultTTY(SerialConnection serialConnection) {
+		assertThat(serialConnection.portDescription()).doesNotContain(SOME_NOT_USED_TTY_NAME);
+		return serialConnection;
 	}
 
 	static boolean isSocatAvailable() {

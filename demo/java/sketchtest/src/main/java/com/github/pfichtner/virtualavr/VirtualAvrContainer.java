@@ -26,7 +26,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public static final String containerDev = "/dev";
 	protected static final int WEBSOCKET_PORT = 8080;
 
-	protected String ttyDevice = "ttyUSB0";
+	private String ttyDevice = "ttyUSB0";
 
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
