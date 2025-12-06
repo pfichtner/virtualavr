@@ -22,11 +22,10 @@
 	</licenses>
 
 	<scm>
-		<url>https://github.com/pfichtner/virtualavr</url>
 		<connection>scm:git:https://github.com/pfichtner/virtualavr.git</connection>
 		<developerConnection>scm:git:https://github.com/pfichtner/virtualavr.git</developerConnection>
-	  <tag>testcontainers-virtualavr-0.0.1</tag>
-  </scm>
+		<url>https://github.com/pfichtner/virtualavr</url>
+	</scm>
 
 	<developers>
 		<developer>
@@ -134,5 +133,22 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<distributionManagement>                        
+                <snapshotRepository>                            
+                        <id>central-ossrh</id>                          
+                        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                </snapshotRepository>
+        </distributionManagement>                                       
+                                                                
+        <repositories>                                  
+                <repository>                    
+                        <id>central-ossrh</id>
+                        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                        <releases>              
+                                <enabled>false</enabled>
+                        </releases>             
+                </repository>                           
+        </repositories>                                         
 
 </project>
