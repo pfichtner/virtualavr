@@ -167,19 +167,6 @@
 					</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-jar-plugin</artifactId>
-						<configuration>
-							<archive>
-								<manifestEntries>
-									<Implementation-Title>${project.name}</Implementation-Title>
-									<Implementation-Version>${project.version}</Implementation-Version>
-									<Automatic-Module-Name>${module.name}</Automatic-Module-Name>
-								</manifestEntries>
-							</archive>
-						</configuration>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<executions>
 							<execution>
