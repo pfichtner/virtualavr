@@ -74,7 +74,7 @@ class TcpSerialModeSupport {
 		this.delegate = delegate;
 	}
 
-	public void prepareStart() {
+	void prepareStart() {
 		startHostSocat();
 		// Remove the /dev bind mount since we don't need it in TCP mode
 		delegate.getBinds().removeIf(b -> b.getVolume().getPath().equals(VirtualAvrContainer.containerDev));
