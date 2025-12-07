@@ -1,5 +1,6 @@
 package com.github.pfichtner.testcontainers.virtualavr;
 
+import static java.lang.ProcessBuilder.Redirect.appendTo;
 import static java.lang.String.format;
 import static java.nio.file.Files.isSymbolicLink;
 import static java.nio.file.Files.readSymbolicLink;
@@ -108,7 +109,7 @@ class TcpSerialModeSupport {
 
 			tcpSerialDevicePath = Files.createTempFile("virtualavr-", ".tmp");
 
-			socatProcess = new ProcessBuilder(socatArgs(tcpSerialPort)).inheritIO().start();
+			socatProcess = socatProcessBuilder().start();
 			boolean ok = new Waiter(5, SECONDS).withPollInterval(50, MILLISECONDS)
 					.waitUntil(this::tcpSerialDevicePathExists);
 			if (!ok) {
@@ -122,6 +123,16 @@ class TcpSerialModeSupport {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to start host socat process", e);
 		}
+	}
+
+	private ProcessBuilder socatProcessBuilder() throws IOException {
+		ProcessBuilder pb = new ProcessBuilder(socatArgs(tcpSerialPort));
+		if (delegate.debug().filter(Boolean.TRUE::equals).isEmpty()) {
+			return pb.inheritIO();
+		}
+		Path socatLog = Files.createTempFile("virtualavr-socat-" + tcpSerialPort, ".log");
+		logger.info("TCP Serial Mode: Socat output will be logged to {}", socatLog);
+		return pb.redirectErrorStream(true).redirectOutput(appendTo(socatLog.toFile()));
 	}
 
 	private boolean tcpSerialDevicePathExists() {
