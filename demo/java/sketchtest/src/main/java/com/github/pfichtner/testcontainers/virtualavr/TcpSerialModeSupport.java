@@ -121,7 +121,9 @@ class TcpSerialModeSupport {
 			}
 
 			// Configure the container to connect to the host
-			delegate.withEnv("SERIAL_TCP", format("host.docker.internal:%d", tcpSerialPort));
+			String serialTcp = format("%s:%d", "host.docker.internal", tcpSerialPort);
+			delegate.withEnv("SERIAL_TCP", serialTcp);
+			logger.info("TCP Serial Mode: Container will connect to {}", serialTcp);
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Failed to start host socat process", e);
 		}
@@ -199,9 +201,11 @@ class TcpSerialModeSupport {
 
 	protected Path devicePath() {
 		try {
-			return isSymbolicLink(tcpSerialDevicePath) //
+			Path path = isSymbolicLink(tcpSerialDevicePath) //
 					? readSymbolicLink(tcpSerialDevicePath) //
 					: tcpSerialDevicePath;
+			logger.info("TCP Serial Mode: PTY symlink {} -> {}", tcpSerialDevicePath, path);
+			return path;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to resolve TCP serial device path", e);
 		}
