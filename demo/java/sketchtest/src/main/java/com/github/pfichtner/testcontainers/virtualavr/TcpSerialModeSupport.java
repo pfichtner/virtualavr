@@ -124,14 +124,6 @@ class TcpSerialModeSupport {
 		}
 	}
 
-	private static boolean canAccess(int port) {
-		try (ServerSocket ignored = new ServerSocket(port)) {
-			return true;
-		} catch (IOException __) {
-			return false;
-		}
-	}
-
 	private boolean tcpSerialDevicePathExists() {
 		return Optional.ofNullable(tcpSerialDevicePath).filter(Files::exists).isPresent();
 	}
@@ -149,6 +141,14 @@ class TcpSerialModeSupport {
 	private static int findFreePort() throws IOException {
 		try (ServerSocket socket = new ServerSocket(0)) {
 			return socket.getLocalPort();
+		}
+	}
+
+	private static boolean canAccess(int port) {
+		try (ServerSocket __ = new ServerSocket(port)) {
+			return true;
+		} catch (IOException __) {
+			return false;
 		}
 	}
 
@@ -175,6 +175,7 @@ class TcpSerialModeSupport {
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+			process.destroyForcibly();
 		}
 	}
 
