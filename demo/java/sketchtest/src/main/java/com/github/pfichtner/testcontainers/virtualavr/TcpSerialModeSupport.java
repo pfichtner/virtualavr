@@ -8,6 +8,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.empty;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,8 +21,7 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.pfichtner.testcontainers.virtualavr.util.Waiter;
+import org.testcontainers.shaded.org.awaitility.core.ConditionTimeoutException;
 
 /**
  * Helper class that enables TCP-based serial mode for a
@@ -99,20 +99,22 @@ class TcpSerialModeSupport {
 			if (tcpSerialPort == 0) {
 				tcpSerialPort = findFreePort();
 			} else {
-				boolean ok = new Waiter(5, SECONDS).withPollInterval(100, MILLISECONDS)
-						.waitUntil(() -> canAccess(tcpSerialPort));
-				logger.info(ok //
-						? "TCP Serial Mode: Port {} is now available" //
-						: "TCP Serial Mode: Timeout waiting for port {} to become available" //
-						, tcpSerialPort);
+				try {
+					await().atMost(5, SECONDS).pollInterval(100, MILLISECONDS).until(() -> canAccess(tcpSerialPort));
+					logger.info("TCP Serial Mode: Port {} is now available" //
+							, tcpSerialPort);
+				} catch (ConditionTimeoutException __) {
+					logger.info("TCP Serial Mode: Timeout waiting for port {} to become available" //
+							, tcpSerialPort);
+				}
 			}
 
 			tcpSerialDevicePath = Files.createTempFile("virtualavr-", ".tmp");
 
 			socatProcess = socatProcessBuilder().start();
-			boolean ok = new Waiter(5, SECONDS).withPollInterval(50, MILLISECONDS)
-					.waitUntil(this::tcpSerialDevicePathExists);
-			if (!ok) {
+			try {
+				await().atMost(5, SECONDS).pollInterval(50, MILLISECONDS).until(this::tcpSerialDevicePathExists);
+			} catch (ConditionTimeoutException __) {
 				throw new RuntimeException(format("Timeout waiting for PTY creation: %s", tcpSerialDevicePath));
 			}
 
