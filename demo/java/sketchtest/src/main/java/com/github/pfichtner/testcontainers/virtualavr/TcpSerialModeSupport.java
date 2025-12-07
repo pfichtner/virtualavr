@@ -7,6 +7,7 @@ import static java.nio.file.Files.readSymbolicLink;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.empty;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -65,7 +66,6 @@ class TcpSerialModeSupport {
 	private static final Logger logger = LoggerFactory.getLogger(TcpSerialModeSupport.class);
 
 	private final VirtualAvrContainer<?> delegate;
-	private boolean debug;
 	private Path tcpSerialDevicePath;
 	private Process socatProcess;
 
@@ -73,11 +73,6 @@ class TcpSerialModeSupport {
 
 	TcpSerialModeSupport(VirtualAvrContainer<?> delegate) {
 		this.delegate = delegate;
-	}
-
-	TcpSerialModeSupport withDebug(boolean debug) {
-		this.debug = debug;
-		return this;
 	}
 
 	public void prepareStart() {
@@ -164,7 +159,7 @@ class TcpSerialModeSupport {
 	private List<String> socatArgs(int tcpSerialPort) {
 		return Stream.of( //
 				Stream.of(SOCAT_BINARY_NAME), //
-				debug ? Stream.of("-d", "-d") : Stream.<String>empty(), //
+				delegate.socatVerbosity().map(s -> s.split(" ")).map(Stream::of).orElse(empty()), //
 				Stream.of(format("pty,raw,echo=0,link=%s", tcpSerialDevicePath)), //
 				Stream.of(format("tcp-listen:%d,reuseaddr,fork", tcpSerialPort)) //
 		).reduce(Stream::concat).orElseGet(Stream::empty).collect(toList()); //

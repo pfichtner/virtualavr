@@ -1,6 +1,7 @@
 package com.github.pfichtner.testcontainers.virtualavr;
 
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
+import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
@@ -24,12 +25,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrConnection.class);
 
-	private static final String BAUDRATE = "BAUDRATE";
 	private static final String DEBUG = "DEBUG";
+	private static final String SOCAT_VERBOSITY = "SOCAT_VERBOSITY";
+	private static final String BAUDRATE = "BAUDRATE";
+
 	private static final int DEFAULT_BAUDRATE = 115200;
 
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
+	private static final String SOCAT_VERBOSE = "-d -d -v";
 
 	public static final String hostDev = "/dev";
 	public static final String containerDev = "/dev";
@@ -68,33 +72,27 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	public VirtualAvrContainer<?> withDeviceName(String ttyDevice) {
 		this.ttyDevice = ttyDevice;
-		withEnv("VIRTUALDEVICE", format("%s/%s", containerDev, ttyDevice));
-		return self();
+		return withEnv("VIRTUALDEVICE", format("%s/%s", containerDev, ttyDevice));
 	}
 
 	public VirtualAvrContainer<?> withBaudrate(int baudrate) {
-		withEnv(BAUDRATE, String.valueOf(baudrate));
-		return self();
+		return withEnv(BAUDRATE, String.valueOf(baudrate));
 	}
 
 	public VirtualAvrContainer<?> withDeviceUser(String user) {
-		withEnv("DEVICEUSER", user);
-		return self();
+		return withEnv("DEVICEUSER", user);
 	}
 
 	public VirtualAvrContainer<?> withDeviceGroup(String group) {
-		withEnv("DEVICEGROUP", group);
-		return self();
+		return withEnv("DEVICEGROUP", group);
 	}
 
 	public VirtualAvrContainer<?> withDeviceMode(int deviceMode) {
-		withEnv("DEVICEMODE", String.valueOf(deviceMode));
-		return self();
+		return withEnv("DEVICEMODE", String.valueOf(deviceMode));
 	}
 
 	public VirtualAvrContainer<?> withPausedStartup() {
-		withEnv("PAUSE_ON_START", String.valueOf(true));
-		return self();
+		return withEnv("PAUSE_ON_START", String.valueOf(true));
 	}
 
 	public VirtualAvrContainer<?> withBuildExtraFlags(Map<String, Object> cFlags) {
@@ -109,19 +107,16 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	public VirtualAvrContainer<?> withBuildExtraFlags(String cFlags) {
-		withEnv("BUILD_EXTRA_FLAGS", cFlags);
-		return self();
+		return withEnv("BUILD_EXTRA_FLAGS", cFlags);
 	}
 
 	public VirtualAvrContainer<SELF> withSketchFile(File sketchFile) {
-		withEnv("FILENAME", sketchFile.getName()) //
+		return withEnv("FILENAME", sketchFile.getName()) //
 				.withFileSystemBind(sketchFile.getParent(), "/sketch/", READ_ONLY);
-		return self();
 	}
 
 	public VirtualAvrContainer<?> withPublishMillis(int millis) {
-		withEnv("PUBLISH_MILLIS", String.valueOf(millis));
-		return self();
+		return withEnv("PUBLISH_MILLIS", String.valueOf(millis));
 	}
 
 	public VirtualAvrContainer<?> withDebug() {
@@ -129,8 +124,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	private VirtualAvrContainer<?> withDebug(boolean debug) {
-		withEnv("DEBUG", String.valueOf(debug));
-		return self();
+		return withEnv(DEBUG, String.valueOf(debug)) //
+				.withEnv(SOCAT_VERBOSITY, debug ? SOCAT_VERBOSE : "");
 	}
 
 	public synchronized VirtualAvrConnection avr() {
@@ -145,7 +140,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public synchronized SerialConnection serialConnection() throws IOException {
 		// TODO a shared connection that can be closed is not very smart
 		if (serialConnection == null || serialConnection.isClosed()) {
-			serialConnection = new SerialConnection(serialPortDescriptor(), baudrate());
+			serialConnection = new SerialConnection(serialPortDescriptor(), baudrate().orElse(DEFAULT_BAUDRATE));
 		}
 		return serialConnection;
 	}
@@ -157,23 +152,25 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 				.orElseGet(() -> format("%s/%s", hostDev, ttyDevice));
 	}
 
-	private int baudrate() {
-		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt).orElse(DEFAULT_BAUDRATE);
+	Optional<Boolean> debug() {
+		return Optional.ofNullable(getEnvMap().get(DEBUG)).map(Boolean::parseBoolean);
 	}
 
-	private boolean debug() {
-		return Optional.ofNullable(getEnvMap().get(DEBUG)).map(Boolean::parseBoolean).orElse(Boolean.FALSE);
+	Optional<String> socatVerbosity() {
+		return Optional.ofNullable(getEnvMap().get(SOCAT_VERBOSITY));
+	}
+
+	Optional<Integer> baudrate() {
+		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt);
 	}
 
 	@Override
 	public void start() {
 		logger.info("Starting VirtualAVR container in {} mode",
 				tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
-		Optional.ofNullable(tcpSerialModeSupport).ifPresent(t -> t.withDebug(debug()).prepareStart());
+		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);
 		super.start();
-		if (debug()) {
-			debugStartOut();
-		}
+		debug().filter(TRUE::equals).ifPresent(b -> debugStartOut());
 	}
 
 	private void debugStartOut() {
