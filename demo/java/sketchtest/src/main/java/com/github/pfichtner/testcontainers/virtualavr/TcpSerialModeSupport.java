@@ -72,12 +72,11 @@ class TcpSerialModeSupport {
 
 			// Start socat on the host: create PTY and listen on TCP
 			// Use fork to allow the container to reconnect if needed
-			ProcessBuilder processBuilder = new ProcessBuilder("socat", //
+			socatProcess = new ProcessBuilder( //
+					"socat", //
 					format("pty,raw,echo=0,link=%s", tcpSerialDevicePath), //
 					format("tcp-listen:%d,reuseaddr,fork", tcpSerialPort)) //
-			;
-			processBuilder.inheritIO();
-			socatProcess = processBuilder.start();
+					.inheritIO().start();
 
 			// Give socat time to create the PTY and start listening
 			int intervalMs = 50; // polling interval
