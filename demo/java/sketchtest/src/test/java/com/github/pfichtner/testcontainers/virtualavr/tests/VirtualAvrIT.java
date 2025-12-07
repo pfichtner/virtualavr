@@ -19,6 +19,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +32,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
 import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.Listener;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.SerialDebug;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.SerialDebug.Direction;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 /**
  * Integration test for virtualavr. Fires up the docker container and runs
@@ -75,7 +76,7 @@ class VirtualAvrIT {
 			try {
 				outputStream.write(bytes);
 			} catch (IOException e) {
-				throw new IllegalStateException(e);
+				throw new UncheckedIOException(e);
 			}
 		}
 
