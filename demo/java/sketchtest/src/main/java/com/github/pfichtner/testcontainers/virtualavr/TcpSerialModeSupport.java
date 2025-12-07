@@ -14,14 +14,14 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.pfichtner.testcontainers.virtualavr.util.Waiter;
 
 /**
  * Helper class that enables TCP-based serial mode for a
@@ -99,59 +99,38 @@ class TcpSerialModeSupport {
 			if (tcpSerialPort == 0) {
 				tcpSerialPort = findFreePort();
 			} else {
-				waitForPortAvailable(tcpSerialPort, 5, SECONDS);
+				boolean ok = new Waiter(5, SECONDS).withPollInterval(100, MILLISECONDS)
+						.waitUntil(() -> canAccess(tcpSerialPort));
+				logger.info(ok //
+						? "TCP Serial Mode: Port {} is now available" //
+						: "TCP Serial Mode: Timeout waiting for port {} to become available" //
+						, tcpSerialPort);
 			}
-			logger.info("TCP Serial Mode: Using port {}", tcpSerialPort);
 
 			tcpSerialDevicePath = Files.createTempFile("virtualavr-", ".tmp");
 
-			// Start socat on the host: create PTY and listen on TCP
-			// Use fork to allow the container to reconnect if needed
 			socatProcess = new ProcessBuilder(socatArgs(tcpSerialPort)).inheritIO().start();
-
-			// Give socat time to create the PTY and start listening
-			int intervalMs = 50; // polling interval
-			int waited = 0;
-			while (!tcpSerialDevicePathExists()) {
-				if (waited >= SECONDS.toMillis(5)) {
-					throw new RuntimeException(format("Timeout waiting for PTY creation: %s", tcpSerialDevicePath));
-				}
-				MILLISECONDS.sleep(intervalMs);
-				waited += intervalMs;
+			boolean ok = new Waiter(5, SECONDS).withPollInterval(50, MILLISECONDS)
+					.waitUntil(this::tcpSerialDevicePathExists);
+			if (!ok) {
+				throw new RuntimeException(format("Timeout waiting for PTY creation: %s", tcpSerialDevicePath));
 			}
 
 			// Configure the container to connect to the host
 			String serialTcp = format("%s:%d", "host.docker.internal", tcpSerialPort);
 			delegate.withEnv("SERIAL_TCP", serialTcp);
 			logger.info("TCP Serial Mode: Container will connect to {}", serialTcp);
-		} catch (IOException | InterruptedException e) {
+		} catch (IOException e) {
 			throw new RuntimeException("Failed to start host socat process", e);
 		}
 	}
 
-	/**
-	 * Wait for a port to become available (not in use).
-	 *
-	 * @param port    the port to check
-	 * @param timeout the maximum time to wait
-	 * @param unit    the unit of the timeout
-	 */
-	private static void waitForPortAvailable(int port, long timeout, TimeUnit unit) {
-		Instant deadline = Instant.now().plusMillis(unit.toMillis(timeout));
-		while (Instant.now().isBefore(deadline)) {
-			try (ServerSocket ignored = new ServerSocket(port)) {
-				logger.info("TCP Serial Mode: Port {} is now available", port);
-				return;
-			} catch (IOException __) {
-				try {
-					MILLISECONDS.sleep(100);
-				} catch (InterruptedException ie) {
-					Thread.currentThread().interrupt();
-					return;
-				}
-			}
+	private static boolean canAccess(int port) {
+		try (ServerSocket ignored = new ServerSocket(port)) {
+			return true;
+		} catch (IOException __) {
+			return false;
 		}
-		logger.warn("TCP Serial Mode: Timeout waiting for port {} to become available", port);
 	}
 
 	private boolean tcpSerialDevicePathExists() {
@@ -163,6 +142,7 @@ class TcpSerialModeSupport {
 				Stream.of(SOCAT_BINARY_NAME), //
 				delegate.socatVerbosity().map(s -> s.split(" ")).map(Stream::of).orElse(empty()), //
 				Stream.of(format("pty,raw,echo=0,link=%s", tcpSerialDevicePath)), //
+				// Use fork to allow the container to reconnect if needed
 				Stream.of(format("tcp-listen:%d,reuseaddr,fork", tcpSerialPort)) //
 		).reduce(Stream::concat).orElseGet(Stream::empty).collect(toList()); //
 	}
