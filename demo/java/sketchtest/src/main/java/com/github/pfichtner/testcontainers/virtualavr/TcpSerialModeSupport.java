@@ -1,6 +1,7 @@
 package com.github.pfichtner.testcontainers.virtualavr;
 
 import static java.lang.String.format;
+import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isSymbolicLink;
 import static java.nio.file.Files.readSymbolicLink;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -12,9 +13,14 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Helper class that enables TCP-based serial mode for a
@@ -56,10 +62,14 @@ class TcpSerialModeSupport {
 
 	private static final String SOCAT_BINARY_NAME = "socat";
 
+	private static final Logger logger = LoggerFactory.getLogger(TcpSerialModeSupport.class);
+
 	private final VirtualAvrContainer<?> delegate;
 	private boolean debug;
 	private Path tcpSerialDevicePath;
 	private Process socatProcess;
+
+	private int tcpSerialPort;
 
 	TcpSerialModeSupport(VirtualAvrContainer<?> delegate) {
 		this.delegate = delegate;
@@ -78,7 +88,26 @@ class TcpSerialModeSupport {
 
 	private void startHostSocat() {
 		try {
-			int tcpSerialPort = findFreePort();
+			if (socatProcess != null && socatProcess.isAlive()) {
+				if (tcpSerialDevicePathExists()) {
+					logger.info("TCP Serial Mode: Socat already running (PID {}) with PTY at {}, skipping start",
+							socatProcess.pid(), tcpSerialDevicePath);
+					return;
+				}
+				logger.warn("TCP Serial Mode: Socat process running (PID {}) but PTY missing, killing and restarting",
+						socatProcess.pid());
+				stopSocat(socatProcess);
+			}
+
+			// Find a free port (only on first start, reuse port on restart for container
+			// compatibility)
+			if (tcpSerialPort == 0) {
+				tcpSerialPort = findFreePort();
+			} else {
+				waitForPortAvailable(tcpSerialPort, 5, SECONDS);
+			}
+			logger.info("TCP Serial Mode: Using port {}", tcpSerialPort);
+
 			tcpSerialDevicePath = Files.createTempFile("virtualavr-", ".tmp");
 
 			// Start socat on the host: create PTY and listen on TCP
@@ -88,7 +117,7 @@ class TcpSerialModeSupport {
 			// Give socat time to create the PTY and start listening
 			int intervalMs = 50; // polling interval
 			int waited = 0;
-			while (!Files.exists(tcpSerialDevicePath)) {
+			while (!tcpSerialDevicePathExists()) {
 				if (waited >= SECONDS.toMillis(5)) {
 					throw new RuntimeException(format("Timeout waiting for PTY creation: %s", tcpSerialDevicePath));
 				}
@@ -101,6 +130,35 @@ class TcpSerialModeSupport {
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Failed to start host socat process", e);
 		}
+	}
+
+	/**
+	 * Wait for a port to become available (not in use).
+	 *
+	 * @param port    the port to check
+	 * @param timeout the maximum time to wait
+	 * @param unit    the unit of the timeout
+	 */
+	private static void waitForPortAvailable(int port, long timeout, TimeUnit unit) {
+		Instant deadline = Instant.now().plusMillis(unit.toMillis(timeout));
+		while (Instant.now().isBefore(deadline)) {
+			try (ServerSocket ignored = new ServerSocket(port)) {
+				logger.info("TCP Serial Mode: Port {} is now available", port);
+				return;
+			} catch (IOException __) {
+				try {
+					MILLISECONDS.sleep(100);
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
+		}
+		logger.warn("TCP Serial Mode: Timeout waiting for port {} to become available", port);
+	}
+
+	private boolean tcpSerialDevicePathExists() {
+		return tcpSerialDevicePath != null && exists(tcpSerialDevicePath);
 	}
 
 	private List<String> socatArgs(int tcpSerialPort) {
