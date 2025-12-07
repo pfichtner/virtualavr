@@ -1,6 +1,6 @@
 {
   "extends": ["config:recommended"],
-  "enabledManagers": ["maven", "docker-compose"],
+  "enabledManagers": ["maven", "docker-compose", "pip_requirements", "npm"],
   "labels": ["dependencies"],
   "packageRules": [
     {
