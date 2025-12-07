@@ -1,7 +1,6 @@
 package com.github.pfichtner.testcontainers.virtualavr;
 
 import static java.lang.String.format;
-import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isSymbolicLink;
 import static java.nio.file.Files.readSymbolicLink;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -134,7 +133,7 @@ class TcpSerialModeSupport {
 	}
 
 	private boolean tcpSerialDevicePathExists() {
-		return tcpSerialDevicePath != null && exists(tcpSerialDevicePath);
+		return Optional.ofNullable(tcpSerialDevicePath).filter(Files::exists).isPresent();
 	}
 
 	private List<String> socatArgs(int tcpSerialPort) {
