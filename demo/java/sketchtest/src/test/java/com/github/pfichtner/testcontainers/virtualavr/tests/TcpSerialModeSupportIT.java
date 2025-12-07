@@ -14,7 +14,6 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
 import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
@@ -42,18 +41,13 @@ class TcpSerialModeSupportIT {
 
 	@Test
 	void canReadAndWriteViaSocatBridge() throws Exception {
-		SerialConnectionAwait awaiter = awaiter(
-				verifyConnectionIsNotDefaultTTY(virtualAvrContainer.serialConnection()));
+		assertThat(virtualAvrContainer.serialPortDescriptor()).doesNotContain(SOME_NOT_USED_TTY_NAME);
+		SerialConnectionAwait awaiter = awaiter(virtualAvrContainer.serialConnection());
 		for (int i = 0; i < 255; i++) {
 			byte[] arr = new byte[] { (byte) i };
 			awaiter.sendAwait(arr, b -> Arrays.equals(b, arr));
 		}
 		awaiter.sendAwait(new byte[] { (byte) 255 }, b -> Arrays.equals(b, new byte[] { (byte) 255, 0 }));
-	}
-
-	static SerialConnection verifyConnectionIsNotDefaultTTY(SerialConnection serialConnection) {
-		assertThat(serialConnection.portDescription()).doesNotContain(SOME_NOT_USED_TTY_NAME);
-		return serialConnection;
 	}
 
 	static boolean isSocatAvailable() {

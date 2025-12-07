@@ -125,17 +125,16 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public synchronized SerialConnection serialConnection() throws IOException {
 		// TODO a shared connection that can be closed is not very smart
 		if (serialConnection == null || serialConnection.isClosed()) {
-			serialConnection = newSerialConnection();
+			serialConnection = new SerialConnection(serialPortDescriptor(), baudrate());
 		}
 		return serialConnection;
 	}
 
-	private SerialConnection newSerialConnection() throws IOException {
-		String name = Optional.ofNullable(tcpSerialModeSupport) //
+	public String serialPortDescriptor() {
+		return Optional.ofNullable(tcpSerialModeSupport) //
 				.map(TcpSerialModeSupport::devicePath) //
 				.map(Object::toString) //
 				.orElseGet(() -> format("%s/%s", hostDev, ttyDevice));
-		return new SerialConnection(name, baudrate());
 	}
 
 	private int baudrate() {
