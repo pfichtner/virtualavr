@@ -5,13 +5,16 @@ import static java.nio.file.Files.isSymbolicLink;
 import static java.nio.file.Files.readSymbolicLink;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Helper class that enables TCP-based serial mode for a
@@ -51,12 +54,20 @@ import java.util.Optional;
  */
 class TcpSerialModeSupport {
 
+	private static final String SOCAT_BINARY_NAME = "socat";
+
 	private final VirtualAvrContainer<?> delegate;
+	private boolean debug;
 	private Path tcpSerialDevicePath;
 	private Process socatProcess;
 
 	TcpSerialModeSupport(VirtualAvrContainer<?> delegate) {
 		this.delegate = delegate;
+	}
+
+	TcpSerialModeSupport withDebug(boolean debug) {
+		this.debug = debug;
+		return this;
 	}
 
 	public void prepareStart() {
@@ -68,15 +79,11 @@ class TcpSerialModeSupport {
 	private void startHostSocat() {
 		try {
 			int tcpSerialPort = findFreePort();
-			this.tcpSerialDevicePath = Files.createTempFile("virtualavr-", ".tmp");
+			tcpSerialDevicePath = Files.createTempFile("virtualavr-", ".tmp");
 
 			// Start socat on the host: create PTY and listen on TCP
 			// Use fork to allow the container to reconnect if needed
-			socatProcess = new ProcessBuilder( //
-					"socat", //
-					format("pty,raw,echo=0,link=%s", tcpSerialDevicePath), //
-					format("tcp-listen:%d,reuseaddr,fork", tcpSerialPort)) //
-					.inheritIO().start();
+			socatProcess = new ProcessBuilder(socatArgs(tcpSerialPort)).inheritIO().start();
 
 			// Give socat time to create the PTY and start listening
 			int intervalMs = 50; // polling interval
@@ -94,6 +101,15 @@ class TcpSerialModeSupport {
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException("Failed to start host socat process", e);
 		}
+	}
+
+	private List<String> socatArgs(int tcpSerialPort) {
+		return Stream.of( //
+				Stream.of(SOCAT_BINARY_NAME), //
+				debug ? Stream.of("-d", "-d") : Stream.<String>empty(), //
+				Stream.of(format("pty,raw,echo=0,link=%s", tcpSerialDevicePath)), //
+				Stream.of(format("tcp-listen:%d,reuseaddr,fork", tcpSerialPort)) //
+		).reduce(Stream::concat).orElseGet(Stream::empty).collect(toList()); //
 	}
 
 	private static int findFreePort() throws IOException {

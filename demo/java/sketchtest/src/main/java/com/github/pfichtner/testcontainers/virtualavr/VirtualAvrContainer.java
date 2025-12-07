@@ -17,6 +17,7 @@ import org.testcontainers.utility.DockerImageName;
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
 
 	private static final String BAUDRATE = "BAUDRATE";
+	private static final String DEBUG = "DEBUG";
 	private static final int DEFAULT_BAUDRATE = 115200;
 
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
@@ -115,6 +116,11 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return self();
 	}
 
+	public VirtualAvrContainer<?> withDebug() {
+		withEnv("DEBUG", Boolean.TRUE.toString());
+		return self();
+	}
+
 	public synchronized VirtualAvrConnection avr() {
 		if (avr == null) {
 			avr = connectionToVirtualAvr(this);
@@ -141,9 +147,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt).orElse(DEFAULT_BAUDRATE);
 	}
 
+	private boolean debug() {
+		return Optional.ofNullable(getEnvMap().get(DEBUG)).map(Boolean::parseBoolean).orElse(Boolean.FALSE);
+	}
+
 	@Override
 	public void start() {
-		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);
+		Optional.ofNullable(tcpSerialModeSupport) //
+				.map(t -> t.withDebug(debug())) //
+				.ifPresent(TcpSerialModeSupport::prepareStart);
 		super.start();
 	}
 

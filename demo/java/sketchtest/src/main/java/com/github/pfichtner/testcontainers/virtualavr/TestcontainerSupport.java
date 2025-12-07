@@ -8,8 +8,6 @@ import java.util.UUID;
 import org.testcontainers.images.ImagePullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
-import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
-
 public final class TestcontainerSupport {
 
 	private static final String VIRTUALAVR_DOCKER_TAG_PROPERTY_NAME = "virtualavr.docker.tag";

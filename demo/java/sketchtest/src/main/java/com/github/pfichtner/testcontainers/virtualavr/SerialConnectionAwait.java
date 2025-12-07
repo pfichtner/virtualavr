@@ -8,8 +8,6 @@ import java.util.function.Predicate;
 
 import org.testcontainers.shaded.org.awaitility.core.ConditionFactory;
 
-import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
-
 public class SerialConnectionAwait {
 
 	private final SerialConnection connection;
