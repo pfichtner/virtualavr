@@ -2,6 +2,7 @@ package com.github.pfichtner.testcontainers.virtualavr;
 
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 import static org.testcontainers.containers.BindMode.READ_WRITE;
@@ -10,11 +11,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
+
+	private static final String VIRTUAL_AVR = "VirtualAVR";
+
+	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrConnection.class);
 
 	private static final String BAUDRATE = "BAUDRATE";
 	private static final String DEBUG = "DEBUG";
@@ -117,13 +125,19 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	public VirtualAvrContainer<?> withDebug() {
-		withEnv("DEBUG", Boolean.TRUE.toString());
+		return withDebug(true);
+	}
+
+	private VirtualAvrContainer<?> withDebug(boolean debug) {
+		withEnv("DEBUG", String.valueOf(debug));
 		return self();
 	}
 
 	public synchronized VirtualAvrConnection avr() {
 		if (avr == null) {
+			logger.info("WebSocket: Connecting to ws://localhost:{}", getFirstMappedPort());
 			avr = connectionToVirtualAvr(this);
+			logger.info("WebSocket: Connection established: isOpen={}", avr.isOpen());
 		}
 		return avr;
 	}
@@ -153,10 +167,34 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	@Override
 	public void start() {
-		Optional.ofNullable(tcpSerialModeSupport) //
-				.map(t -> t.withDebug(debug())) //
-				.ifPresent(TcpSerialModeSupport::prepareStart);
+		logger.info("Starting VirtualAVR container in {} mode",
+				tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
+		Optional.ofNullable(tcpSerialModeSupport).ifPresent(t -> t.withDebug(debug()).prepareStart());
 		super.start();
+		if (debug()) {
+			debugStartOut();
+		}
+	}
+
+	private void debugStartOut() {
+		// Log container info after start
+		logger.info("{} container started: ID={}", VIRTUAL_AVR, getContainerId());
+		logger.info("Container environment variables:");
+		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, v));
+
+		// Wait a moment for the container's entrypoint to establish connections
+		try {
+			SECONDS.sleep(2);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+
+		// Log container logs to help debug
+		logger.info("Container logs (first 50 lines):");
+		Stream.of(getLogs().split("\\R")).limit(50).forEach(l -> logger.info("\t[container] {}", l));
+
+		// Check container health
+		logger.info("Container state: isRunning={}, isHealthy={}", isRunning(), isHealthy());
 	}
 
 	@Override
@@ -165,6 +203,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		Optional.ofNullable(avr).ifPresent(VirtualAvrConnection::close);
 		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::finalizeStop);
 		avr = null;
+		logger.info("{} container stopped", VIRTUAL_AVR);
 	}
 
 }

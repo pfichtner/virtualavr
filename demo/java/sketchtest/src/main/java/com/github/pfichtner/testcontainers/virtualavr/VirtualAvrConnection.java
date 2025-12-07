@@ -18,6 +18,8 @@ import java.util.function.BinaryOperator;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 
 import com.google.gson.Gson;
@@ -30,6 +32,8 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 
 public class VirtualAvrConnection extends WebSocketClient implements AutoCloseable {
+
+	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrConnection.class);
 
 	private static final class PinStateJsonDeserializer implements JsonDeserializer<PinState> {
 		@Override
@@ -410,10 +414,12 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	@Override
 	public void onError(Exception ex) {
+		logger.warn("WebSocket error: {}", ex.getMessage());
 	}
 
 	@Override
 	public void onClose(int code, String reason, boolean remote) {
+		logger.debug("WebSocket closed: code={}, reason={}, remote={}", code, reason, remote);
 	}
 
 }
