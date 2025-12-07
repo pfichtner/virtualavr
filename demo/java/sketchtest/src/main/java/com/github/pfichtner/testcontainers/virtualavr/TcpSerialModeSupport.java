@@ -83,7 +83,7 @@ class TcpSerialModeSupport {
 
 	private void startHostSocat() {
 		try {
-			if (socatProcess != null && socatProcess.isAlive()) {
+			if (Optional.ofNullable(socatProcess).filter(Process::isAlive).isPresent()) {
 				if (tcpSerialDevicePathExists()) {
 					logger.info("TCP Serial Mode: Socat already running (PID {}) with PTY at {}, skipping start",
 							socatProcess.pid(), tcpSerialDevicePath);
@@ -94,24 +94,9 @@ class TcpSerialModeSupport {
 				stopSocat(socatProcess);
 			}
 
-			// Find a free port (only on first start, reuse port on restart for container
-			// compatibility)
-			if (tcpSerialPort == 0) {
-				tcpSerialPort = findFreePort();
-			} else {
-				try {
-					await().atMost(5, SECONDS).pollInterval(100, MILLISECONDS).until(() -> canAccess(tcpSerialPort));
-					logger.info("TCP Serial Mode: Port {} is now available" //
-							, tcpSerialPort);
-				} catch (ConditionTimeoutException __) {
-					logger.info("TCP Serial Mode: Timeout waiting for port {} to become available" //
-							, tcpSerialPort);
-				}
-			}
-
 			tcpSerialDevicePath = Files.createTempFile("virtualavr-", ".tmp");
-
-			socatProcess = socatProcessBuilder().start();
+			tcpSerialPort = tcpSerialPort();
+			socatProcess = socatProcessBuilder(tcpSerialDevicePath, tcpSerialPort).start();
 			try {
 				await().atMost(5, SECONDS).pollInterval(50, MILLISECONDS).until(this::tcpSerialDevicePathExists);
 			} catch (ConditionTimeoutException __) {
@@ -127,8 +112,24 @@ class TcpSerialModeSupport {
 		}
 	}
 
-	private ProcessBuilder socatProcessBuilder() throws IOException {
-		ProcessBuilder pb = new ProcessBuilder(socatArgs(tcpSerialPort));
+	private int tcpSerialPort() {
+		if (tcpSerialPort == 0) {
+			return findFreePort();
+		}
+		// reuse port on restart for container compatibility
+		try {
+			await().atMost(5, SECONDS).pollInterval(100, MILLISECONDS).until(() -> canAccess(tcpSerialPort));
+			logger.info("TCP Serial Mode: Port {} is now available" //
+					, tcpSerialPort);
+		} catch (ConditionTimeoutException __) {
+			logger.info("TCP Serial Mode: Timeout waiting for port {} to become available" //
+					, tcpSerialPort);
+		}
+		return tcpSerialPort;
+	}
+
+	private ProcessBuilder socatProcessBuilder(Path tcpSerialDevicePath, int tcpSerialPort) throws IOException {
+		ProcessBuilder pb = new ProcessBuilder(socatArgs(tcpSerialDevicePath, tcpSerialPort));
 		if (delegate.debug().filter(Boolean.TRUE::equals).isEmpty()) {
 			return pb.inheritIO();
 		}
@@ -141,7 +142,7 @@ class TcpSerialModeSupport {
 		return Optional.ofNullable(tcpSerialDevicePath).filter(Files::exists).isPresent();
 	}
 
-	private List<String> socatArgs(int tcpSerialPort) {
+	private List<String> socatArgs(Path tcpSerialDevicePath, int tcpSerialPort) {
 		return Stream.of( //
 				Stream.of(SOCAT_BINARY_NAME), //
 				delegate.socatVerbosity().map(s -> s.split(" ")).map(Stream::of).orElse(empty()), //
@@ -151,9 +152,11 @@ class TcpSerialModeSupport {
 		).reduce(Stream::concat).orElseGet(Stream::empty).collect(toList()); //
 	}
 
-	private static int findFreePort() throws IOException {
+	private static int findFreePort() {
 		try (ServerSocket socket = new ServerSocket(0)) {
 			return socket.getLocalPort();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to find free TCP port", e);
 		}
 	}
 
