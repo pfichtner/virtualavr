@@ -45,7 +45,8 @@ Environment variables supported
   This tells the container to connect to host:port for serial communication instead of creating a local PTY.
   Notes:
   Typically used on macOS or Windows with Docker Desktop, where local PTYs may not be available.
-  If SERIAL_TCP is empty or unset, the container falls back to standard PTY mode (local virtual device).
+  Important:
+  When ```SERIAL_TCP``` is used, the host machine must provide the [socat](http://www.dest-unreach.org/socat/) binary, as socat is required to bridge the TCP stream into the simulator’s serial interface.
 
 # Screencast of usage
 The screencast is not uptodate!!!

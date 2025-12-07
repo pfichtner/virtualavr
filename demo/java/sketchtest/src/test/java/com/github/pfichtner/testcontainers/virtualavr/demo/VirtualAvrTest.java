@@ -28,6 +28,7 @@ class VirtualAvrTest {
 
 	private static final String INTERNAL_LED = "13";
 
+	@SuppressWarnings("resource")
 	@Container
 	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(loadClasspath("/blink/blink.ino"));
 

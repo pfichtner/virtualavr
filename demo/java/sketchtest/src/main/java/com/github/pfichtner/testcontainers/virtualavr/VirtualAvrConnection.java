@@ -207,11 +207,11 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 		return this;
 	}
 
+	@SuppressWarnings("resource")
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
-		VirtualAvrConnection connection = new VirtualAvrConnection(
-				URI.create(format("ws://%s:%s", "localhost", container.getFirstMappedPort())));
-		connection.addPinStateListener(p -> System.out.printf("Pin %s = %s\n", p.getPin(), p.getState()));
-		return connection;
+		URI serverUri = URI.create(format("ws://%s:%s", "localhost", container.getFirstMappedPort()));
+		return new VirtualAvrConnection(serverUri)
+				.addPinStateListener(p -> System.out.printf("Pin %s = %s\n", p.getPin(), p.getState()));
 	}
 
 	public VirtualAvrConnection(URI serverUri) {

@@ -22,8 +22,10 @@ class VirtualAvrDefinesTest {
 			"TRY_ME_TO_OVERWRITE", SUCCESS_OVERWRITING_DEFINE_REPLACEMENT //
 	);
 
+	@SuppressWarnings("resource")
 	@Container
-	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withBuildExtraFlags(buildExtraFlags) //
+	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>() //
+			.withBuildExtraFlags(buildExtraFlags) //
 			.withSketchFile(new File("../../../test-artifacts/definetest/definetest.ino")) //
 			.withBaudrate(115200);
 
