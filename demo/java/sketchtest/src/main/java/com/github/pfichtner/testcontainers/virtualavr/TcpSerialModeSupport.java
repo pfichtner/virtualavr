@@ -201,14 +201,16 @@ class TcpSerialModeSupport {
 
 	protected Path devicePath() {
 		try {
-			Path path = isSymbolicLink(tcpSerialDevicePath) //
-					? readSymbolicLink(tcpSerialDevicePath) //
-					: tcpSerialDevicePath;
-			logger.info("TCP Serial Mode: PTY symlink {} -> {}", tcpSerialDevicePath, path);
-			return path;
+			Path resolved = resolveSymLink(tcpSerialDevicePath);
+			logger.info("TCP Serial Mode: PTY symlink {} -> {}", tcpSerialDevicePath, resolved);
+			return resolved;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to resolve TCP serial device path", e);
 		}
+	}
+
+	private static Path resolveSymLink(Path path) throws IOException {
+		return isSymbolicLink(path) ? readSymbolicLink(path) : path;
 	}
 
 }

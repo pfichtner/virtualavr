@@ -152,15 +152,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 				.orElseGet(() -> format("%s/%s", hostDev, ttyDevice));
 	}
 
-	Optional<Boolean> debug() {
+	protected Optional<Boolean> debug() {
 		return Optional.ofNullable(getEnvMap().get(DEBUG)).map(Boolean::parseBoolean);
 	}
 
-	Optional<String> socatVerbosity() {
+	protected Optional<String> socatVerbosity() {
 		return Optional.ofNullable(getEnvMap().get(SOCAT_VERBOSITY));
 	}
 
-	Optional<Integer> baudrate() {
+	protected Optional<Integer> baudrate() {
 		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt);
 	}
 
