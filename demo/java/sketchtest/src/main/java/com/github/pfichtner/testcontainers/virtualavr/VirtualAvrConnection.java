@@ -3,77 +3,23 @@ package com.github.pfichtner.testcontainers.virtualavr;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toMap;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
-import java.lang.reflect.Type;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BinaryOperator;
 
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
+public interface VirtualAvrConnection extends AutoCloseable {
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-
-public class VirtualAvrConnection extends WebSocketClient implements AutoCloseable {
-
-	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrConnection.class);
-
-	private static final class PinStateJsonDeserializer implements JsonDeserializer<PinState> {
-		@Override
-		public PinState deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-				throws JsonParseException {
-			JsonObject object = json.getAsJsonObject();
-			String pin = object.get("pin").getAsString();
-			JsonPrimitive state = object.get("state").getAsJsonPrimitive();
-			return createPinState(pin, state).withCpuTime(object.get("cpuTime").getAsDouble());
-		}
-
-		private PinState createPinState(String pin, JsonPrimitive state) {
-			return state.isBoolean() //
-					? new PinState(pin, state.getAsBoolean())
-					: new PinState(pin, state.getAsInt());
-		}
-	}
-
-	public enum PinReportMode {
+	enum PinReportMode {
 		ANALOG("analog"), DIGITAL("digital"), NONE("none");
 
-		private final String modeName;
+		final String modeName;
 
 		PinReportMode(String message) {
 			this.modeName = message;
 		}
 	}
-
-	public interface Listener<T> {
-		void accept(T t);
-	}
-
-	private final Gson gson = new GsonBuilder().registerTypeAdapter(PinState.class, new PinStateJsonDeserializer())
-			.create();
-
-	private final List<Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
-	private final List<Listener<SerialDebug>> serialDebugListeners = new CopyOnWriteArrayList<>();
-	private final List<Listener<CommandReply>> commandReplyListeners = new CopyOnWriteArrayList<>();
-	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
-	private boolean debugSerial;
 
 	public static class PinState {
 
@@ -157,6 +103,19 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	}
 
+	public static class CommandReply {
+
+		private final UUID replyId;
+
+		public CommandReply(UUID replyId) {
+			this.replyId = replyId;
+		}
+
+		public UUID replyId() {
+			return replyId;
+		}
+	}
+
 	public static class SerialDebug {
 
 		public enum Direction {
@@ -181,245 +140,40 @@ public class VirtualAvrConnection extends WebSocketClient implements AutoCloseab
 
 	}
 
-	public static class CommandReply {
-
-		private final UUID replyId;
-
-		public CommandReply(UUID replyId) {
-			this.replyId = replyId;
-		}
-
-		public UUID replyId() {
-			return replyId;
-		}
+	interface Listener<T> {
+		void accept(T t);
 	}
 
-	private VirtualAvrConnection sendAndWaitForReply(WithReplyId messageToSend) {
-		AtomicBoolean replyReceived = new AtomicBoolean();
-		Listener<CommandReply> listener = r -> {
-			if (Objects.equals(messageToSend.replyId(), r.replyId())) {
-				replyReceived.set(true);
-			}
-		};
-		addCommandReplyListener(listener);
-		try {
-			send(gson.toJson(messageToSend));
-			await().untilTrue(replyReceived);
-		} finally {
-			removeCommandReplyListener(listener);
-		}
-		return this;
-	}
+	boolean isConnected();
 
-	@SuppressWarnings("resource")
-	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
-		URI serverUri = URI.create(format("ws://%s:%s", "localhost", container.getFirstMappedPort()));
-		return new VirtualAvrConnection(serverUri)
-				.addPinStateListener(p -> System.out.printf("Pin %s = %s\n", p.getPin(), p.getState()));
-	}
+	void close();
 
-	public VirtualAvrConnection(URI serverUri) {
-		super(serverUri);
-		addPinStateListener(this.pinStates::add);
-		try {
-			connectBlocking();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-	}
+	VirtualAvrConnection addPinStateListener(VirtualAvrConnection.Listener<PinState> listener);
 
-	public VirtualAvrConnection addPinStateListener(Listener<PinState> listener) {
-		pinStateListeners.add(listener);
-		return this;
-	}
+	VirtualAvrConnection removePinStateListener(VirtualAvrConnection.Listener<PinState> listener);
 
-	public VirtualAvrConnection removePinStateListener(Listener<PinState> listener) {
-		pinStateListeners.remove(listener);
-		return this;
-	}
+	VirtualAvrConnection addSerialDebugListener(VirtualAvrConnection.Listener<SerialDebug> listener);
 
-	public VirtualAvrConnection addSerialDebugListener(Listener<SerialDebug> listener) {
-		serialDebugListeners.add(listener);
-		return serialDebugListenersChanged();
-	}
+	VirtualAvrConnection removeSerialDebugListener(VirtualAvrConnection.Listener<SerialDebug> listener);
 
-	public VirtualAvrConnection removeSerialDebugListener(Listener<SerialDebug> listener) {
-		serialDebugListeners.remove(listener);
-		return serialDebugListenersChanged();
-	}
+	VirtualAvrConnection addCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener);
 
-	private VirtualAvrConnection serialDebugListenersChanged() {
-		return debugSerial(!serialDebugListeners.isEmpty());
-	}
+	VirtualAvrConnection removeCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener);
 
-	public VirtualAvrConnection addCommandReplyListener(Listener<CommandReply> listener) {
-		commandReplyListeners.add(listener);
-		return this;
-	}
+	List<PinState> pinStates();
 
-	public VirtualAvrConnection removeCommandReplyListener(Listener<CommandReply> listener) {
-		commandReplyListeners.remove(listener);
-		return this;
-	}
+	Map<String, Object> lastStates();
 
-	public List<PinState> pinStates() {
-		return pinStates;
-	}
+	VirtualAvrConnection clearStates();
 
-	public Map<String, Object> lastStates() {
-		return pinStates().stream().collect(toMap(PinState::getPin, PinState::getState, lastWins()));
-	}
+	VirtualAvrConnection pinState(String pin, boolean state);
 
-	private static <T> BinaryOperator<T> lastWins() {
-		return (first, last) -> last;
-	}
+	VirtualAvrConnection pinState(String pin, int state);
 
-	public VirtualAvrConnection clearStates() {
-		pinStates.clear();
-		return this;
-	}
+	VirtualAvrConnection pinReportMode(String pin, VirtualAvrConnection.PinReportMode mode);
 
-	@Override
-	public void onOpen(ServerHandshake handshakedata) {
-	}
+	VirtualAvrConnection pause();
 
-	@Override
-	public void onMessage(String message) {
-		Map<?, ?> json = gson.fromJson(message, Map.class);
-		if (isDeprecated(json)) {
-			return;
-		}
-		if (isResponse(json)) {
-			callAccept(commandReplyListeners, message, CommandReply.class);
-		} else {
-			String type = String.valueOf(json.get("type"));
-			if ("pinState".equals(type)) {
-				callAccept(pinStateListeners, message, PinState.class);
-			} else if ("serialDebug".equals(type)) {
-				callAccept(serialDebugListeners, message, SerialDebug.class);
-			}
-		}
-	}
-
-	private static boolean isDeprecated(Map<?, ?> json) {
-		return json.get("deprecated") != null;
-	}
-
-	private static boolean isResponse(Map<?, ?> json) {
-		return json.get("replyId") != null && json.get("executed") != null;
-	}
-
-	private <T> void callAccept(List<Listener<T>> listeners, String message, Class<T> clazz) {
-		callAccept(listeners, gson.fromJson(message, clazz));
-	}
-
-	private static <T> void callAccept(List<Listener<T>> listeners, T message) {
-		for (Listener<T> listener : listeners) {
-			listener.accept(message);
-		}
-	}
-
-	private static class WithReplyId {
-
-		private final UUID replyId = UUID.randomUUID();
-
-		public UUID replyId() {
-			return replyId;
-		}
-	}
-
-	@SuppressWarnings("unused")
-	private static class Control extends WithReplyId {
-
-		private static final Control PAUSE = new Control("pause");
-		private static final Control UNPAUSE = new Control("unpause");
-
-		private final String type = "control";
-		private final String action;
-
-		private Control(String action) {
-			this.action = action;
-		}
-
-	}
-
-	@SuppressWarnings("unused")
-	private static class SetPinState extends WithReplyId {
-
-		private final String type = "pinState";
-		private final String pin;
-		private final Object state;
-
-		private SetPinState(String pin, Object state) {
-			this.pin = pin;
-			this.state = state;
-		}
-
-	}
-
-	public VirtualAvrConnection pinState(String pin, boolean state) {
-		return sendAndWaitForReply(new SetPinState(pin, state));
-	}
-
-	public VirtualAvrConnection pinState(String pin, int state) {
-		return sendAndWaitForReply(new SetPinState(pin, state));
-	}
-
-	@SuppressWarnings("unused")
-	private static class SetPinReportMode extends WithReplyId {
-
-		private final String type = "pinMode";
-		private final String pin;
-		private final String mode;
-
-		private SetPinReportMode(String pin, PinReportMode mode) {
-			this.pin = pin;
-			this.mode = mode.modeName;
-		}
-
-	}
-
-	@SuppressWarnings("unused")
-	private static class SetSerialDebug extends WithReplyId {
-
-		private final String type = "serialDebug";
-		private final boolean state;
-
-		private SetSerialDebug(boolean state) {
-			this.state = state;
-		}
-
-	}
-
-	public VirtualAvrConnection pinReportMode(String pin, PinReportMode mode) {
-		return sendAndWaitForReply(new SetPinReportMode(pin, mode));
-	}
-
-	public VirtualAvrConnection pause() {
-		return sendAndWaitForReply(Control.PAUSE);
-	}
-
-	public VirtualAvrConnection unpause() {
-		return sendAndWaitForReply(Control.UNPAUSE);
-	}
-
-	private VirtualAvrConnection debugSerial(boolean state) {
-		if (state != debugSerial) {
-			VirtualAvrConnection connection = sendAndWaitForReply(new SetSerialDebug(state));
-			debugSerial = state;
-			return connection;
-		}
-		return this;
-	}
-
-	@Override
-	public void onError(Exception ex) {
-		logger.warn("WebSocket error: {}", ex.getMessage());
-	}
-
-	@Override
-	public void onClose(int code, String reason, boolean remote) {
-		logger.debug("WebSocket closed: code={}, reason={}, remote={}", code, reason, remote);
-	}
+	VirtualAvrConnection unpause();
 
 }

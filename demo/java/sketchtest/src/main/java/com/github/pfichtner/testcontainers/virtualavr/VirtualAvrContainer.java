@@ -1,6 +1,7 @@
 package com.github.pfichtner.testcontainers.virtualavr;
 
-import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.connectionToVirtualAvr;
+import static com.github.pfichtner.testcontainers.virtualavr.DefaultVirtualAvrConnection.connectionToVirtualAvr;
+import static com.github.pfichtner.testcontainers.virtualavr.util.GracefulCloseProxy.wrapWithGracefulClose;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -23,7 +24,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
 
-	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrConnection.class);
+	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrContainer.class);
 
 	private static final String DEBUG = "DEBUG";
 	private static final String SOCAT_VERBOSITY = "SOCAT_VERBOSITY";
@@ -131,8 +132,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public synchronized VirtualAvrConnection avr() {
 		if (avr == null) {
 			logger.info("WebSocket: Connecting to ws://localhost:{}", getFirstMappedPort());
-			avr = connectionToVirtualAvr(this);
-			logger.info("WebSocket: Connection established: isOpen={}", avr.isOpen());
+			avr = wrapWithGracefulClose(connectionToVirtualAvr(this), VirtualAvrConnection.class);
+			logger.info("WebSocket: Connection established: isConnected={}", avr.isConnected());
 		}
 		return avr;
 	}
