@@ -31,16 +31,15 @@ import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
  * Arduino based Ardulink firmware behavior can be tested without having real
  * hardware/flashing real hardware.
  * <p>
- * This test should become part of Ardulink itself (to test the local/internal
- * sketch file not the one uploaded to GitHub).
+ * This test also is part of Ardulink itself (to test the local/internal
+ * sketch).
  * 
  * @author Peter Fichtner
  */
 @Testcontainers
 class ArdulinkFirmwareIT {
 
-	static final String REMOTE_INO_FILE = "https://raw.githubusercontent.com/Ardulink/Ardulink-2/"
-			+ "master/deploy-dist/rootfolder/sketches/ArdulinkProtocol/ArdulinkProtocol.ino";
+	static final String REMOTE_INO_FILE = "https://github.com/Ardulink/Firmware/releases/download/v1.2.0/ArdulinkProtocol.ino.hex";
 
 	static File inoFile;
 
