@@ -4,6 +4,7 @@ import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSuppor
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOff;
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
+import static java.lang.String.format;
 import static org.awaitility.Awaitility.await;
 import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
@@ -37,7 +38,7 @@ class NoiseLevelIndicatorTest {
 	private static File property(String name) {
 		return Optional.ofNullable(System.getProperty(name)) //
 				.map(File::new) //
-				.orElseThrow(() -> new IllegalStateException("env var " + name + " not set"));
+				.orElseThrow(() -> new IllegalStateException(format("env var %s not set", name)));
 	}
 
 	static VirtualAvrConnection avr;
