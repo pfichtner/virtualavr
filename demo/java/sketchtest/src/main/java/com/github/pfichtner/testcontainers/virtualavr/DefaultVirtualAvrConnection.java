@@ -2,7 +2,6 @@ package com.github.pfichtner.testcontainers.virtualavr;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -10,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BinaryOperator;
 
 import org.java_websocket.client.WebSocketClient;
@@ -60,20 +59,30 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	private boolean debugSerial;
 
 	private VirtualAvrConnection sendAndWaitForReply(WithReplyId messageToSend) {
-		AtomicBoolean replyReceived = new AtomicBoolean();
+		sendAndWaitForReplyAsync(messageToSend).join();
+		return this;
+	}
+
+	private CompletableFuture<CommandReply> sendAndWaitForReplyAsync(WithReplyId message) {
+		CompletableFuture<CommandReply> future = createReplyFuture(message);
+		try {
+			send(gson.toJson(message));
+		} catch (Exception ex) {
+			future.completeExceptionally(ex);
+		}
+		return future;
+	}
+
+	private CompletableFuture<CommandReply> createReplyFuture(WithReplyId message) {
+		CompletableFuture<CommandReply> future = new CompletableFuture<>();
 		VirtualAvrConnection.Listener<CommandReply> listener = r -> {
-			if (Objects.equals(messageToSend.replyId(), r.replyId())) {
-				replyReceived.set(true);
+			if (Objects.equals(message.replyId(), r.replyId())) {
+				future.complete(r);
 			}
 		};
 		addCommandReplyListener(listener);
-		try {
-			send(gson.toJson(messageToSend));
-			await().untilTrue(replyReceived);
-		} finally {
-			removeCommandReplyListener(listener);
-		}
-		return this;
+		future.whenComplete((__r, __t) -> removeCommandReplyListener(listener));
+		return future;
 	}
 
 	@SuppressWarnings("resource")
