@@ -5,6 +5,7 @@ import static com.github.pfichtner.testcontainers.virtualavr.util.GracefulCloseP
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 import static org.testcontainers.containers.BindMode.READ_WRITE;
@@ -158,7 +159,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	protected Optional<String> socatVerbosity() {
-		return Optional.ofNullable(getEnvMap().get(SOCAT_VERBOSITY));
+		return Optional.ofNullable(getEnvMap().get(SOCAT_VERBOSITY)).filter(not(String::isEmpty));
 	}
 
 	protected Optional<Integer> baudrate() {
