@@ -35,14 +35,13 @@ class GracefulCloseProxyTest {
 	}
 
 	// migrate to Mockito if more tests are needed
-	private VirtualAvrConnection mock(Class<VirtualAvrConnection> clazz) {
-		return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { clazz },
-				(InvocationHandler) (__p, method, __a) -> {
-					if (method.getName().equals("close")) {
-						return null;
-					}
-					throw new IllegalStateException("Simulated exception from " + method.getName());
-				}));
+	VirtualAvrConnection mock(Class<VirtualAvrConnection> clazz) {
+		return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] { clazz }, (__p, m, __a) -> {
+			if (m.getName().equals("close")) {
+				return null;
+			}
+			throw new IllegalStateException("Simulated exception from " + m.getName());
+		}));
 	}
 
 }
