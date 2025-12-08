@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 
 import org.junit.jupiter.api.Test;
@@ -24,14 +23,22 @@ class GracefulCloseProxyTest {
 
 	@Test
 	void afterCloseExceptionIsSwallowed() {
-		sut.close();
-		assertThatNoException().isThrownBy(sut::pause);
+		assertThatNoException().isThrownBy(closedSut()::pause);
 	}
 
 	@Test
 	void wrapperReturnsItself() {
+		assertThat(closedSut().pause()).isSameAs(sut);
+	}
+
+	@Test
+	void wrapperReturnsPrimitiveDefaults() {
+		assertThat(closedSut().isConnected()).isFalse();
+	}
+
+	private VirtualAvrConnection closedSut() {
 		sut.close();
-		assertThat(sut.pause()).isSameAs(sut);
+		return sut;
 	}
 
 	// migrate to Mockito if more tests are needed
