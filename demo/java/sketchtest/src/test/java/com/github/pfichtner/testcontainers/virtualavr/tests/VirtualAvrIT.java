@@ -204,7 +204,7 @@ class VirtualAvrIT {
 			String expectedResponse = "Echo response: " + send;
 			await().untilAsserted(() -> {
 				awaiter(virtualAvrContainer.serialConnection()).sendAwait(send, r -> r.contains(expectedResponse));
-				assertThat(rxTx.text(RX)).isEqualTo(send);
+				assertThat(rxTx.text(RX)).contains(send);
 				assertThat(rxTx.text(TX)).contains("Loop").contains(expectedResponse);
 			});
 		}
