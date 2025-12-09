@@ -38,15 +38,7 @@ Environment variables supported
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
 - BUILD_FQBN Fully Qualified Board Name to use for compile (default "arduino:avr:uno")
 - BUILD_EXTRA_FLAGS to set/overwrite defines, e.g. '-DSLEEP_MILLIS=100 -DMESSAGE_TEXT="Hello World"'
-- SERIAL_TCP – enables TCP serial mode by specifying both the host and port in a single string:
-  SERIAL_TCP=<host>:<port>
-  For example:
-  ```export SERIAL_TCP=host.docker.internal:12345```
-  This tells the container to connect to host:port for serial communication instead of creating a local PTY.
-  Notes:
-  Typically used on macOS or Windows with Docker Desktop, where local PTYs may not be available.
-  Important:
-  When ```SERIAL_TCP``` is used, the host machine must provide the [socat](http://www.dest-unreach.org/socat/) binary, as socat is required to bridge the TCP stream into the simulator’s serial interface.
+- SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp---tcp-serial-mode)
 
 # Screencast of usage
 The screencast is not uptodate!!!
@@ -70,6 +62,24 @@ The screencast is not uptodate!!!
 - Pause or unpause virtualavr ```{ "type": "control", "action": "pause|unpause" }```
 - Enable/disable serial debug ```{ "type": "serialDebug", "state": true|false }```
 - Any message that has an "replyId" gets replied by virtualavr (see [Sent by virtualavr](#sent-by-virtualavr))
+
+## SERIAL_TCP — TCP Serial Mode
+```SERIAL_TCP``` is mostly intended for Docker Desktop / WSL2 setups, where Docker runs inside a VM and the host PTY cannot be made available via a bind mount (```-v /dev:/dev```). It can be used on Linux as well, but in that case it is usually unnecessary. 
+```SERIAL_TCP``` makes virtualavr connect to a TCP endpoint instead of creating a PTY inside the container.
+
+You must run socat on the host to bridge TCP to a PTY:
+```
+socat -d -d pty,raw,echo=0 tcp-listen:55555,reuseaddr,fork
+```
+This creates a PTY (e.g. /dev/pts/4) and forwards all TCP traffic on port 55555 to it.
+Starting the container (no /dev mount is needed):
+```
+docker run -e SERIAL_TCP=host.docker.internal:55555 -e FILENAME=myArduinoSketch.ino -v /dev:/dev -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr
+```
+Notes
+- Use ```host.docker.internal``` on Docker Desktop (macOS/Windows); on Linux, use the host machine's IP address accessible from the container.
+- The container never touches the PTY in TCP mode — it talks only via TCP
+- Host socat must be started before the container starts
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
