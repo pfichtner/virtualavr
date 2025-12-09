@@ -175,7 +175,7 @@ This makes full end-to-end integration testing of Arduino/AVR sketches possible 
 
 ### Example
 
-```
+```java
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.*;
 import static java.util.function.Predicate.isEqual;
