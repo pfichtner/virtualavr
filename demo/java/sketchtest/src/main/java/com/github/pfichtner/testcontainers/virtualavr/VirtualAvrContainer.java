@@ -176,7 +176,6 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	private void debugStartOut() {
-		// Log container info after start
 		logger.info("{} container started: ID={}", VIRTUAL_AVR, getContainerId());
 		logger.info("Container environment variables:");
 		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, v));
@@ -188,11 +187,9 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 			Thread.currentThread().interrupt();
 		}
 
-		// Log container logs to help debug
 		logger.info("Container logs (first 50 lines):");
 		Stream.of(getLogs().split("\\R")).limit(50).forEach(l -> logger.info("\t[container] {}", l));
 
-		// Check container health
 		logger.info("Container state: isRunning={}, isHealthy={}", isRunning(), isHealthy());
 	}
 
