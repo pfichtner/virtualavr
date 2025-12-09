@@ -207,7 +207,7 @@ class TcpSerialModeSupport {
 
 	static boolean isSocatAvailable() {
 		try {
-			Process process = new ProcessBuilder("socat", "-h").redirectErrorStream(true).start();
+			Process process = new ProcessBuilder(SOCAT_BINARY_NAME, "-h").redirectErrorStream(true).start();
 			process.waitFor(2, SECONDS);
 			return process.exitValue() == 0 || process.exitValue() == 1;
 		} catch (IOException | InterruptedException e) {
