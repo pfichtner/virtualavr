@@ -18,7 +18,7 @@ import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
-@EnabledIf("isSocatAvailable")
+@EnabledIf("com.github.pfichtner.testcontainers.virtualavr.TcpSerialModeSupport#isSocatAvailable")
 class TcpSerialModeSupportIT {
 
 	private static final String SOME_NOT_USED_TTY_NAME = "someUnusedTTYName";

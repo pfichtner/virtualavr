@@ -28,7 +28,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrContainer.class);
 
 	private static final String DEBUG = "DEBUG";
-	private static final String SOCAT_VERBOSITY = "SOCAT_VERBOSITY";
+	private static final String VERBOSITY = "VERBOSITY";
 	private static final String BAUDRATE = "BAUDRATE";
 
 	private static final int DEFAULT_BAUDRATE = 115_200;
@@ -127,7 +127,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	private VirtualAvrContainer<?> withDebug(boolean debug) {
 		return withEnv(DEBUG, String.valueOf(debug)) //
-				.withEnv(SOCAT_VERBOSITY, debug ? SOCAT_VERBOSE : "");
+				.withEnv(VERBOSITY, debug ? getEnvMap().getOrDefault(VERBOSITY, SOCAT_VERBOSE) : "");
 	}
 
 	public synchronized VirtualAvrConnection avr() {
@@ -159,7 +159,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	protected Optional<String> socatVerbosity() {
-		return Optional.ofNullable(getEnvMap().get(SOCAT_VERBOSITY)).filter(not(String::isEmpty));
+		return Optional.ofNullable(getEnvMap().get(VERBOSITY)).filter(not(String::isEmpty));
 	}
 
 	protected Optional<Integer> baudrate() {

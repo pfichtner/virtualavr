@@ -20,7 +20,7 @@ SERIAL_TCP=${SERIAL_TCP:-}
 
 if [ -n "$SERIAL_TCP" ]; then
     echo "Using TCP serial mode: connecting to $SERIAL_TCP"
-    socat ${SOCAT_VERBOSITY:-} tcp:"$SERIAL_TCP" EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
+    socat ${VERBOSITY:-} tcp:"$SERIAL_TCP" EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
 else
     # Standard PTY mode: create a local virtual serial device
     [ -z "${VIRTUALDEVICE+x}" ] && VIRTUALDEVICE="/dev/virtualavr0"
@@ -35,7 +35,7 @@ else
         CLEANUP_VIRTUALDEVICE=true
     fi
 
-    socat ${SOCAT_VERBOSITY:-} pty,rawer,link="${ROOTDIR}${VIRTUALDEVICE}",user=${DEVICEUSER:-'root'},group=${DEVICEGROUP:-'dialout'},mode=${DEVICEMODE:-660},b$BAUDRATE EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
+    socat ${VERBOSITY:-} pty,rawer,link="${ROOTDIR}${VIRTUALDEVICE}",user=${DEVICEUSER:-'root'},group=${DEVICEGROUP:-'dialout'},mode=${DEVICEMODE:-660},b$BAUDRATE EXEC:"node /app/virtualavr.js $FILENAME",pty,rawer,fdin=3,fdout=4 &
 fi
 
 PID=$!
