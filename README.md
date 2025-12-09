@@ -114,7 +114,6 @@ void awaitHasBlinkedAtLeastThreeTimes() {
   virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
   await().until(() -> count(virtualAvr.pinStates(), PinState.on(INTERNAL_LED)) >= 3
 		  && count(virtualAvr.pinStates(), PinState.off(INTERNAL_LED)) >= 3);
-
 }
 ```
 
