@@ -3,7 +3,6 @@
 [![Docker Image Size](https://img.shields.io/docker/image-size/pfichtner/virtualavr)](https://hub.docker.com/r/pfichtner/virtualavr/)
 [![Docker Image Version](https://img.shields.io/docker/v/pfichtner/virtualavr)](https://hub.docker.com/r/pfichtner/virtualavr/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/pfichtner/virtualavr.svg?maxAge=604800)](https://hub.docker.com/r/pfichtner/virtualavr/)
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.pfichtner/testcontainers-virtualavr.svg)](https://search.maven.org/artifact/io.github.pfichtner/testcontainers-virtualavr)
 
 ### virtualavr
 
@@ -156,6 +155,7 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 
 
 # Testcontainers Java Binding (Maven Central)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.pfichtner/testcontainers-virtualavr.svg)](https://search.maven.org/artifact/io.github.pfichtner/testcontainers-virtualavr)
 
 A dedicated testcontainers module for virtualavr is available on Maven Central.
 This allows you to write Java integration tests that automatically start a virtual AVR simulator inside a Testcontainers-managed Docker container.
@@ -163,7 +163,7 @@ This allows you to write Java integration tests that automatically start a virtu
 <dependency>
     <groupId>io.github.pfichtner</groupId>
     <artifactId>testcontainers-virtualavr</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
 </dependency>
 ```
 The library provides:
