@@ -23,23 +23,24 @@ import org.testcontainers.utility.DockerImageName;
 
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
 
+	private enum EnvVars {
+		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS
+	}
+
 	private static final String VIRTUAL_AVR = "VirtualAVR";
 
 	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrContainer.class);
 
-	private static final String DEBUG = "DEBUG";
-	private static final String VERBOSITY = "VERBOSITY";
-	private static final String BAUDRATE = "BAUDRATE";
-
-	private static final int DEFAULT_BAUDRATE = 115_200;
-
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
+
+	private static final int DEFAULT_BAUDRATE = 115_200;
+	protected static final int WEBSOCKET_PORT = 8080;
 	private static final String SOCAT_VERBOSE = "-d -d -v";
 
 	public static final String hostDev = "/dev";
 	public static final String containerDev = "/dev";
-	protected static final int WEBSOCKET_PORT = 8080;
 
 	private String ttyDevice = "ttyUSB0";
 
@@ -74,27 +75,27 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	public VirtualAvrContainer<?> withDeviceName(String ttyDevice) {
 		this.ttyDevice = ttyDevice;
-		return withEnv("VIRTUALDEVICE", format("%s/%s", containerDev, ttyDevice));
+		return withEnv(EnvVars.VIRTUALDEVICE, format("%s/%s", containerDev, ttyDevice));
 	}
 
 	public VirtualAvrContainer<?> withBaudrate(int baudrate) {
-		return withEnv(BAUDRATE, String.valueOf(baudrate));
+		return withEnv(EnvVars.BAUDRATE, baudrate);
 	}
 
 	public VirtualAvrContainer<?> withDeviceUser(String user) {
-		return withEnv("DEVICEUSER", user);
+		return withEnv(EnvVars.DEVICEUSER, user);
 	}
 
 	public VirtualAvrContainer<?> withDeviceGroup(String group) {
-		return withEnv("DEVICEGROUP", group);
+		return withEnv(EnvVars.DEVICEGROUP, group);
 	}
 
 	public VirtualAvrContainer<?> withDeviceMode(int deviceMode) {
-		return withEnv("DEVICEMODE", String.valueOf(deviceMode));
+		return withEnv(EnvVars.DEVICEMODE, deviceMode);
 	}
 
 	public VirtualAvrContainer<?> withPausedStartup() {
-		return withEnv("PAUSE_ON_START", String.valueOf(true));
+		return withEnv(EnvVars.PAUSE_ON_START, true);
 	}
 
 	public VirtualAvrContainer<?> withBuildExtraFlags(Map<String, Object> cFlags) {
@@ -109,16 +110,16 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	public VirtualAvrContainer<?> withBuildExtraFlags(String cFlags) {
-		return withEnv("BUILD_EXTRA_FLAGS", cFlags);
+		return withEnv(EnvVars.BUILD_EXTRA_FLAGS, cFlags);
 	}
 
-	public VirtualAvrContainer<SELF> withSketchFile(File sketchFile) {
-		return withEnv("FILENAME", sketchFile.getName()) //
+	public VirtualAvrContainer<?> withSketchFile(File sketchFile) {
+		return withEnv(EnvVars.FILENAME, sketchFile.getName()) //
 				.withFileSystemBind(sketchFile.getParent(), "/sketch/", READ_ONLY);
 	}
 
 	public VirtualAvrContainer<?> withPublishMillis(int millis) {
-		return withEnv("PUBLISH_MILLIS", String.valueOf(millis));
+		return withEnv(EnvVars.PUBLISH_MILLIS, millis);
 	}
 
 	public VirtualAvrContainer<?> withDebug() {
@@ -126,8 +127,20 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	private VirtualAvrContainer<?> withDebug(boolean debug) {
-		return withEnv(DEBUG, String.valueOf(debug)) //
-				.withEnv(VERBOSITY, debug ? getEnvMap().getOrDefault(VERBOSITY, SOCAT_VERBOSE) : "");
+		return withEnv(EnvVars.DEBUG, String.valueOf(debug)) //
+				.withEnv(EnvVars.VERBOSITY, debug ? getEnv(EnvVars.VERBOSITY, SOCAT_VERBOSE) : "");
+	}
+
+	private VirtualAvrContainer<?> withEnv(EnvVars envVar, Object value) {
+		return withEnv(envVar.name(), value == null ? null : String.valueOf(value));
+	}
+
+	private String getEnv(EnvVars envVar) {
+		return getEnvMap().get(envVar.name());
+	}
+
+	private String getEnv(EnvVars envVar, String defaultValue) {
+		return getEnvMap().getOrDefault(envVar.name(), defaultValue);
 	}
 
 	public synchronized VirtualAvrConnection avr() {
@@ -155,15 +168,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	protected Optional<Boolean> debug() {
-		return Optional.ofNullable(getEnvMap().get(DEBUG)).map(Boolean::parseBoolean);
+		return Optional.ofNullable(getEnv(EnvVars.DEBUG)).map(Boolean::parseBoolean);
 	}
 
 	protected Optional<String> socatVerbosity() {
-		return Optional.ofNullable(getEnvMap().get(VERBOSITY)).filter(not(String::isEmpty));
+		return Optional.ofNullable(getEnv(EnvVars.VERBOSITY)).filter(not(String::isEmpty));
 	}
 
 	protected Optional<Integer> baudrate() {
-		return Optional.ofNullable(getEnvMap().get(BAUDRATE)).map(Integer::parseInt);
+		return Optional.ofNullable(getEnv(EnvVars.BAUDRATE)).map(Integer::parseInt);
 	}
 
 	@Override
