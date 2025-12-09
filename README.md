@@ -99,6 +99,7 @@ The library provides:
     <artifactId>testcontainers-virtualavr</artifactId>
     <version>0.0.2</version>
 </dependency>
+```
 
 ```java
 private static final String INTERNAL_LED = "13";
