@@ -31,7 +31,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private static final String SOCAT_VERBOSITY = "SOCAT_VERBOSITY";
 	private static final String BAUDRATE = "BAUDRATE";
 
-	private static final int DEFAULT_BAUDRATE = 115200;
+	private static final int DEFAULT_BAUDRATE = 115_200;
 
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
