@@ -83,7 +83,22 @@ Notes
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 
-So here's an example of a [Java (JUnit5) Test](https://github.com/pfichtner/virtualavr/blob/main/demo/java/sketchtest/src/test/java/com/github/pfichtner/virtualavr/demo/VirtualAvrTest.java)
+So here's an example of a Java (JUnit5) Test using a dedicated testcontainers module for virtualavr is available on Maven Central.
+
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.pfichtner/testcontainers-virtualavr.svg)](https://search.maven.org/artifact/io.github.pfichtner/testcontainers-virtualavr)
+
+This allows you to write Java integration tests that automatically start a virtual AVR simulator inside a Testcontainers-managed Docker container.
+The library provides:
+- a VirtualAvrContainer Testcontainers module
+- a typed VirtualAvrConnection API for interacting with the simulator
+- convenience helpers for pin states, reporting modes, and timing
+
+```
+<dependency>
+    <groupId>io.github.pfichtner</groupId>
+    <artifactId>testcontainers-virtualavr</artifactId>
+    <version>0.0.2</version>
+</dependency>
 
 ```java
 private static final String INTERNAL_LED = "13";
@@ -152,58 +167,6 @@ Scenario: Noise level is within 90% of the reference, green led is on
   And pin 12 should be off
 ```
 For a complete python gherkin example see https://github.com/pfichtner/virtualavr/tree/main/demo/python-gherkin
-
-
-# Testcontainers Java Binding (Maven Central)
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.pfichtner/testcontainers-virtualavr.svg)](https://search.maven.org/artifact/io.github.pfichtner/testcontainers-virtualavr)
-
-A dedicated testcontainers module for virtualavr is available on Maven Central.
-This allows you to write Java integration tests that automatically start a virtual AVR simulator inside a Testcontainers-managed Docker container.
-```
-<dependency>
-    <groupId>io.github.pfichtner</groupId>
-    <artifactId>testcontainers-virtualavr</artifactId>
-    <version>0.0.2</version>
-</dependency>
-```
-The library provides:
-- a VirtualAvrContainer Testcontainers module
-- a typed VirtualAvrConnection API for interacting with the simulator
-- convenience helpers for pin states, reporting modes, and timing
-
-This makes full end-to-end integration testing of Arduino/AVR sketches possible directly from Java, without physical hardware.
-
-### Example
-
-```java
-import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
-import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.*;
-import static java.util.function.Predicate.isEqual;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
-@Testcontainers
-class VirtualAvrTest {
-
-	private static final String INTERNAL_LED = "13";
-
-	@Container
-	VirtualAvrContainer<?> virtualavr = new VirtualAvrContainer<>().withSketchFile(new File("blink.ino"));
-
-	@Test
-	void awaitHasBlinkedAtLeastFiveTimesAndCpuTimesAreOk() {
-		VirtualAvrConnection virtualAvr = virtualavr.avr();
-		virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
-		await().until(() -> count(virtualAvr.pinStates(), isEqual(stateIsOn(INTERNAL_LED))) >= 5
-				&& count(virtualAvr.pinStates(), isEqual(stateIsOff(INTERNAL_LED))) >= 5);
-	}
-
-	long count(List<PinState> pinStates, Predicate<PinState> pinState) {
-		return pinStates.stream().filter(pinState).count();
-	}
-
-}
-```
 
 # What's inside? How does it work? 
 - The heart is [avr8js](https://github.com/wokwi/avr8js)
