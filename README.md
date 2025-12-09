@@ -3,6 +3,7 @@
 [![Docker Image Size](https://img.shields.io/docker/image-size/pfichtner/virtualavr)](https://hub.docker.com/r/pfichtner/virtualavr/)
 [![Docker Image Version](https://img.shields.io/docker/v/pfichtner/virtualavr)](https://hub.docker.com/r/pfichtner/virtualavr/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/pfichtner/virtualavr.svg?maxAge=604800)](https://hub.docker.com/r/pfichtner/virtualavr/)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.pfichtner/testcontainers-virtualavr.svg)](https://search.maven.org/artifact/io.github.pfichtner/testcontainers-virtualavr)
 
 ### virtualavr
 
