@@ -154,16 +154,6 @@ Scenario: Noise level is within 90% of the reference, green led is on
 For a complete python gherkin example see https://github.com/pfichtner/virtualavr/tree/main/demo/python-gherkin
 
 
-# What's inside? How does it work? 
-- The heart is [avr8js](https://github.com/wokwi/avr8js)
-- virtualavr.js runs inside a node process, and links nodejs' ~stdin/stdout~ filedescriptor (fd) 3/4 to avr8js' virtual serial port
-- [socat](http://www.dest-unreach.org/socat/) creates a virtual serial port on the local machine (better said inside the docker container) and links this virtual serial port (RX/TX) to nodejs' ~stdin/stdout~ filedescriptor (fd) 3/4. That way you get a virtual serial port which is connected to the serial port of the simulator (avr8js)
-- Due to the whole thing is packaged inside a docker container the serial port is inside that docker container, too (and only). So you have to do volume mounts (-v /dev:/dev) so that you get access to the "in-docker-device" on your local computer 
-- Virtualavr starts a websocket server you can connect to. Using that websocket connection you can control the states of the analog/digital pins as well cou get informed about things hapening on the virtual AVR e.g. state changes of the pins 
-
-![virtualavr.png](docs/images/virtualavr.png)
-
-
 # Testcontainers Java Binding (Maven Central)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.pfichtner/testcontainers-virtualavr.svg)](https://search.maven.org/artifact/io.github.pfichtner/testcontainers-virtualavr)
 
@@ -214,6 +204,16 @@ class VirtualAvrTest {
 
 }
 ```
+
+# What's inside? How does it work? 
+- The heart is [avr8js](https://github.com/wokwi/avr8js)
+- virtualavr.js runs inside a node process, and links nodejs' ~stdin/stdout~ filedescriptor (fd) 3/4 to avr8js' virtual serial port
+- [socat](http://www.dest-unreach.org/socat/) creates a virtual serial port on the local machine (better said inside the docker container) and links this virtual serial port (RX/TX) to nodejs' ~stdin/stdout~ filedescriptor (fd) 3/4. That way you get a virtual serial port which is connected to the serial port of the simulator (avr8js)
+- Due to the whole thing is packaged inside a docker container the serial port is inside that docker container, too (and only). So you have to do volume mounts (-v /dev:/dev) so that you get access to the "in-docker-device" on your local computer 
+- Virtualavr starts a websocket server you can connect to. Using that websocket connection you can control the states of the analog/digital pins as well cou get informed about things hapening on the virtual AVR e.g. state changes of the pins 
+
+![virtualavr.png](docs/images/virtualavr.png)
+
 
 # Todos
 - Provide Java Bindings as maven artifacts
