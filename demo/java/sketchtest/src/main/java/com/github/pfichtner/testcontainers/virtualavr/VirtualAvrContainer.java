@@ -127,8 +127,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	private VirtualAvrContainer<?> withDebug(boolean debug) {
-		return withEnv(EnvVars.DEBUG, String.valueOf(debug)) //
-				.withEnv(EnvVars.VERBOSITY, debug ? getEnv(EnvVars.VERBOSITY, SOCAT_VERBOSE) : "");
+		VirtualAvrContainer<?> self = withEnv(EnvVars.DEBUG, debug);
+		return debug && getEnv(EnvVars.VERBOSITY) == null //
+				? self.withEnv(EnvVars.VERBOSITY, SOCAT_VERBOSE) //
+				: self;
 	}
 
 	private VirtualAvrContainer<?> withEnv(EnvVars envVar, Object value) {
@@ -137,10 +139,6 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	private String getEnv(EnvVars envVar) {
 		return getEnvMap().get(envVar.name());
-	}
-
-	private String getEnv(EnvVars envVar, String defaultValue) {
-		return getEnvMap().getOrDefault(envVar.name(), defaultValue);
 	}
 
 	public synchronized VirtualAvrConnection avr() {
