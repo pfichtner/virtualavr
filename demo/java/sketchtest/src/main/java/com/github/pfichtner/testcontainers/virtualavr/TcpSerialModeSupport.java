@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.shaded.org.awaitility.core.ConditionTimeoutException;
 
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer.EnvVars;
+
 /**
  * Helper class that enables TCP-based serial mode for a
  * {@link VirtualAvrContainer}.
@@ -105,7 +107,7 @@ class TcpSerialModeSupport {
 
 			// Configure the container to connect to the host
 			String serialTcp = format("%s:%d", "host.docker.internal", tcpSerialPort);
-			delegate.withEnv("SERIAL_TCP", serialTcp);
+			delegate.withEnv(EnvVars.SERIAL_TCP, serialTcp);
 			logger.info("TCP Serial Mode: Container will connect to {}", serialTcp);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to start host socat process", e);

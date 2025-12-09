@@ -23,9 +23,9 @@ import org.testcontainers.utility.DockerImageName;
 
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
 
-	private enum EnvVars {
+	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -133,11 +133,11 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 				: self;
 	}
 
-	private VirtualAvrContainer<?> withEnv(EnvVars envVar, Object value) {
+	VirtualAvrContainer<?> withEnv(EnvVars envVar, Object value) {
 		return withEnv(envVar.name(), value == null ? null : String.valueOf(value));
 	}
 
-	private String getEnv(EnvVars envVar) {
+	String getEnv(EnvVars envVar) {
 		return getEnvMap().get(envVar.name());
 	}
 
