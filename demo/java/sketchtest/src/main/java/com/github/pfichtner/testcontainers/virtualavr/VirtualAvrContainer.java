@@ -187,8 +187,9 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 			Thread.currentThread().interrupt();
 		}
 
-		logger.info("Container logs (first 50 lines):");
-		Stream.of(getLogs().split("\\R")).limit(50).forEach(l -> logger.info("\t[container] {}", l));
+		int lines = 50;
+		logger.info("Container logs (first {} lines):", lines);
+		Stream.of(getLogs().split("\\R")).limit(lines).forEach(l -> logger.info("\t[container] {}", l));
 
 		logger.info("Container state: isRunning={}, isHealthy={}", isRunning(), isHealthy());
 	}
