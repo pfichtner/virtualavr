@@ -3,10 +3,8 @@ package com.github.pfichtner.testcontainers.virtualavr.tests;
 import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.withSketchFromClasspath;
 import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
 import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
@@ -48,16 +46,6 @@ class TcpSerialModeSupportIT {
 			awaiter.sendAwait(arr, b -> Arrays.equals(b, arr));
 		}
 		awaiter.sendAwait(new byte[] { (byte) 255 }, b -> Arrays.equals(b, new byte[] { (byte) 255, 0 }));
-	}
-
-	static boolean isSocatAvailable() {
-		try {
-			Process process = new ProcessBuilder("socat", "-h").redirectErrorStream(true).start();
-			process.waitFor(2, SECONDS);
-			return process.exitValue() == 0 || process.exitValue() == 1;
-		} catch (IOException | InterruptedException e) {
-			return false;
-		}
 	}
 
 }
