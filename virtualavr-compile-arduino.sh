@@ -4,6 +4,10 @@ set -euo pipefail
 compile_arduino_sketch() {
     local sketch_dir="$1"
 
+    local target_dir
+    target_dir="$(mktemp -d /tmp/arduino-build-XXXXXX)"
+    compile_log="$target_dir/compile.log"
+
     # Install libraries if libraries.txt exists
     local libraries_file="$sketch_dir/libraries.txt"
     if [[ -f "$libraries_file" ]]; then
@@ -12,7 +16,7 @@ compile_arduino_sketch() {
             [[ -z "$line" || "$line" == \#* ]] && continue
 
             # Unsafe installs disabled by default
-            arduino-cli lib install "$line" || echo "Error installing library: $line" >&2
+            arduino-cli lib install "$line" >"$compile_log" 2>&1 || echo "Error installing library: $line" >&2
         done < "$libraries_file"
     fi
 
@@ -24,10 +28,6 @@ compile_arduino_sketch() {
         # Preserve flags exactly as passed
         build_property_flag="--build-property build.extra_flags=${BUILD_EXTRA_FLAGS}"
     fi
-
-    local target_dir
-    target_dir="$(mktemp -d /tmp/arduino-build-XXXXXX)"
-    compile_log="$target_dir/compile.log"
 
     # Compile
     if ! arduino-cli compile \
