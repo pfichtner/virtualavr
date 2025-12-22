@@ -11,10 +11,8 @@ compile_arduino_sketch() {
             line="$(echo "$line" | xargs)"
             [[ -z "$line" || "$line" == \#* ]] && continue
 
-            # Unsafe installs disabled by default (same as JS code)
-            arduino-cli lib install "$line" || {
-                echo "Error installing library: $line" >&2
-            }
+            # Unsafe installs disabled by default
+            arduino-cli lib install "$line" || echo "Error installing library: $line" >&2
         done < "$libraries_file"
     fi
 
