@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+compile_arduino_sketch() {
+    local sketch_dir="$1"
+
+    # Install libraries if libraries.txt exists
+    local libraries_file="$sketch_dir/libraries.txt"
+    if [[ -f "$libraries_file" ]]; then
+        while IFS= read -r line; do
+            line="$(echo "$line" | xargs)"
+            [[ -z "$line" || "$line" == \#* ]] && continue
+
+            # Unsafe installs disabled by default (same as JS code)
+            arduino-cli lib install "$line" || {
+                echo "Error installing library: $line" >&2
+            }
+        done < "$libraries_file"
+    fi
+
+    # Build parameters
+    local fqbn="${BUILD_FQBN:-arduino:avr:uno}"
+    local build_property_flag=""
+
+    if [[ -n "${BUILD_EXTRA_FLAGS:-}" ]]; then
+        # Preserve flags exactly as passed
+        build_property_flag="--build-property build.extra_flags=${BUILD_EXTRA_FLAGS}"
+    fi
+
+    local target_dir
+    target_dir="$(mktemp -d /tmp/arduino-build-XXXXXX)"
+    compile_log="$target_dir/compile.log"
+
+    # Compile
+    if ! arduino-cli compile \
+        --fqbn "$fqbn" \
+        $build_property_flag \
+        --output-dir "$target_dir" \
+        "$sketch_dir" \
+        >"$compile_log" 2>&1; then
+        echo "Compilation failed" >&2
+        cat "$compile_log" >&2
+        rm -rf "$target_dir"
+        return 1
+    fi
+
+    local sketch_name
+    sketch_name="$(basename "$sketch_dir")"
+    local hex_file="$target_dir/${sketch_name}.ino.hex"
+
+    if [[ ! -f "$hex_file" ]]; then
+        echo "HEX file not found: $hex_file" >&2
+        rm -rf "$target_dir"
+        return 1
+    fi
+
+    cat "$hex_file"
+
+    rm -rf "$target_dir"
+}
+
+
+build_hex() {
+    local input_filename="$1"
+
+    if [[ "$input_filename" == *.hex ]]; then
+        hex_content="$(cat "$input_filename")"
+
+    elif [[ "$input_filename" == *.zip ]]; then
+        local tmp_dir
+        tmp_dir="$(mktemp -d /tmp/arduino-sketch-XXXXXX)"
+        local copy_target="$tmp_dir/sketch"
+        mkdir -p "$copy_target"
+
+        unzip -q "$input_filename" -d "$copy_target"
+        compile_arduino_sketch "$copy_target"
+        rm -rf "$tmp_dir"
+
+    elif [[ "$input_filename" == *.ino ]]; then
+        local tmp_dir
+        tmp_dir="$(mktemp -d /tmp/arduino-sketch-XXXXXX)"
+
+        local base_name
+        base_name="$(basename "$input_filename" .ino)"
+
+        local copy_target="$tmp_dir/$base_name"
+        mkdir -p "$copy_target"
+
+        cp -R "$(dirname "$input_filename")/"* "$copy_target/"
+        compile_arduino_sketch "$copy_target"
+        rm -rf "$tmp_dir"
+
+    elif [[ -d "$input_filename" ]]; then
+        local tmp_dir
+        tmp_dir="$(mktemp -d /tmp/arduino-sketch-XXXXXX)"
+
+        local base_name
+        base_name="$(basename "$input_filename")"
+
+        local copy_target="$tmp_dir/$base_name"
+        mkdir -p "$copy_target"
+
+        cp -R "$input_filename/"* "$copy_target/"
+        compile_arduino_sketch "$copy_target"
+        rm -rf "$tmp_dir"
+
+    else
+        compile_arduino_sketch "$(dirname "$input_filename")"
+    fi
+}
+
+build_hex "$1"

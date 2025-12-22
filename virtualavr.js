@@ -1,17 +1,8 @@
 const os = require('os')
 const fs = require('fs');
 const fsp = require('fs').promises;
-const fetch = require('node-fetch');
 const avr8js = require('avr8js');
-const { exec } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(exec);
 const intelhex = require('intel-hex');
-
-const path = require('path');
-const tmp = require('tmp');
-const mkdirp = require('mkdirp');
-const extract = require('extract-zip');
 
 const ws = require('ws');
 
@@ -69,124 +60,8 @@ uniquePorts.forEach(port => {
 const args = process.argv.slice(2);
 
 
-const prepareTemporaryDirectory = async () => {
-    return new Promise((resolve, reject) => {
-        tmp.dir({ unsafeCleanup: true, prefix: 'arduino-sketch-' }, async (err, dirPath, cleanupCallback) => {
-            if (err) {
-                return reject(new Error(`Failed to create temporary directory: ${err.message}`));
-            }
-
-            try {
-                resolve(dirPath);
-            } catch (error) {
-                reject(new Error(`Failed to clean up temporary directory: ${error.message}`));
-            }
-        });
-    });
-};
-
-
-
-async function compileArduinoSketch(sketchDir) {
-    try {
-        const librariesFile = path.join(sketchDir, 'libraries.txt');
-        if (fs.existsSync(librariesFile)) {
-            const libraryContent = await fsp.readFile(librariesFile, 'utf8');
-            const libraryList = libraryContent.split('\n')
-                .map(line => line.trim())
-                .filter(line => line !== '' && !line.startsWith('#'));
-
-            for (const library of libraryList) {
-                const installCommand = false // TODO introduce some FLAG if unsafe ops should be enabled
-                    ? `arduino-cli config set library.enable_unsafe_install true; arduino-cli lib install --git-url "${library}"`
-                    : `arduino-cli lib install "${library}"`;
-
-                const { stdout, stderr } = await execAsync(installCommand);
-                if (stderr) {
-                    console.error(`Error installing library: ${library}`, stderr);
-                }
-            }
-        }
-
-        const fqbn = process.env.BUILD_FQBN || "arduino:avr:uno";
-        const buildExtraFlags = process.env.BUILD_EXTRA_FLAGS
-            ? process.env.BUILD_EXTRA_FLAGS
-                .split(/\s+(?=-)/)
-                .map(flag => flag.replace(/\\/g, "\\\\").replace(/"/g, '\\"'))
-                .map(flag => `"${flag}"`)
-                .join(" ")
-            : "";
-        const buildPropertyFlag = buildExtraFlags
-            ? `--build-property "build.extra_flags=${buildExtraFlags}"`
-            : "";
-
-        const targetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'arduino-build-'));
-        const compileCommand = `arduino-cli compile --fqbn ${fqbn} ${buildPropertyFlag} --output-dir ${targetDir} ${sketchDir}`;
-        const { stdout, stderr } = await execAsync(compileCommand);
-
-        if (stderr) {
-            console.error('Compiler warnings/errors:', stderr);
-        }
-
-        const hexFilename = path.join(targetDir, path.basename(sketchDir)) + '.ino.hex';
-        const hexContent = await fsp.readFile(hexFilename);
-
-        fs.rmSync(targetDir, { recursive: true, force: true });
-        return hexContent;
-    } catch (error) {
-        console.error('Error during sketch compilation:', error);
-        throw error;
-    }
-}
-
-const runCode = async (inputFilename, portCallback) => {
-    let hexContent = "";
-
-    const fullPath = path.join('/sketch', inputFilename);
-    if (inputFilename.endsWith('.hex')) {
-        hexContent = fs.readFileSync(inputFilename);
-    } else if (inputFilename.endsWith('.zip')) {
-        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'arduino-sketch-'));
-        const copyTarget = path.join(tmpDir, 'sketch');
-        await extract(fullPath, { dir: copyTarget });
-        hexContent = await compileArduinoSketch(copyTarget);
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-    } else if (inputFilename.endsWith('.ino')) {
-        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'arduino-sketch-'));
-
-        const fileName = path.basename(inputFilename);
-        const lastDotIndex = fileName.lastIndexOf('.');
-        const baseName = lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
-
-        const copyTarget = path.join(tmpDir, baseName);
-        fs.mkdirSync(copyTarget);
-
-        fs.cpSync(path.join('/sketch', path.dirname(inputFilename)), copyTarget, { recursive: true });
-
-        hexContent = await compileArduinoSketch(copyTarget);
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-    } else if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'arduino-sketch-'));
-
-        const baseName = path.basename(inputFilename);
-
-        const copyTarget = path.join(tmpDir, baseName);
-        fs.mkdirSync(copyTarget);
-
-        fs.cpSync(path.join('/sketch', inputFilename), copyTarget, { recursive: true });
-
-        hexContent = await compileArduinoSketch(copyTarget);
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-    } else {
-        hexContent = await compileArduinoSketch(path.dirname(inputFilename));
-    }
-
-    if (!hexContent) {
-        console.error("Error on compilation");
-        return;
-    }
-
-    const { data } = intelhex.parse(hexContent);
+const runCode = async (hexContent, portCallback) => {
+    const { data } = intelhex.parse(fs.readFileSync(hexContent));
     const progData = new Uint8Array(data);
 
     // Set up the simulation
