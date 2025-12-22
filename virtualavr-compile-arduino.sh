@@ -64,7 +64,7 @@ build_hex() {
     local input_filename="$1"
 
     if [[ "$input_filename" == *.hex ]]; then
-        hex_content="$(cat "$input_filename")"
+        cat "$input_filename"
 
     elif [[ "$input_filename" == *.zip ]]; then
         local tmp_dir
