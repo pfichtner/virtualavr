@@ -12,7 +12,7 @@ ADD virtualavr.js /app/
 WORKDIR /sketch
 ADD /sketch /sketch/
 
-ADD entrypoint.sh /usr/local/bin
+ADD entrypoint.sh virtualavr-compile-arduino.sh /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 EXPOSE 8080

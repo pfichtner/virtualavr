@@ -5,7 +5,7 @@
 
 setup() {
   ENTRYPOINT_PID=""
-  PATH="$PWD:$PWD/tests/mocks:$PATH" # Ensure socat mock is found
+  PATH="$PWD/tests/mocks:$PWD:$PATH" # Ensure socat mock is found
   TEMP_ENTRYPOINT=$(mktemp)          # Temporary entrypoint with adjusted ROOTDIR
   TEST_ROOTDIR=$(mktemp -d)          # Dynamic test root directory
 
