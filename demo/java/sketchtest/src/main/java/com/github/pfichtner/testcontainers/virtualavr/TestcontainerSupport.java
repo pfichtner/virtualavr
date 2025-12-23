@@ -27,7 +27,11 @@ public final class TestcontainerSupport {
 				.withDeviceMode(666) //
 		;
 
-		// Use TCP serial mode on non-Linux systems (macOS/Windows with Docker Desktop)
+		/**
+		 * On Linux, the standard PTY mode works because /dev can be bind-mounted. On
+		 * macOS/Windows with Docker Desktop, TCP serial mode is needed, so use TCP
+		 * serial mode on non-Linux systems (e.g. macOS/Windows with Docker Desktop)
+		 */
 		return isLinux() ? container : container.withTcpSerialMode();
 	}
 
@@ -42,9 +46,7 @@ public final class TestcontainerSupport {
 	}
 
 	/**
-	 * Checks if the current OS is Linux. On Linux, the standard PTY mode works
-	 * because /dev can be bind-mounted. On macOS/Windows with Docker Desktop, TCP
-	 * serial mode is needed.
+	 * Checks if the current OS is Linux.
 	 *
 	 * @return <code>true</code> if running on Linux
 	 */
