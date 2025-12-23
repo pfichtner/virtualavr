@@ -21,7 +21,7 @@ trap 'cleanup' EXIT
 
 HEXFILE="$(mktemp /tmp/virtualavr-hex-XXXXXX)"
 HEXFILE="$HEXFILE.hex"
-virtualavr-compile-arduino.sh "/sketch/$FILENAME" "$HEXFILE" || exit 1
+virtualavr-compile-arduino "/sketch/$FILENAME" "$HEXFILE" || exit 1
 
 # TCP serial mode: connect to a TCP port on the host instead of creating a local PTY
 # This allows the serial port to work on macOS/Windows with Docker Desktop
