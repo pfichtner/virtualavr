@@ -6,15 +6,24 @@ compile_arduino_sketch() {
     local target_filename="$2"
 
     # Install libraries if libraries.txt exists
+    [[ -n "${ENABLE_UNSAFE_INSTALL:-}" ]] && arduino-cli config set library.enable_unsafe_install "${ENABLE_UNSAFE_INSTALL}"
+
     local libraries_file="$sketch_dir/libraries.txt"
     if [[ -f "$libraries_file" ]]; then
         while IFS= read -r line; do
             line="$(echo "$line" | xargs)"
             [[ -z "$line" || "$line" == \#* ]] && continue
 
-            # TODO support unsafe: arduino-cli config set library.enable_unsafe_install true; arduino-cli lib install --git-url "$line"
-            # Unsafe installs disabled by default
-            arduino-cli lib install "$line" || echo "Error installing library: $line" >&2
+            if [[ "$line" == *"://"* ]] || [[ "$line" == git@* ]]; then
+                [[ -n "${ENABLE_UNSAFE_INSTALL:-}" ]] && arduino-cli config set library.enable_unsafe_install "${ENABLE_UNSAFE_INSTALL}"
+                arduino-cli lib install --git-url "$line" || echo "Error installing Git library: $line" >&2
+            elif [[ "$line" == */* ]] || [[ "$line" == *.zip ]]; then
+                [[ -n "${ENABLE_UNSAFE_INSTALL:-}" ]] && arduino-cli config set library.enable_unsafe_install "${ENABLE_UNSAFE_INSTALL}"
+                arduino-cli lib install --zip-path "$line" || echo "Error installing ZIP library: $line" >&2
+            else
+                arduino-cli lib install "$line" || echo "Error installing library: $line" >&2
+        fi
+
         done < "$libraries_file"
     fi
 
