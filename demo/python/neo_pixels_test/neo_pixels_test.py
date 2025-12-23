@@ -10,7 +10,7 @@ import os
 import uuid
 
 # Constants used in the test
-DATA_PIN = "D6"
+DATA_PIN = "6"
 
 class WebSocketListener:
     def __init__(self, ws):
@@ -185,7 +185,7 @@ def set_pin_state(ws, pin, state):
     wait_for_reply(ws, reply_id)
 
 
-def test_whenTheNoiseLevelIsWithin90PercentOfTheReferenceThenTheGreenLedIsOn(ws_listener):
+def test_whenStartingNeoPixelsDataPinShouldComeHighAndLow(ws_listener):
     set_pin_mode(ws_listener, DATA_PIN, "digital")
 
     # wait for one high and one low
