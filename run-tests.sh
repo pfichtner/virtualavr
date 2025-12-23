@@ -56,6 +56,7 @@ echo "Running Gherkin tests..."
 if [ "$SKIP_PIP_INSTALL" != "true" ]; then
 	pip install -r demo/python-gherkin/requirements.txt
 fi
+export SKETCH_FILE=test-artifacts/wokwi-zip/project.zip
 behave --junit --junit-directory demo/python-gherkin/test-results demo/python-gherkin
 
 echo "All tests completed successfully."
