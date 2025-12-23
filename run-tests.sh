@@ -54,7 +54,7 @@ pytest demo/python/neo_pixels_test -v --junit-xml=demo/python/install-from-githu
 
 echo "Running Gherkin tests..."
 if [ "$SKIP_PIP_INSTALL" != "true" ]; then
-	pip install -r demo/python-gherkin/requirements.txt
+	pip install -r demo/python/noise_indicator_light_test/requirements.txt -r demo/python/neo_pixels_test/requirements.txt
 fi
 behave --junit --junit-directory demo/python-gherkin/test-results demo/python-gherkin
 
