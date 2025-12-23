@@ -32,7 +32,7 @@ public final class TestcontainerSupport {
 	}
 
 	public static ImagePullPolicy onlyPullIfEnabled() {
-		return imageName -> System.getProperty(VIRTUALAVR_DOCKER_PULL_PROPERTY_NAME) != null;
+		return __ -> System.getProperty(VIRTUALAVR_DOCKER_PULL_PROPERTY_NAME) != null;
 	}
 
 	public static DockerImageName imageName() {
