@@ -71,7 +71,7 @@ def docker_container():
         auto_remove=False,
         ports={"8080/tcp": None},  # Map container port to a random free port on the host
         volumes={os.path.abspath(sketch_dir): {"bind": "/sketch", "mode": "ro"}},
-        environment={"FILENAME": sketch_file, "ENABLE_UNSAFE_INSTALL": "true"}
+        environment={"FILENAME": sketch_file,"ENABLE_UNSAFE_INSTALL": "true"}
     )
 
     # Retrieve the dynamically assigned host port
