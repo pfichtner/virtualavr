@@ -12,6 +12,7 @@ compile_arduino_sketch() {
             line="$(echo "$line" | xargs)"
             [[ -z "$line" || "$line" == \#* ]] && continue
 
+            # TODO support unsafe: arduino-cli config set library.enable_unsafe_install true; arduino-cli lib install --git-url "$line"
             # Unsafe installs disabled by default
             arduino-cli lib install "$line" || echo "Error installing library: $line" >&2
         done < "$libraries_file"
