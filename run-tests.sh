@@ -33,7 +33,7 @@ mvn -B -DTESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=localhost \
 
 if [ "$SKIP_PIP_INSTALL" != "true" ]; then
 	python -m pip install --upgrade pip
-	pip install -r demo/python/*/requirements.txt
+        pip install -r demo/python/noise_indicator_light_test/requirements.txt -r demo/python/neo_pixels_test/requirements.txt
 fi
 
 echo "Running Python tests (ino-file)..."
