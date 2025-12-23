@@ -3,10 +3,7 @@ set -euo pipefail
 
 compile_arduino_sketch() {
     local sketch_dir="$1"
-
-    local target_dir
-    target_dir="$(mktemp -d /tmp/arduino-build-XXXXXX)"
-    compile_log="$target_dir/compile.log"
+    local target_filename="$2"
 
     # Install libraries if libraries.txt exists
     local libraries_file="$sketch_dir/libraries.txt"
@@ -16,7 +13,7 @@ compile_arduino_sketch() {
             [[ -z "$line" || "$line" == \#* ]] && continue
 
             # Unsafe installs disabled by default
-            arduino-cli lib install "$line" >"$compile_log" 2>&1 || echo "Error installing library: $line" >&2
+            arduino-cli lib install "$line" || echo "Error installing library: $line" >&2
         done < "$libraries_file"
     fi
 
@@ -29,15 +26,16 @@ compile_arduino_sketch() {
         build_property_flag="--build-property build.extra_flags=${BUILD_EXTRA_FLAGS}"
     fi
 
+    local target_dir
+    target_dir="$(mktemp -d /tmp/arduino-build-XXXXXX)"
+
     # Compile
     if ! arduino-cli compile \
         --fqbn "$fqbn" \
         $build_property_flag \
         --output-dir "$target_dir" \
-        "$sketch_dir" \
-        >"$compile_log" 2>&1; then
+        "$sketch_dir"; then
         echo "Compilation failed" >&2
-        cat "$compile_log" >&2
         rm -rf "$target_dir"
         return 1
     fi
@@ -52,7 +50,7 @@ compile_arduino_sketch() {
         return 1
     fi
 
-    cat "$hex_file"
+    mv "$hex_file" "$target_filename"
 
     rm -rf "$target_dir"
 }
@@ -60,9 +58,10 @@ compile_arduino_sketch() {
 
 build_hex() {
     local input_filename="$1"
+    local target_filename="$2"
 
     if [[ "$input_filename" == *.hex ]]; then
-        cat "$input_filename"
+        cp "$input_filename" "$target_filename"
 
     elif [[ "$input_filename" == *.zip ]]; then
         local tmp_dir
@@ -71,7 +70,7 @@ build_hex() {
         mkdir -p "$copy_target"
 
         unzip -q "$input_filename" -d "$copy_target"
-        compile_arduino_sketch "$copy_target"
+        compile_arduino_sketch "$copy_target" "$target_filename"
         rm -rf "$tmp_dir"
 
     elif [[ "$input_filename" == *.ino ]]; then
@@ -85,7 +84,7 @@ build_hex() {
         mkdir -p "$copy_target"
 
         cp -R "$(dirname "$input_filename")/"* "$copy_target/"
-        compile_arduino_sketch "$copy_target"
+        compile_arduino_sketch "$copy_target" "$target_filename"
         rm -rf "$tmp_dir"
 
     elif [[ -d "$input_filename" ]]; then
@@ -99,12 +98,12 @@ build_hex() {
         mkdir -p "$copy_target"
 
         cp -R "$input_filename/"* "$copy_target/"
-        compile_arduino_sketch "$copy_target"
+        compile_arduino_sketch "$copy_target" "$target_filename"
         rm -rf "$tmp_dir"
 
     else
-        compile_arduino_sketch "$(dirname "$input_filename")"
+        compile_arduino_sketch "$(dirname "$input_filename")" "$target_filename"
     fi
 }
 
-build_hex "$1"
+build_hex "$1" "$2"
