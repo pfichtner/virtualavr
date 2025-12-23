@@ -28,9 +28,7 @@ public final class TestcontainerSupport {
 		;
 
 		// Use TCP serial mode on non-Linux systems (macOS/Windows with Docker Desktop)
-		return isLinux() //
-				? container //
-				: container.withTcpSerialMode();
+		return isLinux() ? container : container.withTcpSerialMode();
 	}
 
 	public static ImagePullPolicy onlyPullIfEnabled() {
