@@ -60,23 +60,20 @@ build_hex() {
     local input_filename="$1"
     local target_filename="$2"
 
+    local tmp_dir
+    tmp_dir="$(mktemp -d /tmp/arduino-sketch-XXXXXX)"
+
     if [[ "$input_filename" == *.hex ]]; then
         cp "$input_filename" "$target_filename"
 
     elif [[ "$input_filename" == *.zip ]]; then
-        local tmp_dir
-        tmp_dir="$(mktemp -d /tmp/arduino-sketch-XXXXXX)"
         local copy_target="$tmp_dir/sketch"
         mkdir -p "$copy_target"
 
         unzip -q "$input_filename" -d "$copy_target"
         compile_arduino_sketch "$copy_target" "$target_filename"
-        rm -rf "$tmp_dir"
 
     elif [[ "$input_filename" == *.ino ]]; then
-        local tmp_dir
-        tmp_dir="$(mktemp -d /tmp/arduino-sketch-XXXXXX)"
-
         local base_name
         base_name="$(basename "$input_filename" .ino)"
 
@@ -85,12 +82,8 @@ build_hex() {
 
         cp -R "$(dirname "$input_filename")/"* "$copy_target/"
         compile_arduino_sketch "$copy_target" "$target_filename"
-        rm -rf "$tmp_dir"
 
     elif [[ -d "$input_filename" ]]; then
-        local tmp_dir
-        tmp_dir="$(mktemp -d /tmp/arduino-sketch-XXXXXX)"
-
         local base_name
         base_name="$(basename "$input_filename")"
 
@@ -99,11 +92,11 @@ build_hex() {
 
         cp -R "$input_filename/"* "$copy_target/"
         compile_arduino_sketch "$copy_target" "$target_filename"
-        rm -rf "$tmp_dir"
 
     else
         compile_arduino_sketch "$(dirname "$input_filename")" "$target_filename"
     fi
+    rm -rf "$tmp_dir"
 }
 
 build_hex "$1" "$2"
