@@ -36,10 +36,6 @@ if [ "$SKIP_PIP_INSTALL" != "true" ]; then
         pip install -r demo/python/noise_indicator_light_test/requirements.txt -r demo/python/neo_pixels_test/requirements.txt
 fi
 
-echo "Running Python tests (install from github)..."
-export SKETCH_FILE=test-artifacts/dl-from-github/TestNeoPixel
-pytest demo/python/neo_pixels_test -v --junit-xml=demo/python/install-from-github/test-results/pytest.xml
-
 echo "Running Python tests (ino-file)..."
 export SKETCH_FILE=test-artifacts/ino-file/noiselevelindicator/noiselevelindicator.ino
 echo "Running Python tests (ino-file, but pass directory)..."
@@ -51,6 +47,10 @@ pytest demo/python/noise_indicator_light_test -v --junit-xml=demo/python/hex-fil
 echo "Running Python tests (wokwi-zip)..."
 export SKETCH_FILE=test-artifacts/wokwi-zip/project.zip
 pytest demo/python/noise_indicator_light_test -v --junit-xml=demo/python/wokwi-zip/test-results/pytest.xml
+
+echo "Running Python tests (install from github)..."
+export SKETCH_FILE=test-artifacts/dl-from-github/TestNeoPixel
+pytest demo/python/neo_pixels_test -v --junit-xml=demo/python/install-from-github/test-results/pytest.xml
 
 echo "Running Gherkin tests..."
 if [ "$SKIP_PIP_INSTALL" != "true" ]; then
