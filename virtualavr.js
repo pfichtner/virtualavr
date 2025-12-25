@@ -100,7 +100,6 @@ const runCode = async (hexContent, portCallback) => {
                         // TODO: Throttle if there are too many messages (see lastStateCycles)
                         const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
                         portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
-                        portCallback({ type: 'pinState', pin: 'D' + arduinoPin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
                         entry.lastStatePublished = state;
                     }
                 }
@@ -177,7 +176,6 @@ const runCode = async (hexContent, portCallback) => {
                                 if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
                                     const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
                                     portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
-                                    portCallback({ type: 'pinState', pin: 'D' + arduinoPin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
                                     entry.lastStatePublished = state;
                                 }
                             }
@@ -206,7 +204,6 @@ function sendNextChar(buff, usart) {
 
 function processMessage(msg, callbackPinState) {
     // { "type": "pinMode", "pin": "12", "mode": "analog" }
-    if (msg.pin && msg.pin.startsWith('D')) msg.pin = msg.pin.substring(1); // deprecated
     const avrPinB = arduinoPinOnPort['B'].indexOf(msg.pin);
     const avrPinC = arduinoPinOnPort['C'].indexOf(msg.pin);
     const avrPinD = arduinoPinOnPort['D'].indexOf(msg.pin);
@@ -220,11 +217,9 @@ function processMessage(msg, callbackPinState) {
             if (avrPinB >= 0) {
                 const state = ports['B'].pinState(avrPinB) === avr8js.PinState.High;
                 callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
-                callbackPinState({ type: 'pinState', pin: 'D' + msg.pin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
             } else if (avrPinD >= 0) {
                 const state = ports['D'].pinState(avrPinD) === avr8js.PinState.High;
                 callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
-                callbackPinState({ type: 'pinState', pin: 'D' + msg.pin, state: state, cpuTime: cpuTime, deprecated: true, note: "pins with D-prefix are deprecated" }); // deprecated
             }
         } else {
             listeningModes[msg.pin] = undefined;
