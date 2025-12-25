@@ -20,6 +20,10 @@ compile_arduino_sketch() {
             elif [[ "$line" == */* ]] || [[ "$line" == *.zip ]]; then
                 [[ -n "${ENABLE_UNSAFE_INSTALL:-}" ]] && arduino-cli config set library.enable_unsafe_install "${ENABLE_UNSAFE_INSTALL}"
                 arduino-cli lib install --zip-path "$line" || echo "Error installing ZIP library: $line" >&2
+                (
+                    cd "$sketch_dir" || { echo "Cannot cd to $sketch_dir" >&2; exit 1; }
+                    arduino-cli lib install --zip-path "$line" || echo "Error installing ZIP library: $line" >&2
+                )
             else
                 arduino-cli lib install "$line" || echo "Error installing library: $line" >&2
         fi
@@ -36,8 +40,7 @@ compile_arduino_sketch() {
         build_property_flag="--build-property build.extra_flags=${BUILD_EXTRA_FLAGS}"
     fi
 
-    local target_dir
-    target_dir="$(mktemp -d /tmp/arduino-build-XXXXXX)"
+    local target_dir="$(mktemp -d /tmp/arduino-build-XXXXXX)"
 
     # Compile
     if ! arduino-cli compile \
@@ -50,8 +53,7 @@ compile_arduino_sketch() {
         return 1
     fi
 
-    local sketch_name
-    sketch_name="$(basename "$sketch_dir")"
+    local sketch_name="$(basename "$sketch_dir")"
     local hex_file="$target_dir/${sketch_name}.ino.hex"
 
     if [[ ! -f "$hex_file" ]]; then
