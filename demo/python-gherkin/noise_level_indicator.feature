@@ -2,12 +2,12 @@ Feature: Noise Level Indicator Led Behavior
 
   Background: Alias defined and pins monitored
     Given the following pins are assigned
-      | alias       | pin  | description                          |
-      | REFERENCE   | A0   | Reference noise level threshold      |
-      | VALUE       | A1   | Current noise level                  |
-      | GREEN_LED   | D10  | Indicates acceptable noise level     |
-      | YELLOW_LED  | D11  | Indicates moderate noise level       |
-      | RED_LED     | D12  | Indicates excessive noise level      |
+      | alias       | pin | description                          |
+      | REFERENCE   | A0  | Reference noise level threshold      |
+      | VALUE       | A1  | Current noise level                  |
+      | GREEN_LED   | 10  | Indicates acceptable noise level     |
+      | YELLOW_LED  | 11  | Indicates moderate noise level       |
+      | RED_LED     | 12  | Indicates excessive noise level      |
     And the pin of GREEN_LED is monitored
     And the pin of YELLOW_LED is monitored
     And the pin of RED_LED is monitored

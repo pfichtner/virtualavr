@@ -180,7 +180,6 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 
 
 # Todos
-- Provide Java Bindings as maven artifacts
 - Add an example (jest?): How to test firmware, e.g. firmware reading DHT22 values and writing infos/warnings to console/SSD1306
 - We could use WS also to load firmware
 - Possibility to define component layout, e.g. add a DHT22
@@ -191,11 +190,4 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
   Could we use arduino firmware? https://github.com/arduino/ArduinoCore-avr/tree/master/bootloaders/atmega : If this works? Do we have to upload elf binaries?
 
 # License
-
-This project is dual-licensed:
-
-- **Apache License 2.0** — for open-source use and compatibility with Apache projects.
-- **Commercial License** — for proprietary/commercial use not permitted by the Apache License.
-
-You are free to use, modify, and distribute this software—including for commercial purposes—under the terms of the Apache License 2.0. If you want to do something beyond what the license allows, you must obtain a separate license from the copyright holder. Please contact us at virtualavr@public-files.de
-
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.

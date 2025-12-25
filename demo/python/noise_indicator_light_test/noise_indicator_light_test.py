@@ -12,9 +12,9 @@ import uuid
 # Constants used in the test
 REF_PIN = "A0"
 VALUE_PIN = "A1"
-GREEN_LED = "D10"
-YELLOW_LED = "D11"
-RED_LED = "D12"
+GREEN_LED = "10"
+YELLOW_LED = "11"
+RED_LED = "12"
 
 class WebSocketListener:
     def __init__(self, ws):
