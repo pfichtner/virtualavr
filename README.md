@@ -36,6 +36,7 @@ Environment variables supported
 - PAUSE_ON_START virtualavr will start in pause mode. See commands for pausing/unpausing
 - PUBLISH_MILLIS analog values gets published each millis on change (default 250)
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
+- ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager’s verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
 - BUILD_FQBN Fully Qualified Board Name to use for compile (default "arduino:avr:uno")
 - BUILD_EXTRA_FLAGS to set/overwrite defines, e.g. '-DSLEEP_MILLIS=100 -DMESSAGE_TEXT="Hello World"'
 - SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp---tcp-serial-mode)
