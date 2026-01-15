@@ -147,15 +147,11 @@ class ArdulinkFirmwareIT {
 	}
 
 	static boolean stateOfPinIs(VirtualAvrConnection avr, String pin, boolean expected) {
-		return equal(stateOfPin(avr, pin), expected);
+		return equal(avr.lastState(pin), expected);
 	}
 
 	static boolean stateOfPinIs(VirtualAvrConnection avr, String pin, int expected) {
-		return equal(stateOfPin(avr, pin), expected);
-	}
-
-	static Object stateOfPin(VirtualAvrConnection avr, String pin) {
-		return avr.lastStates().get(pin);
+		return equal(avr.lastState(pin), expected);
 	}
 
 	static String powerDigitalMessage(int pin, boolean state) {

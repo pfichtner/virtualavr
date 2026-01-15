@@ -10,7 +10,6 @@ import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -19,8 +18,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class NoiseLevelIndicatorTest {
@@ -78,8 +77,7 @@ class NoiseLevelIndicatorTest {
 	}
 
 	boolean statesAre(PinState... states) {
-		Map<String, Object> lastStates = avr.lastStates();
-		return Arrays.stream(states).allMatch(s -> equal(s.getState(), lastStates.get(s.getPin())));
+		return Arrays.stream(states).allMatch(s -> equal(s.getState(), avr.lastState(s.getPin())));
 	}
 
 }

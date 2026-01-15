@@ -76,7 +76,7 @@ class SwitchAllPortsViaArdulinkTest {
 	}
 
 	void awaitUntil(PinState state) {
-		await().until(() -> equal(virtualAvrContainer.avr().lastStates().get(state.getPin()), state.getState()));
+		await().until(() -> equal(virtualAvrContainer.avr().lastState(state.getPin()), state.getState()));
 	}
 
 	static VirtualAvrConnection enableSerialDebug(VirtualAvrConnection avr) {

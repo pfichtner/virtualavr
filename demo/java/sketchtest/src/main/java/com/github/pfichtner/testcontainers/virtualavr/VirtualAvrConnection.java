@@ -164,6 +164,8 @@ public interface VirtualAvrConnection extends AutoCloseable {
 
 	Map<String, Object> lastStates();
 
+	Object lastState(String pin);
+
 	VirtualAvrConnection clearStates();
 
 	VirtualAvrConnection pinState(String pin, boolean state);

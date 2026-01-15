@@ -149,6 +149,15 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		return pinStates().stream().collect(toMap(PinState::getPin, PinState::getState, lastWins()));
 	}
 
+	@Override
+	public Object lastState(String pin) {
+		return pinStates().stream() //
+				.filter(p -> p.getPin().equals(pin)) //
+				.reduce(lastWins()) //
+				.map(PinState::getState) //
+				.orElse(null);
+	}
+
 	private static <T> BinaryOperator<T> lastWins() {
 		return (first, last) -> last;
 	}
