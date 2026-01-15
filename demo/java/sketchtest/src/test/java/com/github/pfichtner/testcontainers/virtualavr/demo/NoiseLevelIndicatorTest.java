@@ -6,10 +6,10 @@ import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnectio
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState.stateIsOn;
 import static java.lang.String.format;
 import static org.awaitility.Awaitility.await;
-import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +77,7 @@ class NoiseLevelIndicatorTest {
 	}
 
 	boolean statesAre(PinState... states) {
-		return Arrays.stream(states).allMatch(s -> equal(s.getState(), avr.lastState(s.getPin())));
+		return Arrays.stream(states).allMatch(s -> Objects.equals(s.getState(), avr.lastState(s.getPin())));
 	}
 
 }

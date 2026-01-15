@@ -11,9 +11,9 @@ import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnectio
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
 import java.io.File;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,8 +23,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class SwitchAllPortsViaArdulinkTest {
@@ -76,7 +76,7 @@ class SwitchAllPortsViaArdulinkTest {
 	}
 
 	void awaitUntil(PinState state) {
-		await().until(() -> equal(virtualAvrContainer.avr().lastState(state.getPin()), state.getState()));
+		await().until(() -> Objects.equals(virtualAvrContainer.avr().lastState(state.getPin()), state.getState()));
 	}
 
 	static VirtualAvrConnection enableSerialDebug(VirtualAvrConnection avr) {

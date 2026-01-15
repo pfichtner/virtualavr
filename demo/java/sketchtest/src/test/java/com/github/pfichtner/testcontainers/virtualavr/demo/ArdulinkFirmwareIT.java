@@ -8,12 +8,12 @@ import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnectio
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static java.util.stream.Collectors.joining;
 import static org.awaitility.Awaitility.await;
-import static org.testcontainers.shaded.com.google.common.base.Objects.equal;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -147,11 +147,11 @@ class ArdulinkFirmwareIT {
 	}
 
 	static boolean stateOfPinIs(VirtualAvrConnection avr, String pin, boolean expected) {
-		return equal(avr.lastState(pin), expected);
+		return Objects.equals(avr.lastState(pin), expected);
 	}
 
 	static boolean stateOfPinIs(VirtualAvrConnection avr, String pin, int expected) {
-		return equal(avr.lastState(pin), expected);
+		return Objects.equals(avr.lastState(pin), expected);
 	}
 
 	static String powerDigitalMessage(int pin, boolean state) {
