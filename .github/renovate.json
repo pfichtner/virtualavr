@@ -1,5 +1,5 @@
 {
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "schedule:automergeDaily", ":dependencyDashboard"],
   "enabledManagers": ["maven", "docker-compose", "pip_requirements", "npm"],
   "labels": ["dependencies"],
   "packageRules": [
