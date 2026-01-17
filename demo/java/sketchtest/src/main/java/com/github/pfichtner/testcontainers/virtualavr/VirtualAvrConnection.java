@@ -4,10 +4,11 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public interface VirtualAvrConnection extends AutoCloseable {
 
@@ -19,6 +20,20 @@ public interface VirtualAvrConnection extends AutoCloseable {
 		PinReportMode(String message) {
 			this.modeName = message;
 		}
+	}
+
+	public static interface PinStates extends Iterable<PinState> {
+
+		void clear();
+
+		Map<String, Object> last();
+
+		Object last(String pin);
+
+		default Stream<PinState> stream() {
+			return StreamSupport.stream(spliterator(), false);
+		}
+
 	}
 
 	public static class PinState {
@@ -160,12 +175,24 @@ public interface VirtualAvrConnection extends AutoCloseable {
 
 	VirtualAvrConnection removeCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener);
 
-	List<PinState> pinStates();
+	PinStates pinStates();
 
+	/**
+	 * @deprecated use {@link PinStates#last()} instead
+	 */
+	@Deprecated
 	Map<String, Object> lastStates();
 
+	/**
+	 * @deprecated use {@link PinStates#last(String)} instead
+	 */
+	@Deprecated
 	Object lastState(String pin);
 
+	/**
+	 * @deprecated use {@link PinStates#clear()} instead
+	 */
+	@Deprecated
 	VirtualAvrConnection clearStates();
 
 	VirtualAvrConnection pinState(String pin, boolean state);

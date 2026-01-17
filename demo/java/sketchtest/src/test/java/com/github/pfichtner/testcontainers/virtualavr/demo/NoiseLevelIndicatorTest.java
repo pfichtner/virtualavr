@@ -77,7 +77,7 @@ class NoiseLevelIndicatorTest {
 	}
 
 	boolean statesAre(PinState... states) {
-		return Arrays.stream(states).allMatch(s -> Objects.equals(s.getState(), avr.lastState(s.getPin())));
+		return Arrays.stream(states).allMatch(s -> Objects.equals(s.getState(), avr.pinStates().last(s.getPin())));
 	}
 
 }

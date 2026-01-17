@@ -15,15 +15,15 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.assertj.core.api.AbstractStringAssert;
-import org.assertj.core.api.ListAssert;
+import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
-import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinState;
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
 class ArdulinkAvrTest {
@@ -222,7 +222,7 @@ class ArdulinkAvrTest {
 		await().untilAsserted(() -> consumer.accept(assertThat(serial.received())));
 	}
 
-	private void awaitState(Consumer<ListAssert<PinState>> consumer) {
+	private void awaitState(Consumer<IterableAssert<PinState>> consumer) {
 		await().untilAsserted(() -> consumer.accept(assertThat(virtualAvrContainer.avr().pinStates())));
 	}
 

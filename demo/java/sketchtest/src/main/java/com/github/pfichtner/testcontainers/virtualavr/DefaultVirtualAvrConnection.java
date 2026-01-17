@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toMap;
 
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +33,41 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrConnection.class);
 
+	public static class DefaultPinStates implements PinStates {
+
+		private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
+
+		@Override
+		public Iterator<PinState> iterator() {
+			return pinStates.iterator();
+		}
+
+		public void add(PinState pinState) {
+			this.pinStates.add(pinState);
+		}
+
+		public void clear() {
+			this.pinStates.clear();
+		}
+
+		public Map<String, Object> last() {
+			return this.pinStates.stream().collect(toMap(PinState::getPin, PinState::getState, lastWins()));
+		}
+
+		public Object last(String pin) {
+			return this.pinStates.stream() //
+					.filter(p -> p.getPin().equals(pin)) //
+					.reduce(lastWins()) //
+					.map(PinState::getState) //
+					.orElse(null);
+		}
+
+		private static <T> BinaryOperator<T> lastWins() {
+			return (first, last) -> last;
+		}
+
+	}
+
 	private static final class PinStateJsonDeserializer implements JsonDeserializer<PinState> {
 		@Override
 		public PinState deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
@@ -55,7 +91,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	private final List<VirtualAvrConnection.Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
 	private final List<VirtualAvrConnection.Listener<SerialDebug>> serialDebugListeners = new CopyOnWriteArrayList<>();
 	private final List<VirtualAvrConnection.Listener<CommandReply>> commandReplyListeners = new CopyOnWriteArrayList<>();
-	private final List<PinState> pinStates = new CopyOnWriteArrayList<>();
+	private final DefaultPinStates pinStates = new DefaultPinStates();
 	private boolean debugSerial;
 
 	private VirtualAvrConnection sendAndWaitForReply(WithReplyId messageToSend) {
@@ -94,12 +130,42 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	public DefaultVirtualAvrConnection(URI serverUri) {
 		super(serverUri);
-		addPinStateListener(this.pinStates::add);
+		addPinStateListener(pinStates::add);
 		try {
 			connectBlocking();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+	}
+
+	@Override
+	public PinStates pinStates() {
+		return pinStates;
+	}
+
+	/**
+	 * @deprecated use {@link PinStates#last()} instead
+	 */
+	@Deprecated
+	public Map<String, Object> lastStates() {
+		return pinStates().last();
+	}
+
+	/**
+	 * @deprecated use {@link PinStates#last(String)} instead
+	 */
+	@Deprecated
+	public Object lastState(String pin) {
+		return pinStates().last(pin);
+	}
+
+	/**
+	 * @deprecated use {@link PinStates#clear()} instead
+	 */
+	@Override
+	public VirtualAvrConnection clearStates() {
+		pinStates().clear();
+		return this;
 	}
 
 	@Override
@@ -138,32 +204,6 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	public VirtualAvrConnection removeCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener) {
 		commandReplyListeners.remove(listener);
-		return this;
-	}
-
-	public List<PinState> pinStates() {
-		return pinStates;
-	}
-
-	public Map<String, Object> lastStates() {
-		return pinStates().stream().collect(toMap(PinState::getPin, PinState::getState, lastWins()));
-	}
-
-	@Override
-	public Object lastState(String pin) {
-		return pinStates().stream() //
-				.filter(p -> p.getPin().equals(pin)) //
-				.reduce(lastWins()) //
-				.map(PinState::getState) //
-				.orElse(null);
-	}
-
-	private static <T> BinaryOperator<T> lastWins() {
-		return (first, last) -> last;
-	}
-
-	public VirtualAvrConnection clearStates() {
-		pinStates.clear();
 		return this;
 	}
 

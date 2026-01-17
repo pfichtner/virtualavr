@@ -6,14 +6,14 @@ import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnectio
 import static java.lang.Math.abs;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.isEqual;
-import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.net.URISyntaxException;
-import java.util.List;
+import java.util.Iterator;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -44,19 +44,28 @@ class VirtualAvrTest {
 	void awaitHasBlinkedAtLeastFiveTimesAndCpuTimesAreOk() {
 		VirtualAvrConnection virtualAvr = virtualavr.avr();
 		virtualAvr.pinReportMode(INTERNAL_LED, DIGITAL);
-		await().until(() -> count(virtualAvr.pinStates(), isEqual(stateIsOn(INTERNAL_LED))) >= 5
-				&& count(virtualAvr.pinStates(), isEqual(stateIsOff(INTERNAL_LED))) >= 5);
+		await().until(() -> count(virtualAvr.pinStates().stream(), isEqual(stateIsOn(INTERNAL_LED))) >= 5
+				&& count(virtualAvr.pinStates().stream(), isEqual(stateIsOff(INTERNAL_LED))) >= 5);
 		checkCpuTimes(virtualAvr.pinStates(), 0.250);
 	}
 
-	private static void checkCpuTimes(List<PinState> states, double expected) {
-		assertThat(range(1, states.size()) //
-				.mapToDouble(i -> states.get(i).getCpuTime() - states.get(i - 1).getCpuTime()))
-				.allMatch(diff -> abs(diff - expected) <= 0.1);
+	static void checkCpuTimes(Iterable<PinState> states, double expected) {
+		Iterator<PinState> it = states.iterator();
+		if (!it.hasNext()) {
+			return;
+		}
+
+		PinState prev = it.next();
+		while (it.hasNext()) {
+			PinState curr = it.next();
+			double diff = curr.getCpuTime() - prev.getCpuTime();
+			assertThat(abs(diff - expected)).isLessThanOrEqualTo(0.1);
+			prev = curr;
+		}
 	}
 
-	long count(List<PinState> pinStates, Predicate<PinState> pinState) {
-		return pinStates.stream().filter(pinState).count();
+	static long count(Stream<PinState> pinStates, Predicate<PinState> pinState) {
+		return pinStates.filter(pinState).count();
 	}
 
 }

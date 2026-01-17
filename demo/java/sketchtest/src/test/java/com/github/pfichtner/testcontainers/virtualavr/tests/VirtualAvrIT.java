@@ -21,9 +21,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -150,8 +150,8 @@ class VirtualAvrIT {
 	private long waitForToggles(String pin, int times) {
 		VirtualAvrConnection virtualAvr = virtualAvrContainer.avr();
 		long start = currentTimeMillis();
-		await().until(() -> count(virtualAvr.pinStates(), isEqual(stateIsOn(pin))) >= times
-				&& count(virtualAvr.pinStates(), isEqual(stateIsOff(pin))) >= times);
+		await().until(() -> count(virtualAvr.pinStates().stream(), isEqual(stateIsOn(pin))) >= times
+				&& count(virtualAvr.pinStates().stream(), isEqual(stateIsOff(pin))) >= times);
 		return currentTimeMillis() - start;
 	}
 
@@ -210,8 +210,8 @@ class VirtualAvrIT {
 		}
 	}
 
-	long count(List<PinState> pinStates, Predicate<PinState> pinState) {
-		return pinStates.stream().filter(pinState).count();
+	long count(Stream<PinState> pinStates, Predicate<PinState> pinState) {
+		return pinStates.filter(pinState).count();
 	}
 
 }
