@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 
+import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinStates;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -69,6 +70,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	}
 
 	private static final class PinStateJsonDeserializer implements JsonDeserializer<PinState> {
+
 		@Override
 		public PinState deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
 				throws JsonParseException {
@@ -83,6 +85,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 					? new PinState(pin, state.getAsBoolean())
 					: new PinState(pin, state.getAsInt());
 		}
+
 	}
 
 	private final Gson gson = new GsonBuilder().registerTypeAdapter(PinState.class, new PinStateJsonDeserializer())
@@ -125,7 +128,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
 		URI serverUri = URI.create(format("ws://%s:%s", "localhost", container.getFirstMappedPort()));
 		return new DefaultVirtualAvrConnection(serverUri)
-				.addPinStateListener(p -> System.out.printf("Pin %s = %s\n", p.getPin(), p.getState()));
+				.addPinStateListener(p -> logger.info("Pin {} = {}", p.getPin(), p.getState()));
 	}
 
 	public DefaultVirtualAvrConnection(URI serverUri) {
@@ -145,6 +148,8 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	/**
 	 * @deprecated use {@link PinStates#last()} instead
+	 * @see #pinStates()
+	 * @see PinStates#last()
 	 */
 	@Deprecated
 	public Map<String, Object> lastStates() {
@@ -153,6 +158,8 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	/**
 	 * @deprecated use {@link PinStates#last(String)} instead
+	 * @see #pinStates()
+	 * @see PinStates#last(String)
 	 */
 	@Deprecated
 	public Object lastState(String pin) {
@@ -161,6 +168,8 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	/**
 	 * @deprecated use {@link PinStates#clear()} instead
+	 * @see #pinStates()
+	 * @see PinStates#clear()
 	 */
 	@Override
 	public VirtualAvrConnection clearStates() {
@@ -230,11 +239,15 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	}
 
 	private static boolean isDeprecated(Map<?, ?> json) {
-		return json.get("deprecated") != null;
+		return hasAttribute(json, "deprecated");
 	}
 
 	private static boolean isResponse(Map<?, ?> json) {
-		return json.get("replyId") != null && json.get("executed") != null;
+		return hasAttribute(json, "replyId") && hasAttribute(json, "executed");
+	}
+
+	private static boolean hasAttribute(Map<?, ?> values, String name) {
+		return values.get(name) != null;
 	}
 
 	private <T> void callAccept(List<VirtualAvrConnection.Listener<T>> listeners, String message, Class<T> clazz) {

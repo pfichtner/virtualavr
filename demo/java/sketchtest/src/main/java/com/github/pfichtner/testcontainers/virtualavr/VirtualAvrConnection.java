@@ -179,18 +179,24 @@ public interface VirtualAvrConnection extends AutoCloseable {
 
 	/**
 	 * @deprecated use {@link PinStates#last()} instead
+	 * @see #pinStates()
+	 * @see PinStates#last()
 	 */
 	@Deprecated
 	Map<String, Object> lastStates();
 
 	/**
 	 * @deprecated use {@link PinStates#last(String)} instead
+	 * @see #pinStates()
+	 * @see PinStates#last(String)
 	 */
 	@Deprecated
 	Object lastState(String pin);
 
 	/**
 	 * @deprecated use {@link PinStates#clear()} instead
+	 * @see #pinStates()
+	 * @see PinStates#clear()
 	 */
 	@Deprecated
 	VirtualAvrConnection clearStates();
