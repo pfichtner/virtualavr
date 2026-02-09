@@ -24,7 +24,7 @@ jobs:
     - uses: actions/checkout@v6.0.2
     - name: Setup Bats and bats libs
       id: setup-bats
-      uses: bats-core/bats-action@3.0.1
+      uses: bats-core/bats-action@4.0.0
     - name: entrypoint tests
       shell: bash
       env:
