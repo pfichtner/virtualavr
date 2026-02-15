@@ -3,7 +3,7 @@
     "test": "jest --config ./jest.config.json --forceExit"
   },
   "dependencies": {
-    "avr8js": "^0.20.1",
+    "avr8js": "^0.21.0",
     "extract-zip": "^2.0.1",
     "intel-hex": "^0.2.0",
     "mkdirp": "^3.0.1",
