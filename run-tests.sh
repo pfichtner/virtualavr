@@ -38,6 +38,7 @@ fi
 
 echo "Running Python tests (ino-file)..."
 export SKETCH_FILE=test-artifacts/ino-file/noiselevelindicator/noiselevelindicator.ino
+pytest demo/python/noise_indicator_light_test -v --junit-xml=demo/python/ino-file/test-results/pytest.xml
 echo "Running Python tests (ino-file, but pass directory)..."
 export SKETCH_FILE=test-artifacts/ino-file/noiselevelindicator
 pytest demo/python/noise_indicator_light_test -v --junit-xml=demo/python/ino-file-but-dir-as-arg/test-results/pytest.xml
