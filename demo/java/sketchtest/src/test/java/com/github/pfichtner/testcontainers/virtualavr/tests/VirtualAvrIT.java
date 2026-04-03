@@ -141,7 +141,7 @@ class VirtualAvrIT {
 		long timeToTogglePinThreeTimes = waitForToggles(INTERNAL_LED, 3);
 
 		virtualAvr.pinReportMode(INTERNAL_LED, NONE);
-		virtualAvr.clearStates();
+		virtualAvr.pinStates().clear();
 
 		MILLISECONDS.sleep(timeToTogglePinThreeTimes * 2);
 		assertThat(virtualAvr.pinStates().stream()).noneMatch(s -> INTERNAL_LED.equals(s.getPin()));
