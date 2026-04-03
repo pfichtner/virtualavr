@@ -150,20 +150,27 @@ def wait_for_ws_message(listener, pin, expected_state, timeout=20):
         AssertionError: If the expected state for the pin is not received within the timeout.
     """
     start_time = time.time()
+    seen = 0
 
     while time.time() - start_time < timeout:
-        # Filter messages related to the specified pin
-        pin_messages = [msg for msg in listener.get_all_messages() if msg.get("type") == "pinState" and msg.get("pin") == pin]
+        all_msgs = listener.get_all_messages()
+        new_msgs = all_msgs[seen:]
+        seen = len(all_msgs)
 
-        if pin_messages:
-            last_message = pin_messages[-1]
-            if last_message.get("state") == expected_state:
-                print(f"Last message for pin {pin} has the expected state: {expected_state}")
-                return last_message
+        for msg in new_msgs:
+            if (
+                msg.get("type") == "pinState"
+                and msg.get("pin") == pin
+                and msg.get("state") == expected_state
+            ):
+                return msg
 
-        time.sleep(0.1)
+        time.sleep(0.01)
 
-    pytest.fail(f"No message for pin {pin} with the expected state {expected_state} received within {timeout} seconds.")
+    pytest.fail(
+        f"No message for pin {pin} with the expected state {expected_state} "
+        f"received within {timeout} seconds."
+    )
 
 
 def wait_for_reply(listener, reply_id, timeout=20):
