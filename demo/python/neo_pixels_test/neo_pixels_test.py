@@ -157,7 +157,7 @@ def wait_for_ws_message(listener, pin, expected_state, timeout=20):
                 print(f"Last message for pin {pin} has the expected state: {expected_state}")
                 return last_message
 
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     pytest.fail(f"No message for pin {pin} with the expected state {expected_state} received within {timeout} seconds.")
 
