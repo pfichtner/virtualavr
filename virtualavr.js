@@ -1,6 +1,7 @@
 const os = require('os')
 const fs = require('fs');
 const fsp = require('fs').promises;
+const { performance } = require('perf_hooks');
 const avr8js = require('avr8js');
 const intelhex = require('intel-hex');
 
@@ -8,6 +9,7 @@ const ws = require('ws');
 
 const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const BATCH_MILLIS = Number(process.env.BATCH_MILLIS) || 0;
+const REALTIME = process.env.REALTIME === 'true';
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 let isPaused = !!process.env.PAUSE_ON_START;
 
@@ -50,13 +52,27 @@ const unoPinMappings = {
 // TODO use pwmFrequency
 
 
-const arduinoPinOnPort = {};
-const uniquePorts = Array.from(new Set(Object.values(unoPinMappings).map(pinObj => pinObj.port)));
-uniquePorts.forEach(port => {
-    arduinoPinOnPort[port] = Object.keys(unoPinMappings)
-        .filter(pin => unoPinMappings[pin].port === port)
-        .sort((a, b) => unoPinMappings[a].pin - unoPinMappings[b].pin);
-});
+/**
+ * Precomputed lookup tables for O(1) pin mapping.
+ * 
+ * pinToAvr: Maps Arduino pin names (e.g., '13', 'A0', 'D13') to their AVR port and pin bit.
+ * portAvrPinToArduino: Maps AVR port names to an array of Arduino pin names, indexed by bit.
+ */
+const pinToAvr = {};
+const portAvrPinToArduino = {};
+
+for (const [arduinoPin, mapping] of Object.entries(unoPinMappings)) {
+    pinToAvr[arduinoPin] = mapping;
+    // Support 'D' prefix for digital pins (e.g., 'D13')
+    if (!arduinoPin.startsWith('A')) {
+        pinToAvr['D' + arduinoPin] = mapping;
+    }
+
+    if (!portAvrPinToArduino[mapping.port]) {
+        portAvrPinToArduino[mapping.port] = [];
+    }
+    portAvrPinToArduino[mapping.port][mapping.pin] = arduinoPin;
+}
 
 const args = process.argv.slice(2);
 
@@ -79,7 +95,7 @@ const runCode = async (hexContent, portCallback) => {
     const portStates = {};
     const handlePort = (portName, portCallback) => {        
         const port = ports[portName];
-        const arduinoPins = arduinoPinOnPort[portName];
+        const arduinoPins = portAvrPinToArduino[portName] || [];
         let lastValue = 0;
         port.addListener((value) => {
             // Optimization: Only process pins if the port value has actually changed.
@@ -149,12 +165,45 @@ const runCode = async (hexContent, portCallback) => {
     new avr8js.AVRTimer(cpu, avr8js.timer0Config);
     new avr8js.AVRTimer(cpu, avr8js.timer1Config);
     new avr8js.AVRTimer(cpu, avr8js.timer2Config);
+
+    let syncStartTime = performance.now();
+    let syncStartCycles = cpu.cycles;
+
     while (true) {
         if (!isPaused) {
-            for (let i = 0; i < 500000; i++) {
-                avr8js.avrInstruction(cpu);
-                cpu.tick();
+            if (REALTIME) {
+                const now = performance.now();
+                const elapsedMs = now - syncStartTime;
+                const targetCycles = Math.floor((elapsedMs * clockFrequency) / 1000);
+                let cyclesToRun = targetCycles - (cpu.cycles - syncStartCycles);
+
+                if (cyclesToRun > 0) {
+                    // Limit catch-up to 100ms to prevent "spiral of death" if the host is overloaded
+                    const maxBurst = clockFrequency / 10;
+                    if (cyclesToRun > maxBurst) {
+                        cyclesToRun = maxBurst;
+                        // Reset sync markers if we hit the limit to avoid persistent lag
+                        syncStartTime = now;
+                        syncStartCycles = cpu.cycles;
+                    }
+
+                    while (cyclesToRun > 0 && !isPaused) {
+                        const prevCycles = cpu.cycles;
+                        avr8js.avrInstruction(cpu);
+                        cpu.tick();
+                        cyclesToRun -= (cpu.cycles - prevCycles);
+                    }
+                }
+            } else {
+                for (let i = 0; i < 500000; i++) {
+                    avr8js.avrInstruction(cpu);
+                    cpu.tick();
+                }
             }
+        } else {
+            // Keep sync markers current while paused to avoid catch-up burst on unpause
+            syncStartTime = performance.now();
+            syncStartCycles = cpu.cycles;
         }
         await new Promise(resolve => setTimeout(resolve));
 
@@ -173,13 +222,15 @@ const runCode = async (hexContent, portCallback) => {
             // Function to process a port's state
             const processPortState = (portName) => {
                 const port = ports[portName];
-                const arduinoPins = arduinoPinOnPort[portName];
-                for (const arduinoPin in portStates) {
-                    const entry = portStates[arduinoPin];
-                    const avrPin = arduinoPins.indexOf(arduinoPin) >= 0 ? arduinoPins.indexOf(arduinoPin) : arduinoPins.indexOf('D' + arduinoPin);
+                const arduinoPins = portAvrPinToArduino[portName] || [];
+                for (let avrPin = 0; avrPin < arduinoPins.length; avrPin++) {
+                    const arduinoPin = arduinoPins[avrPin];
+                    if (!arduinoPin) continue;
 
-                    if (avrPin >= 0) {
-                        if (port.pinState(avrPin) === avr8js.PinState.High) {
+                    const entry = portStates[arduinoPin];
+                    if (!entry) continue;
+
+                    if (port.pinState(avrPin) === avr8js.PinState.High) {
                             entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
                         }
                         if (String(listeningModes[arduinoPin]) === 'analog') {
@@ -197,7 +248,6 @@ const runCode = async (hexContent, portCallback) => {
                         entry.lastUpdateCycles = cpu.cycles;
                         entry.lastStateCycles = cpu.cycles;
                         entry.pinHighCycles = 0;
-                    }
                 }
             };
 
@@ -218,9 +268,7 @@ function sendNextChar(buff, usart) {
 
 function processMessage(msg, callbackPinState) {
     // { "type": "pinMode", "pin": "12", "mode": "analog" }
-    const avrPinB = arduinoPinOnPort['B'].indexOf(msg.pin);
-    const avrPinC = arduinoPinOnPort['C'].indexOf(msg.pin);
-    const avrPinD = arduinoPinOnPort['D'].indexOf(msg.pin);
+    const mapping = pinToAvr[msg.pin];
     if (msg.type === 'pinMode') {
         if (msg.mode === 'analog' || msg.mode === 'pwm') {
             listeningModes[msg.pin] = 'analog';
@@ -228,11 +276,8 @@ function processMessage(msg, callbackPinState) {
             listeningModes[msg.pin] = 'digital';
             const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
             // Immediately publish the current state
-            if (avrPinB >= 0) {
-                const state = ports['B'].pinState(avrPinB) === avr8js.PinState.High;
-                callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
-            } else if (avrPinD >= 0) {
-                const state = ports['D'].pinState(avrPinD) === avr8js.PinState.High;
+            if (mapping && (mapping.port === 'B' || mapping.port === 'D')) {
+                const state = ports[mapping.port].pinState(mapping.pin) === avr8js.PinState.High;
                 callbackPinState({ type: 'pinState', pin: msg.pin, state: state, cpuTime: cpuTime });
             }
         } else {
@@ -241,17 +286,13 @@ function processMessage(msg, callbackPinState) {
     } else if (msg.type === 'fakePinState' || msg.type === 'pinState') {
         if (typeof msg.state === 'boolean') {
             // { "type": "pinState", "pin": "12", "state": true }
-            if (avrPinB >= 0) {
-                ports['B'].setPin(avrPinB, msg.state);
-            } else if (avrPinD >= 0) {
-                ports['D'].setPin(avrPinD, msg.state);
+            if (mapping && (mapping.port === 'B' || mapping.port === 'D')) {
+                ports[mapping.port].setPin(mapping.pin, msg.state);
             }
         } else if (typeof msg.state === 'number') {
             // { "type": "pinState", "pin": "12", "state": 42 }
-            if (avrPinC >= 0) {
-                adc.channelValues[avrPinC] = msg.state * 5 / 1024;
-            } else if (avrPinD >= 0) {
-                adc.channelValues[avrPinD] = msg.state * 5 / 1024;
+            if (mapping && (mapping.port === 'C' || mapping.port === 'D')) {
+                adc.channelValues[mapping.pin] = msg.state * 5 / 1024;
             }
         }
     } else if (msg.type === 'control') {
