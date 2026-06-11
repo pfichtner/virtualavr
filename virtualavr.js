@@ -79,28 +79,41 @@ const runCode = async (hexContent, portCallback) => {
     const handlePort = (portName, portCallback) => {        
         const port = ports[portName];
         const arduinoPins = arduinoPinOnPort[portName];
-        port.addListener(() => {
-            for (let i = 0; i < arduinoPins.length; i++) {
-                const arduinoPin = arduinoPins[i];
-                const state = port.pinState(i) === avr8js.PinState.High;
+        let lastValue = 0;
+        port.addListener((value) => {
+            // Optimization: Only process pins if the port value has actually changed.
+            // Using XOR to find which bits (pins) changed since the last update.
+            const changed = value ^ lastValue;
+            if (changed === 0) {
+                return;
+            }
+            lastValue = value;
 
-                let entry = portStates[arduinoPin];
-                if (entry === undefined) {
-                    entry = { lastState: undefined, lastStateCycles: 0, lastUpdateCycles: cpu.cycles, lastStatePublished: 0, pinHighCycles: 0 };
-                    portStates[arduinoPin] = entry;
-                }
-                if (entry.lastState !== state) {
-                    if (entry.lastState) {
-                        entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
+            for (let i = 0; i < arduinoPins.length; i++) {
+                // Only process the pin if its corresponding bit in the port has changed.
+                // This eliminates unnecessary pinState() calls and state checks for stable pins.
+                if (changed & (1 << i)) {
+                    const arduinoPin = arduinoPins[i];
+                    const state = port.pinState(i) === avr8js.PinState.High;
+
+                    let entry = portStates[arduinoPin];
+                    if (entry === undefined) {
+                        entry = { lastState: undefined, lastStateCycles: 0, lastUpdateCycles: cpu.cycles, lastStatePublished: 0, pinHighCycles: 0 };
+                        portStates[arduinoPin] = entry;
                     }
-                    entry.lastState = state;
-                    entry.lastStateCycles = cpu.cycles;
-                    if (listeningModes[arduinoPin] === 'digital') {
-                        // TODO: Should we move all publishes out of the callback (also the digitals)?
-                        // TODO: Throttle if there are too many messages (see lastStateCycles)
-                        const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
-                        portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
-                        entry.lastStatePublished = state;
+                    if (entry.lastState !== state) {
+                        if (entry.lastState) {
+                            entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
+                        }
+                        entry.lastState = state;
+                        entry.lastStateCycles = cpu.cycles;
+                        if (listeningModes[arduinoPin] === 'digital') {
+                            // TODO: Should we move all publishes out of the callback (also the digitals)?
+                            // TODO: Throttle if there are too many messages (see lastStateCycles)
+                            const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
+                            portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
+                            entry.lastStatePublished = state;
+                        }
                     }
                 }
             }
