@@ -7,6 +7,7 @@ const intelhex = require('intel-hex');
 const ws = require('ws');
 
 const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
+const BATCH_MILLIS = Number(process.env.BATCH_MILLIS) || 0;
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 let isPaused = !!process.env.PAUSE_ON_START;
 
@@ -276,12 +277,39 @@ function main() {
             threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
         }
     });
+
+    const pendingMessages = [];
+    let batchTimer = null;
+
+    const flushMessages = () => {
+        if (pendingMessages.length > 0) {
+            pendingMessages.forEach(msg => {
+                const json = JSON.stringify(msg);
+                wss.clients.forEach(client => {
+                    if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
+                        client.send(json);
+                    }
+                });
+            });
+            pendingMessages.length = 0;
+        }
+        batchTimer = null;
+    };
+
     const callbackPinState = (msg) => {
-        wss.clients.forEach(client => {
-            if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
-                client.send(JSON.stringify(msg));
+        if (BATCH_MILLIS > 0) {
+            pendingMessages.push(msg);
+            if (!batchTimer) {
+                batchTimer = setTimeout(flushMessages, BATCH_MILLIS);
             }
-        });
+        } else {
+            const json = JSON.stringify(msg);
+            wss.clients.forEach(client => {
+                if (client !== ws && client.readyState === ws.WebSocket.OPEN) {
+                    client.send(json);
+                }
+            });
+        }
     };
 
     wss.on('connection', function connection(ws) {

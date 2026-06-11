@@ -35,6 +35,7 @@ Environment variables supported
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
 - PAUSE_ON_START virtualavr will start in pause mode. See commands for pausing/unpausing
 - PUBLISH_MILLIS analog values gets published each millis on change (default 250)
+- BATCH_MILLIS outgoing WebSocket messages are collected for this many milliseconds before being flushed. Maintains compatibility by sending individual messages (default 0, which means no batching)
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
 - ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager’s verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
 - BUILD_FQBN Fully Qualified Board Name to use for compile (default "arduino:avr:uno")
