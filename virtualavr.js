@@ -9,6 +9,7 @@ const ws = require('ws');
 
 const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const BATCH_MILLIS = Number(process.env.BATCH_MILLIS) || 0;
+const INSTRUCTION_CHUNK_SIZE = Number(process.env.INSTRUCTION_CHUNK_SIZE) || 500000;
 const REALTIME = process.env.REALTIME === 'true';
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 let isPaused = !!process.env.PAUSE_ON_START;
@@ -199,7 +200,7 @@ const runCode = async (hexContent, portCallback) => {
                     }
                 }
             } else {
-                for (let i = 0; i < 500000; i++) {
+                for (let i = 0; i < INSTRUCTION_CHUNK_SIZE; i++) {
                     avr8js.avrInstruction(cpu);
                     cpu.tick();
                 }

@@ -35,6 +35,7 @@ Environment variables supported
 - VERBOSITY verbosity args for socat e.g. "-d -d -v" see man socat for more infos. That way you can see what is "copied" by socat from serial line to avr8js/node and vice versa
 - PAUSE_ON_START virtualavr will start in pause mode. See commands for pausing/unpausing
 - REALTIME if set to "true", synchronizes the emulation with the wall-clock time (16MHz). Reduces host CPU usage significantly (default "false")
+- INSTRUCTION_CHUNK_SIZE number of instructions to execute per event-loop chunk (default 500000)
 - PUBLISH_MILLIS analog values gets published each millis on change (default 250)
 - BATCH_MILLIS outgoing WebSocket messages are collected for this many milliseconds before being flushed. Maintains compatibility by sending individual messages (default 0, which means no batching)
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
