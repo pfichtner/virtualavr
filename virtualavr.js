@@ -148,49 +148,27 @@ const runCode = async (hexContent, portCallback) => {
     handlePort('B', portCallback);
     handlePort('D', portCallback);
 
-    const RX_BUFFER_SIZE = 8192;
-    const rxBuffer = Buffer.alloc(RX_BUFFER_SIZE);
-    let rxReadIndex = 0;
-    let rxWriteIndex = 0;
-    let rxCount = 0;
-    const transmitBuffer = Buffer.alloc(1);
-    sending = false;
-
-    function sendNextChar(usart) {
-        if (rxCount > 0) {
-            const ch = rxBuffer[rxReadIndex];
-            rxReadIndex = (rxReadIndex + 1) % RX_BUFFER_SIZE;
-            rxCount--;
-            usart.writeByte(ch);
-        } else {
-            sending = false;
-        }
-    }
-
     const usart = new avr8js.AVRUSART(cpu, avr8js.usart0Config, clockFrequency);
     usart.onByteTransmit = data => {
-        transmitBuffer[0] = data;
-        output.write(transmitBuffer);
-        if (serialDebug) {
-            portCallback({ type: 'serialDebug', direction: 'TX', bytes: [data] });
-        }
-    }
-    usart.onRxComplete = () => sendNextChar(usart);
-    input.on('data', data => {
-        for (let i = 0; i < data.length; i++) {
-            if (rxCount < RX_BUFFER_SIZE) {
-                rxBuffer[rxWriteIndex] = data[i];
-                rxWriteIndex = (rxWriteIndex + 1) % RX_BUFFER_SIZE;
-                rxCount++;
+            const arrBuff = new Uint8Array(1);
+            arrBuff[0] = data;
+            output.write(arrBuff);
+            if (serialDebug) {
+                portCallback({ type: 'serialDebug', direction: 'TX', bytes: [data] });
             }
-        }
-        if (!sending) {
-            sending = true;
-            sendNextChar(usart);
-        }
-        if (serialDebug) {
-            portCallback({ type: 'serialDebug', direction: 'RX', bytes: Array.from(data) });
-        }
+    }
+    const buff = [];
+    usart.onRxComplete = () => sendNextChar(buff, usart);
+    input.on('data', data => {
+            var bytes = Array.prototype.slice.call(data, 0);
+            for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
+            if (!sending) {
+                sending = true;
+                sendNextChar(buff, usart);
+            }
+            if (serialDebug) {
+                portCallback({ type: 'serialDebug', direction: 'RX', bytes: bytes });
+            }
     });
 
     new avr8js.AVRTimer(cpu, avr8js.timer0Config);
