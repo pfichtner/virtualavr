@@ -79,8 +79,21 @@ for (const [arduinoPin, mapping] of Object.entries(unoPinMappings)) {
     portAvrPinToArduino[mapping.port][mapping.pin] = arduinoPin;
 }
 
-const args = process.argv.slice(2);
+const pinToIndex = {};
+let pinCounter = 0;
+for (const arduinoPin of Object.keys(unoPinMappings)) {
+    pinToIndex[arduinoPin] = pinCounter++;
+    if (!arduinoPin.startsWith('A')) pinToIndex['D' + arduinoPin] = pinToIndex[arduinoPin];
+}
+const NUM_PINS = pinCounter;
+const FIELDS_PER_PIN = 5;
+const LAST_STATE_OFFSET = 0;
+const LAST_STATE_CYCLES_OFFSET = 1;
+const LAST_UPDATE_CYCLES_OFFSET = 2;
+const LAST_STATE_PUBLISHED_OFFSET = 3;
+const PIN_HIGH_CYCLES_OFFSET = 4;
 
+const args = process.argv.slice(2);
 
 const runCode = async (hexContent, portCallback) => {
     const { data } = intelhex.parse(fs.readFileSync(hexContent));
@@ -97,14 +110,12 @@ const runCode = async (hexContent, portCallback) => {
         }
     }
 
-    const portStates = {};
+    const portStates = new Float64Array(NUM_PINS * FIELDS_PER_PIN);
     const handlePort = (portName, portCallback) => {        
         const port = ports[portName];
         const arduinoPins = portAvrPinToArduino[portName] || [];
         let lastValue = 0;
         port.addListener((value) => {
-            // Optimization: Only process pins if the port value has actually changed.
-            // Using XOR to find which bits (pins) changed since the last update.
             const changed = value ^ lastValue;
             if (changed === 0) {
                 return;
@@ -112,29 +123,22 @@ const runCode = async (hexContent, portCallback) => {
             lastValue = value;
 
             for (let i = 0; i < arduinoPins.length; i++) {
-                // Only process the pin if its corresponding bit in the port has changed.
-                // This eliminates unnecessary pinState() calls and state checks for stable pins.
                 if (changed & (1 << i)) {
                     const arduinoPin = arduinoPins[i];
                     const state = port.pinState(i) === avr8js.PinState.High;
+                    const idx = pinToIndex[arduinoPin] * FIELDS_PER_PIN;
 
-                    let entry = portStates[arduinoPin];
-                    if (entry === undefined) {
-                        entry = { lastState: undefined, lastStateCycles: 0, lastUpdateCycles: cpu.cycles, lastStatePublished: 0, pinHighCycles: 0 };
-                        portStates[arduinoPin] = entry;
-                    }
-                    if (entry.lastState !== state) {
-                        if (entry.lastState) {
-                            entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
+                    const lastState = portStates[idx + LAST_STATE_OFFSET] === 1;
+                    if (lastState !== state) {
+                        if (lastState) {
+                            portStates[idx + PIN_HIGH_CYCLES_OFFSET] += (cpu.cycles - portStates[idx + LAST_STATE_CYCLES_OFFSET]);
                         }
-                        entry.lastState = state;
-                        entry.lastStateCycles = cpu.cycles;
+                        portStates[idx + LAST_STATE_OFFSET] = state ? 1 : 0;
+                        portStates[idx + LAST_STATE_CYCLES_OFFSET] = cpu.cycles;
                         if (listeningModes[arduinoPin] === 'digital') {
-                            // TODO: Should we move all publishes out of the callback (also the digitals)?
-                            // TODO: Throttle if there are too many messages (see lastStateCycles)
                             const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
                             portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
-                            entry.lastStatePublished = state;
+                            portStates[idx + LAST_STATE_PUBLISHED_OFFSET] = state ? 1 : 0;
                         }
                     }
                 }
@@ -195,31 +199,33 @@ const runCode = async (hexContent, portCallback) => {
 
     let syncStartTime = performance.now();
     let syncStartCycles = cpu.cycles;
+    let lastRealtimeCheck = syncStartTime;
 
     while (true) {
         if (!isPaused) {
             if (REALTIME) {
                 const now = performance.now();
-                const elapsedMs = now - syncStartTime;
-                const targetCycles = Math.floor((elapsedMs * clockFrequency) / 1000);
-                let cyclesToRun = targetCycles - (cpu.cycles - syncStartCycles);
+                if (now - lastRealtimeCheck > 1) { // 1ms threshold
+                    const elapsedMs = now - syncStartTime;
+                    const targetCycles = Math.floor((elapsedMs * clockFrequency) / 1000);
+                    let cyclesToRun = targetCycles - (cpu.cycles - syncStartCycles);
 
-                if (cyclesToRun > 0) {
-                    // Limit catch-up to 100ms to prevent "spiral of death" if the host is overloaded
-                    const maxBurst = clockFrequency / 10;
-                    if (cyclesToRun > maxBurst) {
-                        cyclesToRun = maxBurst;
-                        // Reset sync markers if we hit the limit to avoid persistent lag
-                        syncStartTime = now;
-                        syncStartCycles = cpu.cycles;
-                    }
+                    if (cyclesToRun > 0) {
+                        const maxBurst = clockFrequency / 10;
+                        if (cyclesToRun > maxBurst) {
+                            cyclesToRun = maxBurst;
+                            syncStartTime = now;
+                            syncStartCycles = cpu.cycles;
+                        }
 
-                    while (cyclesToRun > 0 && !isPaused) {
-                        const prevCycles = cpu.cycles;
-                        avr8js.avrInstruction(cpu);
-                        cpu.tick();
-                        cyclesToRun -= (cpu.cycles - prevCycles);
+                        while (cyclesToRun > 0 && !isPaused) {
+                            const prevCycles = cpu.cycles;
+                            avr8js.avrInstruction(cpu);
+                            cpu.tick();
+                            cyclesToRun -= (cpu.cycles - prevCycles);
+                        }
                     }
+                    lastRealtimeCheck = now;
                 }
             } else {
                 for (let i = 0; i < INSTRUCTION_CHUNK_SIZE; i++) {
@@ -228,9 +234,9 @@ const runCode = async (hexContent, portCallback) => {
                 }
             }
         } else {
-            // Keep sync markers current while paused to avoid catch-up burst on unpause
             syncStartTime = performance.now();
             syncStartCycles = cpu.cycles;
+            lastRealtimeCheck = syncStartTime;
         }
         await new Promise(resolve => setTimeout(resolve));
 
@@ -252,27 +258,25 @@ const runCode = async (hexContent, portCallback) => {
 
                 const port = ports[mapping.port];
                 const avrPin = mapping.pin;
-                const entry = portStates[arduinoPin];
-                if (!entry) continue;
+                const idx = pinToIndex[arduinoPin] * FIELDS_PER_PIN;
 
                 if (port.pinState(avrPin) === avr8js.PinState.High) {
-                    entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
+                    portStates[idx + PIN_HIGH_CYCLES_OFFSET] += (cpu.cycles - portStates[idx + LAST_STATE_CYCLES_OFFSET]);
                 }
 
-                const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
+                const cyclesSinceUpdate = cpu.cycles - portStates[idx + LAST_UPDATE_CYCLES_OFFSET];
                 if (cyclesSinceUpdate > 0) {
-                    // TODO fix pwmFrequencies
-                    const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
-                    if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
+                    const state = Math.round(portStates[idx + PIN_HIGH_CYCLES_OFFSET] / cyclesSinceUpdate * 255);
+                    if (Math.abs(state - portStates[idx + LAST_STATE_PUBLISHED_OFFSET]) > MIN_DIFF_TO_PUBLISH) {
                         const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
                         portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
-                        entry.lastStatePublished = state;
+                        portStates[idx + LAST_STATE_PUBLISHED_OFFSET] = state;
                     }
                 }
                 
-                entry.lastUpdateCycles = cpu.cycles;
-                entry.lastStateCycles = cpu.cycles;
-                entry.pinHighCycles = 0;
+                portStates[idx + LAST_UPDATE_CYCLES_OFFSET] = cpu.cycles;
+                portStates[idx + LAST_STATE_CYCLES_OFFSET] = cpu.cycles;
+                portStates[idx + PIN_HIGH_CYCLES_OFFSET] = 0;
             }
         }
     }
