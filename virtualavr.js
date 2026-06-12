@@ -22,6 +22,10 @@ var cpu;
 var adc;
 const ports = {};
 const listeningModes = {};
+const activeAnalogListeners = new Set();
+// We don't strictly need a set for digital listeners since they are event-driven in handlePort,
+// but tracking them helps maintain the separation requested.
+const activeDigitalListeners = new Set();
 let sending = false;
 var serialDebug;
 var lastPublish = new Date();
@@ -219,40 +223,34 @@ const runCode = async (hexContent, portCallback) => {
         if (now - lastPublish > PUBLISH_MILLIS) {
             lastPublish = now;
 
-            // Function to process a port's state
-            const processPortState = (portName) => {
-                const port = ports[portName];
-                const arduinoPins = portAvrPinToArduino[portName] || [];
-                for (let avrPin = 0; avrPin < arduinoPins.length; avrPin++) {
-                    const arduinoPin = arduinoPins[avrPin];
-                    if (!arduinoPin) continue;
+            for (const arduinoPin of activeAnalogListeners) {
+                const mapping = pinToAvr[arduinoPin];
+                if (!mapping) continue;
 
-                    const entry = portStates[arduinoPin];
-                    if (!entry) continue;
+                const port = ports[mapping.port];
+                const avrPin = mapping.pin;
+                const entry = portStates[arduinoPin];
+                if (!entry) continue;
 
-                    if (port.pinState(avrPin) === avr8js.PinState.High) {
-                            entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
-                        }
-                        if (String(listeningModes[arduinoPin]) === 'analog') {
-                            const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
-                            if (cyclesSinceUpdate > 0) {
-                                // TODO fix pwmFrequencies
-                                const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
-                                if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
-                                    const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
-                                    portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
-                                    entry.lastStatePublished = state;
-                                }
-                            }
-                        }
-                        entry.lastUpdateCycles = cpu.cycles;
-                        entry.lastStateCycles = cpu.cycles;
-                        entry.pinHighCycles = 0;
+                if (port.pinState(avrPin) === avr8js.PinState.High) {
+                    entry.pinHighCycles += (cpu.cycles - entry.lastStateCycles);
                 }
-            };
 
-            processPortState('B');
-            processPortState('D');
+                const cyclesSinceUpdate = cpu.cycles - entry.lastUpdateCycles;
+                if (cyclesSinceUpdate > 0) {
+                    // TODO fix pwmFrequencies
+                    const state = Math.round(entry.pinHighCycles / cyclesSinceUpdate * 255);
+                    if (Math.abs(state - entry.lastStatePublished) > MIN_DIFF_TO_PUBLISH) {
+                        const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
+                        portCallback({ type: 'pinState', pin: arduinoPin, state: state, cpuTime: cpuTime });
+                        entry.lastStatePublished = state;
+                    }
+                }
+                
+                entry.lastUpdateCycles = cpu.cycles;
+                entry.lastStateCycles = cpu.cycles;
+                entry.pinHighCycles = 0;
+            }
         }
     }
 }
@@ -272,8 +270,12 @@ function processMessage(msg, callbackPinState) {
     if (msg.type === 'pinMode') {
         if (msg.mode === 'analog' || msg.mode === 'pwm') {
             listeningModes[msg.pin] = 'analog';
+            activeAnalogListeners.add(msg.pin);
+            activeDigitalListeners.delete(msg.pin);
         } else if (msg.mode === 'digital') {
             listeningModes[msg.pin] = 'digital';
+            activeAnalogListeners.delete(msg.pin);
+            activeDigitalListeners.add(msg.pin);
             const cpuTime = (cpu.cycles / clockFrequency).toFixed(6);
             // Immediately publish the current state
             if (mapping && (mapping.port === 'B' || mapping.port === 'D')) {
@@ -282,6 +284,8 @@ function processMessage(msg, callbackPinState) {
             }
         } else {
             listeningModes[msg.pin] = undefined;
+            activeAnalogListeners.delete(msg.pin);
+            activeDigitalListeners.delete(msg.pin);
         }
     } else if (msg.type === 'fakePinState' || msg.type === 'pinState') {
         if (typeof msg.state === 'boolean') {
