@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
 
       # Needed for multi-arch
       - name: Set up QEMU
