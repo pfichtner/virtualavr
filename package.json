@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "jest": "^30.4.0",
-    "node-stream-zip": "^1.15.0",
+    "node-stream-zip": "^1.16.0",
     "wait-for-expect": "^4.0.0",
     "ws": "^8.21.1"
   }
