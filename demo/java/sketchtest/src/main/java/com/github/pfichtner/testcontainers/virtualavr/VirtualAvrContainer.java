@@ -12,6 +12,7 @@ import static org.testcontainers.containers.BindMode.READ_WRITE;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -25,7 +26,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, EEPROM_FILE
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -116,6 +117,19 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer<?> withSketchFile(File sketchFile) {
 		return withEnv(EnvVars.FILENAME, sketchFile.getName()) //
 				.withFileSystemBind(sketchFile.getParent(), "/sketch/", READ_ONLY);
+	}
+
+	public VirtualAvrContainer<?> withEepromFile(File eepromFile) {
+		try {
+			if (!eepromFile.exists() && !eepromFile.createNewFile()) {
+				throw new IOException("Could not create " + eepromFile);
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		String containerPath = format("/eeprom/%s", eepromFile.getName());
+		return withEnv(EnvVars.EEPROM_FILE, containerPath) //
+				.withFileSystemBind(eepromFile.getAbsolutePath(), containerPath, READ_WRITE);
 	}
 
 	public VirtualAvrContainer<?> withPublishMillis(int millis) {

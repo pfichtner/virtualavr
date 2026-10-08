@@ -1,6 +1,7 @@
 const os = require('os')
 const fs = require('fs');
 const fsp = require('fs').promises;
+const path = require('path');
 const { performance } = require('perf_hooks');
 const avr8js = require('avr8js');
 const intelhex = require('intel-hex');
@@ -14,9 +15,12 @@ const REALTIME = process.env.REALTIME === 'true';
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 let isPaused = !!process.env.PAUSE_ON_START;
 
-// Open custom file descriptors
-const input = fs.createReadStream(null, { fd: 3 });
-const output = fs.createWriteStream(null, { fd: 4 });
+// Open custom file descriptors (fd 3/4 are provided by socat, they may be
+// shared with the parent process, so they must not be closed by the streams)
+const input = fs.createReadStream(null, { fd: 3, autoClose: false });
+const output = fs.createWriteStream(null, { fd: 4, autoClose: false });
+input.on('error', error => process.stderr.write(`serial input (fd 3) unavailable: ${error.message}\n`));
+output.on('error', error => process.stderr.write(`serial output (fd 4) unavailable: ${error.message}\n`));
 
 let messageQueue = [];
 var cpu;
@@ -94,6 +98,121 @@ const LAST_STATE_PUBLISHED_OFFSET = 3;
 const PIN_HIGH_CYCLES_OFFSET = 4;
 
 const args = process.argv.slice(2);
+
+const DEFAULT_EEPROM_SIZE = 1024;
+
+// EEPROM sizes (in bytes) of the MCUs the supported FQBNs are based on
+const EEPROM_SIZE_BY_MCU = {
+    atmega328p: 1024,
+    atmega32u4: 1024,
+    atmega2560: 4096,
+    atmega1280: 4096,
+    atmega168: 512,
+    atmega88: 512,
+    atmega8: 512,
+    atmega48: 256,
+    attiny85: 512,
+    attiny84: 512,
+    attiny45: 256,
+    attiny44: 256,
+    attiny25: 128,
+    attiny24: 128,
+};
+
+// Default MCU per FQBN (PACKAGER:ARCH:BOARD) for boards that do not select
+// one through their "cpu"/"mcu"/"chip" menu option
+const MCU_BY_FQBN = {
+    'arduino:avr:uno': 'atmega328p',
+    'arduino:avr:nano': 'atmega328p',
+    'arduino:avr:mega': 'atmega2560',
+    'arduino:avr:pro': 'atmega328p',
+    'arduino:avr:mini': 'atmega328p',
+    'arduino:avr:ethernet': 'atmega328p',
+    'arduino:avr:fio': 'atmega328p',
+    'arduino:avr:micro': 'atmega32u4',
+    'arduino:avr:leonardo': 'atmega32u4',
+    'arduino:avr:yun': 'atmega32u4',
+    'arduino:avr:gemma': 'attiny85',
+};
+
+function findMcu(token) {
+    if (!token) {
+        return undefined;
+    }
+    if (EEPROM_SIZE_BY_MCU[token]) {
+        return token;
+    }
+    if (/^\d+$/.test(token)) {
+        // Board menu options like "chip=85" (ATTinyCore) or "cpu=8"
+        return findMcu(`attiny${token}`) || findMcu(`atmega${token}`);
+    }
+    // Board menu options like "cpu=atmega328" (ATmega328P)
+    return Object.keys(EEPROM_SIZE_BY_MCU)
+        .filter(mcu => mcu.startsWith(token) || token.startsWith(mcu))
+        .sort((a, b) => b.length - a.length)[0];
+}
+
+function resolveMcu(fqbn) {
+    if (!fqbn) {
+        return undefined;
+    }
+    const [packager, arch, board, ...options] = fqbn.split(':');
+    if (!board) {
+        return undefined;
+    }
+    const menuOption = /(?:^|,)(?:cpu|mcu|chip)=([^,]+)/.exec(options.join(','));
+    if (menuOption) {
+        const mcu = findMcu(menuOption[1].toLowerCase());
+        if (mcu) {
+            return mcu;
+        }
+    }
+    return MCU_BY_FQBN[[packager, arch, board].join(':')];
+}
+
+function resolveEepromSize(env = process.env) {
+    if (env.EEPROM_SIZE) {
+        const size = Number(env.EEPROM_SIZE);
+        if (!Number.isInteger(size) || size <= 0) {
+            throw new Error(`Invalid EEPROM_SIZE: ${env.EEPROM_SIZE}`);
+        }
+        return size;
+    }
+    const mcu = resolveMcu(env.BUILD_FQBN);
+    return (mcu && EEPROM_SIZE_BY_MCU[mcu]) || DEFAULT_EEPROM_SIZE;
+}
+
+/**
+ * EEPROM backend that keeps its content in a file so that EEPROM values
+ * survive a restart of the simulation.
+ */
+class PersistentEEPROMBackend extends avr8js.EEPROMMemoryBackend {
+    constructor(size, filePath) {
+        super(size);
+        this.filePath = filePath;
+        const directory = path.dirname(filePath);
+        if (directory) {
+            fs.mkdirSync(directory, { recursive: true });
+        }
+        if (fs.existsSync(filePath)) {
+            this.memory.set(fs.readFileSync(filePath).subarray(0, size));
+        }
+    }
+
+    writeMemory(addr, value) {
+        super.writeMemory(addr, value);
+        this.persist();
+    }
+
+    eraseMemory(addr) {
+        super.eraseMemory(addr);
+        this.persist();
+    }
+
+    persist() {
+        fs.writeFileSync(this.filePath, this.memory);
+    }
+}
 
 const runCode = async (hexContent, portCallback) => {
     const { data } = intelhex.parse(fs.readFileSync(hexContent));
@@ -174,6 +293,13 @@ const runCode = async (hexContent, portCallback) => {
     new avr8js.AVRTimer(cpu, avr8js.timer0Config);
     new avr8js.AVRTimer(cpu, avr8js.timer1Config);
     new avr8js.AVRTimer(cpu, avr8js.timer2Config);
+
+    const eepromSize = resolveEepromSize();
+    const eepromFile = process.env.EEPROM_FILE;
+    const eepromBackend = eepromFile
+        ? new PersistentEEPROMBackend(eepromSize, eepromFile)
+        : new avr8js.EEPROMMemoryBackend(eepromSize);
+    new avr8js.AVREEPROM(cpu, eepromBackend, avr8js.eepromConfig);
 
     let syncStartTime = performance.now();
     let syncStartCycles = cpu.cycles;
@@ -267,6 +393,10 @@ function sendNextChar(buff, usart) {
     } else {
         sending = false;
     }
+}
+
+function sendMessage(msg) {
+    messageQueue.push(msg);
 }
 
 function processMessage(msg, callbackPinState) {
@@ -366,7 +496,7 @@ function main() {
         ws.on('message', function message(data) {
             if (data) {
                 try {
-                    messageQueue.push(JSON.parse(data));
+                    sendMessage(JSON.parse(data));
                 } catch (e) {
                     console.error(`Failed to parse JSON: ${data}, Error: ${e.message}`);
                 }
@@ -382,5 +512,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-    runCode
+    runCode,
+    sendMessage,
+    resolveEepromSize
 }
