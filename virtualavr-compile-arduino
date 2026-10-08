@@ -92,7 +92,7 @@ build_hex() {
         local copy_target="$tmp_dir/$base_name"
         mkdir -p "$copy_target"
 
-        cp -R "$(dirname "$input_filename")/"* "$copy_target/"
+        cp -RL "$(dirname "$input_filename")/"* "$copy_target/"
         compile_arduino_sketch "$copy_target" "$target_filename"
 
     elif [[ -d "$input_filename" ]]; then
@@ -102,7 +102,7 @@ build_hex() {
         local copy_target="$tmp_dir/$base_name"
         mkdir -p "$copy_target"
 
-        cp -R "$input_filename/"* "$copy_target/"
+        cp -RL "$input_filename/"* "$copy_target/"
         compile_arduino_sketch "$copy_target" "$target_filename"
 
     else
