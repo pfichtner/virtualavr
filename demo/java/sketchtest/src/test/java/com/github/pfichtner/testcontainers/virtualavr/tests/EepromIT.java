@@ -5,6 +5,8 @@ import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwa
 import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
 
 import java.io.File;
+import java.util.List;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,24 +33,20 @@ class EepromIT {
 
 	@Test
 	void eepromContentIsPersistedAcrossContainerRestart(@TempDir File tmpDir) throws Exception {
-		File eepromFile = new File(tmpDir, "eeprom.bin");
-		VirtualAvrContainer<?> first = newContainer().withEepromFile(eepromFile);
-		first.start();
-		try (SerialConnection serialConnection = first.serialConnection()) {
-			awaiter(serialConnection).awaitReceived(r -> r.contains("state=fresh virgin=255") //
-					&& r.contains("put=ok") //
-					&& r.contains("done"));
-		} finally {
-			first.stop();
-		}
+		Predicate<String> predicateRun1 = r -> r.contains("state=fresh virgin=255") //
+				&& r.contains("put=ok") //
+				&& r.contains("done");
+		Predicate<String> predicateRun2 = r -> r.contains("state=restored value=4711") //
+				&& r.contains("done");
 
-		VirtualAvrContainer<?> second = newContainer().withEepromFile(eepromFile);
-		second.start();
-		try (SerialConnection serialConnection = second.serialConnection()) {
-			awaiter(serialConnection).awaitReceived(r -> r.contains("state=restored value=4711") //
-					&& r.contains("done"));
-		} finally {
-			second.stop();
+		for (Predicate<String> predicate : List.of(predicateRun1, predicateRun2)) {
+			VirtualAvrContainer<?> virtualAvrContainer = newContainer().withEepromFile(new File(tmpDir, "eeprom.bin"));
+			virtualAvrContainer.start();
+			try (SerialConnection serialConnection = virtualAvrContainer.serialConnection()) {
+				awaiter(serialConnection).awaitReceived(predicate);
+			} finally {
+				virtualAvrContainer.stop();
+			}
 		}
 	}
 
