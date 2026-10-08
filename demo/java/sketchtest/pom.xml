@@ -3,7 +3,7 @@
 
 	<groupId>io.github.pfichtner</groupId>
 	<artifactId>testcontainers-virtualavr</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>0.0.4-SNAPSHOT</version>
 	<name>Testcontainers VirtualAVR</name>
 	<description>Java Testcontainers module providing a Virtual AVR/Arduino simulator for integration testing microcontroller programs without real hardware.</description>
 	<url>https://github.com/pfichtner/virtualavr</url>
@@ -199,6 +199,8 @@
 					<plugin>
 						<groupId>org.sonatype.central</groupId>
 						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.11.0</version>
+						<extensions>true</extensions>
 						<configuration>
 							<deploymentName>testcontainers-virtualavr ${project.version}</deploymentName>
 							<publishingServerId>central</publishingServerId>
