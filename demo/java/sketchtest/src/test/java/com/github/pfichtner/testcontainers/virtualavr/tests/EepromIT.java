@@ -19,6 +19,7 @@ class EepromIT {
 	@Test
 	void virginEepromIsFilledWith0xffAndPutGetRoundtripWorks() throws Exception {
 		VirtualAvrContainer<?> virtualAvrContainer = newContainer();
+		virtualAvrContainer.start();
 		try (SerialConnection serialConnection = virtualAvrContainer.serialConnection()) {
 			awaiter(serialConnection).awaitReceived(r -> r.contains("state=fresh virgin=255") //
 					&& r.contains("put=ok") //
@@ -32,6 +33,7 @@ class EepromIT {
 	void eepromContentIsPersistedAcrossContainerRestart(@TempDir File tmpDir) throws Exception {
 		File eepromFile = new File(tmpDir, "eeprom.bin");
 		VirtualAvrContainer<?> first = newContainer().withEepromFile(eepromFile);
+		first.start();
 		try (SerialConnection serialConnection = first.serialConnection()) {
 			awaiter(serialConnection).awaitReceived(r -> r.contains("state=fresh virgin=255") //
 					&& r.contains("put=ok") //
@@ -41,6 +43,7 @@ class EepromIT {
 		}
 
 		VirtualAvrContainer<?> second = newContainer().withEepromFile(eepromFile);
+		second.start();
 		try (SerialConnection serialConnection = second.serialConnection()) {
 			awaiter(serialConnection).awaitReceived(r -> r.contains("state=restored value=4711") //
 					&& r.contains("done"));
