@@ -5,6 +5,8 @@ import static java.util.stream.Collectors.toMap;
 
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +20,6 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
 
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinStates;
 import com.google.gson.Gson;
@@ -125,8 +126,12 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	}
 
 	@SuppressWarnings("resource")
-	public static VirtualAvrConnection connectionToVirtualAvr(GenericContainer<?> container) {
-		URI serverUri = URI.create(format("ws://%s:%s", "localhost", container.getFirstMappedPort()));
+	public static VirtualAvrConnection connectionToVirtualAvr(VirtualAvrContainer<?> container) {
+		String tokenQuery = container.token() //
+				.map(token -> "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8)) //
+				.orElse("");
+		URI serverUri = URI.create(
+				format("ws://%s:%s%s", "localhost", container.getFirstMappedPort(), tokenQuery));
 		return new DefaultVirtualAvrConnection(serverUri)
 				.addPinStateListener(p -> logger.info("Pin {} = {}", p.getPin(), p.getState()));
 	}

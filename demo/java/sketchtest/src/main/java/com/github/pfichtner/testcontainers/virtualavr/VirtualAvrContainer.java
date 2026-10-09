@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -26,7 +27,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, EEPROM_FILE
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, EEPROM_FILE, WS_TOKEN
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -136,6 +137,18 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return withEnv(EnvVars.PUBLISH_MILLIS, millis);
 	}
 
+	/**
+	 * Sets the token the container requires for WebSocket connections. If not set
+	 * explicitly, a random token is generated on {@link #start()} so that
+	 * authentication is enabled by default.
+	 *
+	 * @param token the token to use
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withToken(String token) {
+		return withEnv(EnvVars.WS_TOKEN, token);
+	}
+
 	public VirtualAvrContainer<?> withDebug() {
 		return withDebug(true);
 	}
@@ -153,6 +166,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	String getEnv(EnvVars envVar) {
 		return getEnvMap().get(envVar.name());
+	}
+
+	Optional<String> token() {
+		return Optional.ofNullable(getEnv(EnvVars.WS_TOKEN)).filter(not(String::isEmpty));
 	}
 
 	public synchronized VirtualAvrConnection avr() {
@@ -193,6 +210,9 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	@Override
 	public void start() {
+		if (token().isEmpty()) {
+			withToken(UUID.randomUUID().toString());
+		}
 		logger.info("Starting VirtualAVR container in {} mode",
 				tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
 		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);

@@ -17,4 +17,4 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 EXPOSE 8080
 HEALTHCHECK --start-period=3s --timeout=3s \
-  CMD echo '{}' | websocat ws://localhost:8080 || exit 1
+  CMD echo '{}' | websocat "ws://localhost:8080?token=${WS_TOKEN}" || exit 1
