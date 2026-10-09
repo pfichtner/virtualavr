@@ -14,6 +14,7 @@ const INSTRUCTION_CHUNK_SIZE = Number(process.env.INSTRUCTION_CHUNK_SIZE) || 500
 const REALTIME = process.env.REALTIME === 'true';
 const MIN_DIFF_TO_PUBLISH = process.env.MIN_DIFF_TO_PUBLISH || 0;
 let isPaused = !!process.env.PAUSE_ON_START;
+const WS_TOKEN = process.env.WS_TOKEN || '';
 
 // Open custom file descriptors (fd 3/4 are provided by socat, they may be
 // shared with the parent process, so they must not be closed by the streams)
@@ -492,7 +493,13 @@ function main() {
         }
     };
 
-    wss.on('connection', function connection(ws) {
+    wss.on('connection', function connection(ws, req) {
+        const token = new URL(req.url, 'ws://localhost').searchParams.get('token');
+        if (WS_TOKEN && token !== WS_TOKEN) {
+            console.error('WebSocket connection rejected: invalid token');
+            ws.terminate();
+            return;
+        }
         ws.on('message', function message(data) {
             if (data) {
                 try {

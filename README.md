@@ -45,6 +45,7 @@ Environment variables supported
 - EEPROM_FILE path to a file where the EEPROM content is stored. If set, EEPROM data persists across restarts; otherwise it is volatile memory
 - ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager's verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
 - SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp---tcp-serial-mode)
+- WS_TOKEN if set, WebSocket clients must pass the matching token as the `token` query parameter; if unset, no authentication is required
 
 # Screencast of usage
 The screencast is not uptodate!!!
