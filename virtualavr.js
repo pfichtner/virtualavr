@@ -7,6 +7,7 @@ const avr8js = require('avr8js');
 const intelhex = require('intel-hex');
 
 const ws = require('ws');
+const crypto = require('crypto');
 
 const PUBLISH_MILLIS = process.env.PUBLISH_MILLIS || 250;
 const BATCH_MILLIS = Number(process.env.BATCH_MILLIS) || 0;
@@ -450,8 +451,16 @@ function processMessage(msg, callbackPinState) {
 
 function main() {
     // const callback = (pin, state) => {};
+    const AUTH_TOKEN = process.env.VIRTUALAVR_AUTH_TOKEN || crypto.randomBytes(24).toString('hex');
+    if (!process.env.VIRTUALAVR_AUTH_TOKEN) {
+        console.log(`No VIRTUALAVR_AUTH_TOKEN set, generated token for this session: ${AUTH_TOKEN}`);
+    }
     const wss = new ws.WebSocketServer({
         port: 8080,
+        verifyClient: (info, done) => {
+            const token = new URL(info.req.url, 'http://localhost').searchParams.get('token');
+            done(token === AUTH_TOKEN);
+        },
         perMessageDeflate: {
             concurrencyLimit: 2, // Limits zlib concurrency for perf.
             threshold: 1024 // Size (in bytes) below which messages should not be compressed if context takeover is disabled.
