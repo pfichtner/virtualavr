@@ -63,8 +63,9 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
 		withDeviceName(ttyDevice) //
 				.withFileSystemBind(hostDev, containerDev, READ_WRITE) //
-				.withEnv(Map.of(EnvVars.WS_TOKEN.name(), UUID.randomUUID().toString())) //
+				.withToken(UUID.randomUUID().toString()) //
 				.addExposedPort(WEBSOCKET_PORT);
+		explicitlySet.clear();
 	}
 
 	/**
