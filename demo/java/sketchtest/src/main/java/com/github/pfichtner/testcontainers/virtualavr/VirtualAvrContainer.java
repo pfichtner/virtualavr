@@ -59,6 +59,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
 		withDeviceName(ttyDevice) //
 				.withFileSystemBind(hostDev, containerDev, READ_WRITE) //
+				.withToken(UUID.randomUUID().toString()) //
 				.addExposedPort(WEBSOCKET_PORT);
 	}
 
@@ -138,11 +139,12 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	/**
-	 * Sets the token the container requires for WebSocket connections. If not set
-	 * explicitly, a random token is generated on {@link #start()} so that
-	 * authentication is enabled by default.
+	 * Sets the token the container requires for WebSocket connections. By default a
+	 * random token is generated when the container is created, so authentication is
+	 * enabled unless it is disabled by passing {@code ""} or {@code null}.
 	 *
-	 * @param token the token to use
+	 * @param token the token to use, or {@code ""}/{@code null} to disable
+	 *                authentication
 	 * @return this container instance
 	 */
 	public VirtualAvrContainer<?> withToken(String token) {
@@ -210,9 +212,6 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	@Override
 	public void start() {
-		if (token().isEmpty()) {
-			withToken(UUID.randomUUID().toString());
-		}
 		logger.info("Starting VirtualAVR container in {} mode",
 				tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
 		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);
