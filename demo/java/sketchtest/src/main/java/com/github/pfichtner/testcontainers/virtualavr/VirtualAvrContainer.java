@@ -49,6 +49,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
 	private TcpSerialModeSupport tcpSerialModeSupport;
+	private boolean tokenExplicitlySet;
 
 	public VirtualAvrContainer() {
 		this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_TAG));
@@ -59,7 +60,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
 		withDeviceName(ttyDevice) //
 				.withFileSystemBind(hostDev, containerDev, READ_WRITE) //
-				.withToken(UUID.randomUUID().toString()) //
+				.withEnv(EnvVars.WS_TOKEN, UUID.randomUUID().toString()) //
 				.addExposedPort(WEBSOCKET_PORT);
 	}
 
@@ -148,6 +149,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 * @return this container instance
 	 */
 	public VirtualAvrContainer<?> withToken(String token) {
+		tokenExplicitlySet = true;
 		return withEnv(EnvVars.WS_TOKEN, token);
 	}
 
@@ -222,7 +224,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private void debugStartOut() {
 		logger.info("{} container started: ID={}", VIRTUAL_AVR, getContainerId());
 		logger.info("Container environment variables:");
-		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, v));
+		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, maskedEnvValue(k, v)));
 
 		// Wait a moment for the container's entrypoint to establish connections
 		try {
@@ -236,6 +238,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		Stream.of(getLogs().split("\\R")).limit(lines).forEach(l -> logger.info("\t[container] {}", l));
 
 		logger.info("Container state: isRunning={}, isHealthy={}", isRunning(), isHealthy());
+	}
+
+	private String maskedEnvValue(String key, String value) {
+		return EnvVars.WS_TOKEN.name().equals(key) && tokenExplicitlySet ? "***" : value;
 	}
 
 	@Override

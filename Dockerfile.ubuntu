@@ -18,4 +18,4 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 EXPOSE 8080
 HEALTHCHECK --start-period=3s --timeout=3s \
-  CMD echo '{}' | websocat "ws://localhost:8080?token=${WS_TOKEN}" || exit 1
+  CMD TOKEN=$(node -e 'process.stdout.write(encodeURIComponent(process.env.WS_TOKEN||""))'); echo '{}' | websocat "ws://localhost:8080?token=$TOKEN" || exit 1

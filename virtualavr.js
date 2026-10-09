@@ -494,11 +494,20 @@ function main() {
     };
 
     wss.on('connection', function connection(ws, req) {
-        const token = new URL(req.url, 'ws://localhost').searchParams.get('token');
-        if (WS_TOKEN && token !== WS_TOKEN) {
-            console.error('WebSocket connection rejected: invalid token');
-            ws.terminate();
-            return;
+        if (WS_TOKEN) {
+            let token = null;
+            try {
+                token = new URL(req.url, 'ws://localhost').searchParams.get('token');
+            } catch (e) {
+                console.error('WebSocket connection rejected: unparseable request URL');
+                ws.terminate();
+                return;
+            }
+            if (token !== WS_TOKEN) {
+                console.error('WebSocket connection rejected: invalid token');
+                ws.terminate();
+                return;
+            }
         }
         ws.on('message', function message(data) {
             if (data) {
