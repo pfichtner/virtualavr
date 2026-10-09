@@ -13,8 +13,10 @@ import static org.testcontainers.containers.BindMode.READ_WRITE;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -33,6 +35,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private static final String VIRTUAL_AVR = "VirtualAVR";
 
 	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrContainer.class);
+	private static final Set<String> doMask = Set.of(EnvVars.WS_TOKEN.name());
 
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
@@ -49,7 +52,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
 	private TcpSerialModeSupport tcpSerialModeSupport;
-	private boolean tokenExplicitlySet;
+	private final Set<String> explicitlySet = new HashSet<>();
 
 	public VirtualAvrContainer() {
 		this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_TAG));
@@ -60,7 +63,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
 		withDeviceName(ttyDevice) //
 				.withFileSystemBind(hostDev, containerDev, READ_WRITE) //
-				.withEnv(EnvVars.WS_TOKEN, UUID.randomUUID().toString()) //
+				.withEnv(Map.of(EnvVars.WS_TOKEN.name(), UUID.randomUUID().toString())) //
 				.addExposedPort(WEBSOCKET_PORT);
 	}
 
@@ -145,11 +148,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 * enabled unless it is disabled by passing {@code ""} or {@code null}.
 	 *
 	 * @param token the token to use, or {@code ""}/{@code null} to disable
-	 *                authentication
+	 *              authentication
 	 * @return this container instance
 	 */
 	public VirtualAvrContainer<?> withToken(String token) {
-		tokenExplicitlySet = true;
 		return withEnv(EnvVars.WS_TOKEN, token);
 	}
 
@@ -166,6 +168,12 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	VirtualAvrContainer<?> withEnv(EnvVars envVar, Object value) {
 		return withEnv(envVar.name(), value == null ? null : String.valueOf(value));
+	}
+
+	@Override
+	public SELF withEnv(String key, String value) {
+		explicitlySet.add(key);
+		return super.withEnv(key, value);
 	}
 
 	String getEnv(EnvVars envVar) {
@@ -224,7 +232,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private void debugStartOut() {
 		logger.info("{} container started: ID={}", VIRTUAL_AVR, getContainerId());
 		logger.info("Container environment variables:");
-		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, maskedEnvValue(k, v)));
+		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, doMask(k) ? "***" : v));
 
 		// Wait a moment for the container's entrypoint to establish connections
 		try {
@@ -240,8 +248,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		logger.info("Container state: isRunning={}, isHealthy={}", isRunning(), isHealthy());
 	}
 
-	private String maskedEnvValue(String key, String value) {
-		return EnvVars.WS_TOKEN.name().equals(key) && tokenExplicitlySet ? "***" : value;
+	private boolean doMask(String key) {
+		return doMask.contains(key) && explicitlySet.contains(key);
 	}
 
 	@Override
