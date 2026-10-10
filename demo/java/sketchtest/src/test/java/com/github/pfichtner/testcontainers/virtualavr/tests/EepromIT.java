@@ -18,14 +18,17 @@ class EepromIT {
 
 	private static final String SKETCH = "/eeprom/eeprom.ino";
 
+	Predicate<String> isFreshState = r -> r.contains("state=fresh virgin=255") //
+			&& r.contains("put=ok") //
+			&& r.contains("done");
+	Predicate<String> isRestoredState = r -> r.contains("state=restored value=4711") //
+			&& r.contains("done");
+
 	@Test
 	void virginEepromIsFilledWith0xffAndPutGetRoundtripWorks() throws Exception {
-		VirtualAvrContainer<?> virtualAvrContainer = newContainer();
-		virtualAvrContainer.start();
+		VirtualAvrContainer<?> virtualAvrContainer = start(newContainer());
 		try (SerialConnection serialConnection = virtualAvrContainer.serialConnection()) {
-			awaiter(serialConnection).awaitReceived(r -> r.contains("state=fresh virgin=255") //
-					&& r.contains("put=ok") //
-					&& r.contains("done"));
+			awaiter(serialConnection).awaitReceived(isFreshState);
 		} finally {
 			virtualAvrContainer.stop();
 		}
@@ -33,15 +36,9 @@ class EepromIT {
 
 	@Test
 	void eepromContentIsPersistedAcrossContainerRestart(@TempDir File tmpDir) throws Exception {
-		Predicate<String> predicateRun1 = r -> r.contains("state=fresh virgin=255") //
-				&& r.contains("put=ok") //
-				&& r.contains("done");
-		Predicate<String> predicateRun2 = r -> r.contains("state=restored value=4711") //
-				&& r.contains("done");
-
-		for (Predicate<String> predicate : List.of(predicateRun1, predicateRun2)) {
-			VirtualAvrContainer<?> virtualAvrContainer = newContainer().withEepromFile(new File(tmpDir, "eeprom.bin"));
-			virtualAvrContainer.start();
+		for (Predicate<String> predicate : List.of(isFreshState, isRestoredState)) {
+			VirtualAvrContainer<?> virtualAvrContainer = start(
+					newContainer().withEepromFile(new File(tmpDir, "eeprom.bin")));
 			try (SerialConnection serialConnection = virtualAvrContainer.serialConnection()) {
 				awaiter(serialConnection).awaitReceived(predicate);
 			} finally {
@@ -52,6 +49,11 @@ class EepromIT {
 
 	private static VirtualAvrContainer<?> newContainer() {
 		return virtualAvrContainer(withSketchFromClasspath(SKETCH));
+	}
+
+	private static VirtualAvrContainer<?> start(VirtualAvrContainer<?> virtualAvrContainer) {
+		virtualAvrContainer.start();
+		return virtualAvrContainer;
 	}
 
 }
