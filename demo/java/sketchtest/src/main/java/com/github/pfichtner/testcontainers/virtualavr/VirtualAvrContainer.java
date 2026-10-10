@@ -29,7 +29,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, EEPROM_FILE, WS_TOKEN
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -126,6 +126,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 				.withFileSystemBind(sketchFile.getParent(), "/sketch/", READ_ONLY);
 	}
 
+	public VirtualAvrContainer<?> withEepromFile(File eepromFile, int eepromSize) {
+		return withEepromFile(eepromFile).withEnv(EnvVars.EEPROM_SIZE, eepromSize);
+	}
+
 	public VirtualAvrContainer<?> withEepromFile(File eepromFile) {
 		try {
 			if (!eepromFile.exists() && !eepromFile.createNewFile()) {
@@ -137,6 +141,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		String containerPath = format("/eeprom/%s", eepromFile.getName());
 		return withEnv(EnvVars.EEPROM_FILE, containerPath) //
 				.withFileSystemBind(eepromFile.getAbsolutePath(), containerPath, READ_WRITE);
+	}
+
+	public VirtualAvrContainer<?> withRealtime(boolean realtime) {
+		return withEnv(EnvVars.REALTIME, realtime);
 	}
 
 	public VirtualAvrContainer<?> withPublishMillis(int millis) {
