@@ -13,8 +13,11 @@ import static org.testcontainers.containers.BindMode.READ_WRITE;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -26,12 +29,13 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
 
 	private static final Logger logger = LoggerFactory.getLogger(VirtualAvrContainer.class);
+	private static final Set<String> doMask = Set.of(EnvVars.WS_TOKEN.name());
 
 	public static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("pfichtner/virtualavr");
 	public static final String DEFAULT_TAG = "latest";
@@ -48,6 +52,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
 	private TcpSerialModeSupport tcpSerialModeSupport;
+	private final Set<String> explicitlySet = new HashSet<>();
 
 	public VirtualAvrContainer() {
 		this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_TAG));
@@ -57,8 +62,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		super(dockerImageName);
 		dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
 		withDeviceName(ttyDevice) //
+				.withToken(UUID.randomUUID().toString()) //
 				.withFileSystemBind(hostDev, containerDev, READ_WRITE) //
 				.addExposedPort(WEBSOCKET_PORT);
+		explicitlySet.clear();
 	}
 
 	/**
@@ -144,6 +151,19 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return withEnv(EnvVars.PUBLISH_MILLIS, millis);
 	}
 
+	/**
+	 * Sets the token the container requires for WebSocket connections. By default a
+	 * random token is generated when the container is created, so authentication is
+	 * enabled unless it is disabled by passing {@code ""} or {@code null}.
+	 *
+	 * @param token the token to use, or {@code ""}/{@code null} to disable
+	 *              authentication
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withToken(String token) {
+		return withEnv(EnvVars.WS_TOKEN, token);
+	}
+
 	public VirtualAvrContainer<?> withDebug() {
 		return withDebug(true);
 	}
@@ -159,8 +179,18 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		return withEnv(envVar.name(), value == null ? null : String.valueOf(value));
 	}
 
+	@Override
+	public SELF withEnv(String key, String value) {
+		explicitlySet.add(key);
+		return super.withEnv(key, value);
+	}
+
 	String getEnv(EnvVars envVar) {
 		return getEnvMap().get(envVar.name());
+	}
+
+	Optional<String> token() {
+		return Optional.ofNullable(getEnv(EnvVars.WS_TOKEN)).filter(not(String::isEmpty));
 	}
 
 	public synchronized VirtualAvrConnection avr() {
@@ -211,7 +241,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private void debugStartOut() {
 		logger.info("{} container started: ID={}", VIRTUAL_AVR, getContainerId());
 		logger.info("Container environment variables:");
-		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, v));
+		getEnvMap().forEach((k, v) -> logger.info("\t{}={}", k, doMask(k) ? "***" : v));
 
 		// Wait a moment for the container's entrypoint to establish connections
 		try {
@@ -225,6 +255,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		Stream.of(getLogs().split("\\R")).limit(lines).forEach(l -> logger.info("\t[container] {}", l));
 
 		logger.info("Container state: isRunning={}, isHealthy={}", isRunning(), isHealthy());
+	}
+
+	private boolean doMask(String key) {
+		return doMask.contains(key) && explicitlySet.contains(key);
 	}
 
 	@Override

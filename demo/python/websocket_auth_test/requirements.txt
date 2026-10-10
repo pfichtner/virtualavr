@@ -1,0 +1,3 @@
+pytest
+docker
+websocket-client

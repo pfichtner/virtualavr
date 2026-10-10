@@ -33,7 +33,7 @@ mvn -B -DTESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=localhost \
 
 if [ "$SKIP_PIP_INSTALL" != "true" ]; then
 	python -m pip install --upgrade pip
-        pip install -r demo/python/noise_indicator_light_test/requirements.txt -r demo/python/neo_pixels_test/requirements.txt
+	pip install -r demo/python/noise_indicator_light_test/requirements.txt -r demo/python/neo_pixels_test/requirements.txt -r demo/python/websocket_auth_test/requirements.txt
 fi
 
 echo "Running Python tests (ino-file)..."
@@ -55,6 +55,10 @@ pytest demo/python/noise_indicator_light_test -v --junit-xml=demo/python/wokwi-z
 echo "Running Python tests (install from github)..."
 export SKETCH_FILE=test-artifacts/dl-from-github/TestNeoPixel
 pytest demo/python/neo_pixels_test -v --junit-xml=demo/python/install-from-github/test-results/pytest.xml
+
+echo "Running Python tests (websocket auth)..."
+export SKETCH_FILE=test-artifacts/ino-file/noiselevelindicator/noiselevelindicator.ino
+pytest demo/python/websocket_auth_test -v --junit-xml=demo/python/websocket-auth/test-results/pytest.xml
 
 echo "Running Gherkin tests..."
 if [ "$SKIP_PIP_INSTALL" != "true" ]; then
