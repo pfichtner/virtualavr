@@ -41,21 +41,22 @@ class EepromIT {
 
 	@Test
 	void eepromContentIsPersistedAcrossContainerRestart(@TempDir File tmpDir) throws Exception {
+		int sizeOfEeprom = 1234;
+		File eepromFile = new File(tmpDir, "eeprom.bin");
 		for (Predicate<String> predicate : List.of(isFreshState, isRestoredState)) {
-			File eepromFile = new File(tmpDir, "eeprom.bin");
-			VirtualAvrContainer<?> virtualAvrContainer = start(newContainer().withEepromFile(eepromFile));
+			VirtualAvrContainer<?> virtualAvrContainer = start(newContainer().withEepromFile(eepromFile, sizeOfEeprom));
 			try (SerialConnection serialConnection = virtualAvrContainer.serialConnection()) {
 				awaiter(serialConnection).awaitReceived(predicate);
 			} finally {
 				virtualAvrContainer.stop();
 			}
-			assertThat(readAllBytes(eepromFile.toPath())).as("EEPROM content") //
-					.containsExactly(expectedContent());
 		}
+		assertThat(readAllBytes(eepromFile.toPath())).as("EEPROM content") //
+				.containsExactly(expectedContent(sizeOfEeprom));
 	}
 
-	private byte[] expectedContent() {
-		byte[] expected = new byte[1024];
+	private byte[] expectedContent(int sizeOfEeprom) {
+		byte[] expected = new byte[sizeOfEeprom];
 		Arrays.fill(expected, (byte) 0xFF);
 		return ByteBuffer.wrap(expected) //
 				.order(ByteOrder.LITTLE_ENDIAN) //
