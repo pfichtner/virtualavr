@@ -3,8 +3,13 @@ package com.github.pfichtner.testcontainers.virtualavr.tests;
 import static com.github.pfichtner.testcontainers.virtualavr.IOUtil.withSketchFromClasspath;
 import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
 import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
+import static java.nio.file.Files.readAllBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -37,14 +42,26 @@ class EepromIT {
 	@Test
 	void eepromContentIsPersistedAcrossContainerRestart(@TempDir File tmpDir) throws Exception {
 		for (Predicate<String> predicate : List.of(isFreshState, isRestoredState)) {
-			VirtualAvrContainer<?> virtualAvrContainer = start(
-					newContainer().withEepromFile(new File(tmpDir, "eeprom.bin")));
+			File eepromFile = new File(tmpDir, "eeprom.bin");
+			VirtualAvrContainer<?> virtualAvrContainer = start(newContainer().withEepromFile(eepromFile));
 			try (SerialConnection serialConnection = virtualAvrContainer.serialConnection()) {
 				awaiter(serialConnection).awaitReceived(predicate);
 			} finally {
 				virtualAvrContainer.stop();
 			}
+			assertThat(readAllBytes(eepromFile.toPath())).as("EEPROM content") //
+					.containsExactly(expectedContent());
 		}
+	}
+
+	private byte[] expectedContent() {
+		byte[] expected = new byte[1024];
+		Arrays.fill(expected, (byte) 0xFF);
+		return ByteBuffer.wrap(expected) //
+				.order(ByteOrder.LITTLE_ENDIAN) //
+				.putInt(0xC0FFEE42) //
+				.putShort((short) 4711) //
+				.array();
 	}
 
 	private static VirtualAvrContainer<?> newContainer() {
