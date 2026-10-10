@@ -2,6 +2,7 @@
 !/package*.json
 !/virtualavr.js
 !/entrypoint.sh
+!/healthcheck.js
 !/virtualavr-compile-arduino
 !/sketch/
 
