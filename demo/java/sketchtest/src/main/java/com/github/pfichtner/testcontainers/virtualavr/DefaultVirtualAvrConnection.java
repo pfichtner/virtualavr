@@ -172,6 +172,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	 * @see PinStates#clear()
 	 */
 	@Override
+	@Deprecated
 	public VirtualAvrConnection clearStates() {
 		pinStates().clear();
 		return this;
