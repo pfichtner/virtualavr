@@ -26,7 +26,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -117,6 +117,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer<?> withSketchFile(File sketchFile) {
 		return withEnv(EnvVars.FILENAME, sketchFile.getName()) //
 				.withFileSystemBind(sketchFile.getParent(), "/sketch/", READ_ONLY);
+	}
+
+	public VirtualAvrContainer<?> withEepromFile(File eepromFile, int eepromSize) {
+		return withEepromFile(eepromFile).withEnv(EnvVars.EEPROM_SIZE, eepromSize);
 	}
 
 	public VirtualAvrContainer<?> withEepromFile(File eepromFile) {
