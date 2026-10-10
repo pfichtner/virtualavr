@@ -41,8 +41,8 @@ Environment variables supported
 - MIN_DIFF_TO_PUBLISH only publish analog values if they differ more than this value (default 0)
 - BUILD_FQBN Fully Qualified Board Name to use for compile (default "arduino:avr:uno")
 - BUILD_EXTRA_FLAGS to set/overwrite defines, e.g. '-DSLEEP_MILLIS=100 -DMESSAGE_TEXT="Hello World"'
-- EEPROM_SIZE optional; size of EEPROM in bytes. If unset, determined by the board (BUILD_FQBN) — e.g. ATmega328P → 1024, ATmega2560 → 4096 — and falls back to 1024 for unknown boards
 - EEPROM_FILE path to a file where the EEPROM content is stored. If set, EEPROM data persists across restarts; otherwise it is volatile memory
+- EEPROM_SIZE optional; size of EEPROM in bytes. If unset, determined by the board (BUILD_FQBN) — e.g. ATmega328P → 1024, ATmega2560 → 4096 — and falls back to 1024 for unknown boards
 - ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager's verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
 - SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp---tcp-serial-mode)
 - WS_TOKEN if set, WebSocket clients must pass the matching token as the `token` query parameter; if unset, no authentication is required
