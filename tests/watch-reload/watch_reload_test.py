@@ -98,6 +98,20 @@ class WebSocketListener:
                 return True
         return False
 
+    def wait_for_disconnect(self, timeout):
+        """Wait until the server closes the connection (e.g. on reload)."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if not self.running:
+                return True
+            time.sleep(0.1)
+        return False
+
+    def probe_pin(self, pin, timeout=30):
+        """Subscribe to a pin and wait until it is driven high."""
+        self.send({"type": "pinMode", "pin": str(pin), "mode": "digital"})
+        return self.wait_for_pin_state(pin, True, timeout)
+
     def stop(self):
         self.running = False
         if self.thread:
@@ -107,20 +121,6 @@ class WebSocketListener:
                 self.ws.close()
             except Exception:  # noqa: BLE001
                 pass
-
-
-def wait_for_log(container, expected, count=1, timeout=120):
-    """Wait until the container logs contain `expected` at least `count` times."""
-    deadline = time.time() + timeout
-    logs = ""
-    while time.time() < deadline:
-        logs = container.logs().decode("utf-8", errors="replace")
-        if logs.count(expected) >= count:
-            return logs
-        time.sleep(0.5)
-    pytest.fail(
-        f"Expected {count}x '{expected}' in container logs within {timeout}s.\nLogs:\n{logs}"
-    )
 
 
 @pytest.fixture
@@ -149,9 +149,6 @@ def watch_container(tmp_path):
         ws_url = f"ws://localhost:{host_port}"
         print(f"Container running, WebSocket on {ws_url}")
 
-        # Wait for the initial firmware to be compiled and started.
-        wait_for_log(container, "Starting simulator...", count=1, timeout=120)
-
         yield {
             "container": container,
             "ws_url": ws_url,
@@ -164,16 +161,14 @@ def watch_container(tmp_path):
 
 
 def test_sketch_change_is_recompiled_and_reloaded(watch_container):
-    container = watch_container["container"]
     ws_url = watch_container["ws_url"]
     sketch_file = watch_container["sketch_file"]
 
     # Initial firmware (v1) drives pin 8.
     listener = WebSocketListener(ws_url)
-    listener.connect()
+    listener.connect(retries=120, delay=1)
     try:
-        listener.send({"type": "pinMode", "pin": "8", "mode": "digital"})
-        assert listener.wait_for_pin_state("8", True, timeout=30), \
+        assert listener.probe_pin("8", timeout=30), \
             "Initial firmware (must drive pin 8) is not running"
     finally:
         listener.stop()
@@ -182,19 +177,21 @@ def test_sketch_change_is_recompiled_and_reloaded(watch_container):
     time.sleep(1.1)  # ensure the modification time changes
     sketch_file.write_text(SKETCH_V2)
 
-    wait_for_log(container, "Detected changes in /sketch. Recompiling...", timeout=30)
-    # A second "Starting simulator..." proves the simulator was restarted.
-    wait_for_log(container, "Starting simulator...", count=2, timeout=120)
-
-    # The reloaded firmware (v2) drives pin 9.
-    listener = WebSocketListener(ws_url)
-    listener.connect()
-    try:
-        listener.send({"type": "pinMode", "pin": "9", "mode": "digital"})
-        assert listener.wait_for_pin_state("9", True, timeout=30), \
-            "Reloaded firmware (must drive pin 9) is not running"
-    finally:
-        listener.stop()
+    # The reloaded firmware (v2) drives pin 9. Probing the not-yet-killed old
+    # simulator yields no pin-9 activity, so keep reconnecting until the new
+    # simulator answers: the pin-9 probe is the proof of the reload.
+    deadline = time.time() + 120
+    reloaded = False
+    while time.time() < deadline and not reloaded:
+        listener = WebSocketListener(ws_url)
+        try:
+            listener.connect(retries=3, delay=1)
+            reloaded = listener.probe_pin("9", timeout=5)
+        except ConnectionError:
+            pass
+        finally:
+            listener.stop()
+    assert reloaded, "Reloaded firmware (must drive pin 9) is not running"
 
 
 def test_watch_disabled_does_not_reload(tmp_path):
@@ -212,17 +209,29 @@ def test_watch_disabled_does_not_reload(tmp_path):
     )
 
     try:
-        wait_for_log(container, "Starting simulator...", count=1, timeout=120)
+        container.reload()
+        host_port = container.attrs["NetworkSettings"]["Ports"]["8080/tcp"][0]["HostPort"]
+        ws_url = f"ws://localhost:{host_port}"
 
-        time.sleep(1.1)
-        (tmp_path / "sketch.ino").write_text(SKETCH_V2)
-        time.sleep(10)
+        listener = WebSocketListener(ws_url)
+        listener.connect(retries=120, delay=1)
+        try:
+            assert listener.probe_pin("8", timeout=30), \
+                "Initial firmware (must drive pin 8) is not running"
+            # Subscribe to v2's pin: it must never be driven high.
+            listener.send({"type": "pinMode", "pin": "9", "mode": "digital"})
 
-        logs = container.logs().decode("utf-8", errors="replace")
-        assert "Detected changes" not in logs, \
-            "WATCH=false must not trigger a reload"
-        assert logs.count("Starting simulator...") == 1, \
-            "WATCH=false must start the simulator exactly once"
+            time.sleep(1.1)
+            (tmp_path / "sketch.ino").write_text(SKETCH_V2)
+
+            assert not listener.wait_for_pin_state("9", True, timeout=10), \
+                "WATCH=false must not reload the sketch (v2 must not run)"
+            assert not listener.wait_for_disconnect(0.5), \
+                "WATCH=false must not restart the simulator"
+            assert listener.wait_for_pin_state("8", True, timeout=10), \
+                "Original firmware must keep running (pin 8 must keep toggling)"
+        finally:
+            listener.stop()
     finally:
         print("Container logs:\n" + container.logs().decode("utf-8", errors="replace"))
         container.stop(timeout=10)
