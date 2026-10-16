@@ -101,6 +101,7 @@ The library provides:
 - a VirtualAvrContainer Testcontainers module
 - a typed VirtualAvrConnection API for interacting with the simulator
 - convenience helpers for pin states, reporting modes, and timing
+- automatic WebSocket reconnection (restoring pin subscriptions) across simulator restarts, e.g. WATCH reloads
 
 ```
 <dependency>
