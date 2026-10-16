@@ -65,8 +65,7 @@ class WatchReloadIT {
 			// its subscriptions, so no re-subscription is needed here. The old
 			// firmware never drives pin 9, so this can only pass once the
 			// reloaded firmware runs.
-			await().atMost(120, SECONDS).pollInterval(1, SECONDS).ignoreExceptions()
-					.untilAsserted(() -> assertThat(avr.pinStates().last("9")).isEqualTo(true));
+			await().atMost(60, SECONDS).until(() -> Boolean.TRUE.equals(avr.pinStates().last("9")));
 			assertThat(avr.isConnected()).isTrue();
 		} finally {
 			virtualAvrContainer.stop();
