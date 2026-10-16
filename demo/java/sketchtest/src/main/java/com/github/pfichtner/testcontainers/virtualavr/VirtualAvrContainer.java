@@ -161,7 +161,19 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer<?> withWatch() {
 		return withWatch(true);
 	}
-
+	
+	/**
+	 * Enables watch mode with the given polling interval for file change detection:
+	 * monitors the sketch file(s) in {@code /sketch} for changes and automatically
+	 * recompiles and reloads the firmware.
+	 *
+	 * @param seconds the polling interval in seconds
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withWatchInterval(int seconds) {
+		return withWatch().withEnv(EnvVars.WATCH_INTERVAL, seconds);
+	}
+	
 	/**
 	 * Enables or disables watch mode.
 	 *
@@ -171,20 +183,6 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 */
 	public VirtualAvrContainer<?> withWatch(boolean watch) {
 		return withEnv(EnvVars.WATCH, watch);
-	}
-
-	/**
-	 * Enables or disables watch mode with the given polling interval for file
-	 * change detection: monitors the sketch file(s) in {@code /sketch} for
-	 * changes and automatically recompiles and reloads the firmware.
-	 *
-	 * @param watch   {@code true} to monitor the sketch file(s) for changes and
-	 *                automatically recompile and reload the firmware
-	 * @param seconds the polling interval in seconds
-	 * @return this container instance
-	 */
-	public VirtualAvrContainer<?> withWatch(boolean watch, int seconds) {
-		return withWatch(watch).withEnv(EnvVars.WATCH_INTERVAL, seconds);
 	}
 
 	/**
