@@ -46,6 +46,8 @@ Environment variables supported
 - ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager's verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
 - SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp---tcp-serial-mode)
 - WS_TOKEN if set, WebSocket clients must pass the matching token as the `token` query parameter; if unset, no authentication is required
+- WATCH if set to "true", monitors the sketch file(s) in `/sketch` for changes and automatically recompiles/reloads the firmware (default "false")
+- WATCH_INTERVAL polling interval in seconds for file change detection (default 1)
 
 # Screencast of usage
 The screencast is not uptodate!!!
@@ -191,7 +193,6 @@ For a complete python gherkin example see https://github.com/pfichtner/virtualav
 - Possibility to define component layout, e.g. add a DHT22
 - JS Callbacks for pin states/Components, e.g. DHT22
 - Java-Bindings for pin states/Components, e.g. DHT22 (IPC, using websockets?)
-- Watch support: Recompile/reload firmware when changed on filesystem
 - Could we implement upload? So that you can upload the compiled firmware to running container / /dev/virtualdevice?
   Could we use arduino firmware? https://github.com/arduino/ArduinoCore-avr/tree/master/bootloaders/atmega : If this works? Do we have to upload elf binaries?
 

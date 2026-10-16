@@ -215,6 +215,12 @@ class PersistentEEPROMBackend extends avr8js.EEPROMMemoryBackend {
     }
 }
 
+let shouldStop = false;
+
+function stop() {
+    shouldStop = true;
+}
+
 const runCode = async (hexContent, portCallback) => {
     const { data } = intelhex.parse(fs.readFileSync(hexContent));
     const progData = new Uint8Array(data);
@@ -306,7 +312,7 @@ const runCode = async (hexContent, portCallback) => {
     let syncStartCycles = cpu.cycles;
     let lastRealtimeCheck = syncStartTime;
 
-    while (true) {
+    while (!shouldStop) {
         if (!isPaused) {
             if (REALTIME) {
                 const now = performance.now();
@@ -440,6 +446,8 @@ function processMessage(msg, callbackPinState) {
             isPaused = false;
         } else if (msg.action === 'pause') {
             isPaused = true;
+        } else if (msg.action === 'reload') {
+            shouldStop = true;
         }
     } else if (msg.type === 'serialDebug') {
         serialDebug = msg.state;
@@ -520,6 +528,20 @@ function main() {
         });
     });
 
+    // Graceful shutdown on SIGTERM/SIGINT
+    const shutdown = () => {
+        console.log('Shutting down gracefully...');
+        shouldStop = true;
+        wss.close(() => {
+            process.exit(0);
+        });
+        // Force exit after timeout
+        setTimeout(() => process.exit(1), 5000);
+    };
+
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
+
     runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState);
 }
 
@@ -530,5 +552,6 @@ if (require.main === module) {
 module.exports = {
     runCode,
     sendMessage,
-    resolveEepromSize
+    resolveEepromSize,
+    stop
 }

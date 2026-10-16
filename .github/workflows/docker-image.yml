@@ -56,5 +56,5 @@ jobs:
       if: (success() || failure()) # run this step even if previous step failed
       with:
         name: Test report
-        path: demo/java/sketchtest/target/surefire-reports/*.xml,demo/python/*/test-results/pytest.xml,demo/python-gherkin/test-results/TESTS-*_behavior.xml
+        path: demo/java/sketchtest/target/surefire-reports/*.xml,demo/python/*/test-results/pytest.xml,tests/watch-reload/test-results/pytest.xml,demo/python-gherkin/test-results/TESTS-*_behavior.xml
         reporter: java-junit
