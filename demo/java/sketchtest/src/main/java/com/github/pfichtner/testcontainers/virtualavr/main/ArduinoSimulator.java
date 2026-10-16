@@ -17,27 +17,13 @@ import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 public class ArduinoSimulator {
 
 	public ArduinoSimulator(String... args) {
-		boolean watch = false;
-		File firmware = null;
-		for (String arg : args) {
-			if ("--watch".equals(arg)) {
-				watch = true;
-			} else if (firmware == null) {
-				firmware = new File(arg);
-			}
+		if (args.length == 0) {
+			throw new IllegalArgumentException("Pass .ino/.hex/.zip file as argument");
 		}
-		if (firmware == null) {
-			throw new IllegalArgumentException(
-					"Pass .ino/.hex/.zip file as argument, optionally with --watch");
-		}
+		File firmware = new File(args[0]);
 
 		try (VirtualAvrContainer<?> virtualAvrContainer = new VirtualAvrContainer<>()) {
-			virtualAvrContainer.withSketchFile(firmware);
-			if (watch) {
-				virtualAvrContainer.withWatch();
-				System.out.println("Watch mode enabled: changes to " + firmware.getParent()
-						+ " are recompiled and reloaded automatically");
-			}
+			virtualAvrContainer.withSketchFile(firmware).withWatch();
 			virtualAvrContainer.start();
 
 			// do sysouts
