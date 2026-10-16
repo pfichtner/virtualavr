@@ -20,10 +20,10 @@ import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 /**
  * Integration test for the container's WATCH mode: changing the sketch on the
- * host must recompile and restart the simulation. The simulator process (and
- * with it the WebSocket connection) is killed on reload, so this also verifies
- * that the {@link VirtualAvrConnection} transparently reconnects and restores
- * its subscriptions.
+ * host must recompile the sketch and hot-reload the firmware inside the
+ * running simulator. The reload happens in place, so the WebSocket connection
+ * and its subscriptions survive it - this verifies both the reload and the
+ * connection continuity.
  */
 class WatchReloadIT {
 
@@ -61,10 +61,10 @@ class WatchReloadIT {
 			Thread.sleep(1100);
 			setPin(sketchFile, 9);
 
-			// The connection restores its subscriptions on reconnect (see
-			// DefaultVirtualAvrConnection#onOpen), so no re-subscription is needed
-			// here. The old simulator never drives pin 9, so this can only pass
-			// once the reloaded firmware runs.
+			// The reload happens in place: the connection never drops and keeps
+			// its subscriptions, so no re-subscription is needed here. The old
+			// firmware never drives pin 9, so this can only pass once the
+			// reloaded firmware runs.
 			await().atMost(120, SECONDS).pollInterval(1, SECONDS).ignoreExceptions()
 					.untilAsserted(() -> assertThat(avr.pinStates().last("9")).isEqualTo(true));
 			assertThat(avr.isConnected()).isTrue();

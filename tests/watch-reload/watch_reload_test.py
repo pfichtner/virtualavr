@@ -5,9 +5,11 @@ exercises the real socat -> node(virtualavr.js) process chain and the mounted
 /sketch volume that the reload logic depends on.
 
 The test starts a container with WATCH=true, changes the sketch on the host and
-asserts that the entrypoint recompiles the sketch and starts a fresh simulator
-running the new firmware. The new firmware is detected by observing a pin that
-is only driven by the reloaded sketch.
+asserts that the entrypoint recompiles the sketch and the running simulator
+hot-reloads the new firmware. The reload happens in place: the WebSocket
+connection and its subscriptions survive it, which is asserted as well. The new
+firmware is detected by observing a pin that is only driven by the reloaded
+sketch.
 """
 
 import json
@@ -81,7 +83,7 @@ class WebSocketListener:
         while self.running:
             try:
                 self.queue.put(json.loads(self.ws.recv()))
-            except Exception:  # noqa: BLE001 - connection closed on reload
+            except Exception:  # noqa: BLE001 - connection closed
                 self.running = False
                 break
 
@@ -104,7 +106,7 @@ class WebSocketListener:
         return False
 
     def wait_for_disconnect(self, timeout):
-        """Wait until the server closes the connection (e.g. on reload)."""
+        """Wait until the server closes the connection (e.g. on a restart)."""
         deadline = time.time() + timeout
         while time.time() < deadline:
             if not self.running:
@@ -169,34 +171,30 @@ def test_sketch_change_is_recompiled_and_reloaded(watch_container):
     ws_url = watch_container["ws_url"]
     sketch_file = watch_container["sketch_file"]
 
-    # Initial firmware drives pin 8.
+    # One connection for the whole test: the firmware reload happens in place,
+    # so the connection must survive it with its subscriptions intact.
     listener = WebSocketListener(ws_url)
     listener.connect(retries=120, delay=1)
     try:
-        assert listener.probe_pin("8", timeout=30), \
+        # Subscribe to both pins up front: pin 8 proves the initial firmware
+        # runs, pin 9 proves the reloaded firmware runs.
+        listener.send({"type": "pinMode", "pin": "8", "mode": "digital"})
+        listener.send({"type": "pinMode", "pin": "9", "mode": "digital"})
+        assert listener.wait_for_pin_state("8", True, timeout=30), \
             "Initial firmware (must drive pin 8) is not running"
+
+        # Change the sketch on the host (mounted read/write into the container).
+        time.sleep(1.1)  # ensure the modification time changes
+        set_pin(sketch_file, 9)
+
+        # The old simulator never drives pin 9, so this can only pass once the
+        # reloaded firmware runs - received on the same, never reconnected
+        # connection (no re-subscription is needed either).
+        assert listener.wait_for_pin_state("9", True, timeout=120), \
+            "Reloaded firmware (must drive pin 9) is not running"
+        assert listener.running, "Connection must survive the firmware reload"
     finally:
         listener.stop()
-
-    # Change the sketch on the host (mounted read/write into the container).
-    time.sleep(1.1)  # ensure the modification time changes
-    set_pin(sketch_file, 9)
-
-    # The reloaded firmware drives pin 9. Probing the not-yet-killed old
-    # simulator yields no pin-9 activity, so keep reconnecting until the new
-    # simulator answers: the pin-9 probe is the proof of the reload.
-    deadline = time.time() + 120
-    reloaded = False
-    while time.time() < deadline and not reloaded:
-        listener = WebSocketListener(ws_url)
-        try:
-            listener.connect(retries=3, delay=1)
-            reloaded = listener.probe_pin("9", timeout=5)
-        except ConnectionError:
-            pass
-        finally:
-            listener.stop()
-    assert reloaded, "Reloaded firmware (must drive pin 9) is not running"
 
 
 def test_watch_disabled_does_not_reload(tmp_path):

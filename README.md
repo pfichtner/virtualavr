@@ -46,8 +46,8 @@ Environment variables supported
 - ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager's verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
 - SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp---tcp-serial-mode)
 - WS_TOKEN if set, WebSocket clients must pass the matching token as the `token` query parameter; if unset, no authentication is required
-- WATCH if set to "true", monitors the sketch file(s) in `/sketch` for changes and automatically recompiles/reloads the firmware (default "false")
-- WATCH_INTERVAL polling interval in seconds for file change detection (default 1)
+- WATCH if set to "true", monitors the sketch file(s) in `/sketch` for changes and automatically recompiles/reloads the firmware (default "false"). The reload happens in place: the simulator process, the serial device and all WebSocket connections (including their pin subscriptions) stay untouched — clients do not observe a disconnect
+- WATCH_INTERVAL polling interval in seconds for file change detection (default 1); after a recompile the running simulator picks up the new hex file within this interval. `cpuTime` restarts at 0 with each reload while clients keep their received pin history
 
 # Screencast of usage
 The screencast is not uptodate!!!
@@ -101,7 +101,7 @@ The library provides:
 - a VirtualAvrContainer Testcontainers module
 - a typed VirtualAvrConnection API for interacting with the simulator
 - convenience helpers for pin states, reporting modes, and timing
-- automatic WebSocket reconnection (restoring pin subscriptions) across simulator restarts, e.g. WATCH reloads
+- automatic WebSocket reconnection (restoring pin subscriptions) if the simulator process goes away (crash recovery; note that WATCH reloads do not drop the connection, they happen in place)
 
 ```
 <dependency>

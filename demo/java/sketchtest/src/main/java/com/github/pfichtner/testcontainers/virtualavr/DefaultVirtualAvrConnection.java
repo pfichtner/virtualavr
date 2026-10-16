@@ -235,9 +235,11 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	@Override
 	public void onOpen(ServerHandshake handshakedata) {
-		// A (re)connected simulator is a freshly started process: drop the pin
-		// states of the previous firmware and restore the subscriptions the
-		// simulator does not know about anymore.
+		// Crash recovery: after reconnecting to a restarted simulator process,
+		// drop the pin states of the previous firmware and restore the
+		// subscriptions the fresh process does not know about anymore. (WATCH
+		// reloads happen in place and never disconnect, so they do not come
+		// through here.)
 		pinStates.clear();
 		pinReportModes.forEach((pin, mode) -> sendQuietly(new SetPinReportMode(pin, mode)));
 		if (debugSerial) {
@@ -414,9 +416,9 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	/**
 	 * Keeps trying to reconnect to the (restarted) simulation until the connection
-	 * is re-established or {@link #close()} was called. This makes the connection
-	 * survive a WATCH reload, where the simulator process is killed and restarted
-	 * whenever the sketch changes.
+	 * is re-established or {@link #close()} was called. This is a crash-recovery
+	 * safety net; note that WATCH reloads happen in place and do not drop the
+	 * connection at all.
 	 */
 	private void scheduleReconnect() {
 		if (!reconnecting.compareAndSet(false, true)) {
