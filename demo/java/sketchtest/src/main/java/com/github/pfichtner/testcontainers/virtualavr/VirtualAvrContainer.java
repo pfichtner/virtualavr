@@ -29,7 +29,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN,
+		WATCH, WATCH_INTERVAL
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -149,6 +150,41 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	public VirtualAvrContainer<?> withPublishMillis(int millis) {
 		return withEnv(EnvVars.PUBLISH_MILLIS, millis);
+	}
+
+	/**
+	 * Enables watch mode: monitors the sketch file(s) in {@code /sketch} for
+	 * changes and automatically recompiles and reloads the firmware.
+	 *
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withWatch() {
+		return withWatch(true);
+	}
+
+	/**
+	 * Enables or disables watch mode.
+	 *
+	 * @param watch {@code true} to monitor the sketch file(s) for changes and
+	 *              automatically recompile and reload the firmware
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withWatch(boolean watch) {
+		return withEnv(EnvVars.WATCH, watch);
+	}
+
+	/**
+	 * Enables or disables watch mode with the given polling interval for file
+	 * change detection: monitors the sketch file(s) in {@code /sketch} for
+	 * changes and automatically recompiles and reloads the firmware.
+	 *
+	 * @param watch   {@code true} to monitor the sketch file(s) for changes and
+	 *                automatically recompile and reload the firmware
+	 * @param seconds the polling interval in seconds
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withWatch(boolean watch, int seconds) {
+		return withWatch(watch).withEnv(EnvVars.WATCH_INTERVAL, seconds);
 	}
 
 	/**
