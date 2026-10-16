@@ -32,9 +32,26 @@ const activeAnalogListeners = new Set();
 // We don't strictly need a set for digital listeners since they are event-driven in handlePort,
 // but tracking them helps maintain the separation requested.
 const activeDigitalListeners = new Set();
-let sending = false;
+// Serial input state of the *current* firmware run. The input stream and its
+// handler live at module level so that a firmware reload does not stack
+// duplicate listeners; each run (re)points usart/callback at its own instances.
+const serialState = { buff: [], usart: null, sending: false, callback: null };
 var serialDebug;
 var lastPublish = new Date();
+
+// Registered exactly once: runCode only (re)points serialState at the current
+// firmware's usart/callback, so a reload cannot stack duplicate handlers.
+input.on('data', data => {
+        var bytes = Array.prototype.slice.call(data, 0);
+        for (let i = 0; i < bytes.length; i++) serialState.buff.push(bytes[i]);
+        if (!serialState.sending && serialState.usart) {
+            serialState.sending = true;
+            sendNextChar();
+        }
+        if (serialDebug && serialState.callback) {
+            serialState.callback({ type: 'serialDebug', direction: 'RX', bytes: bytes });
+        }
+});
 
 const clockFrequency = 16e6;  // 16 MHz
 const unoPinMappings = {
@@ -215,6 +232,12 @@ class PersistentEEPROMBackend extends avr8js.EEPROMMemoryBackend {
     }
 }
 
+let shouldStop = false;
+
+function stop() {
+    shouldStop = true;
+}
+
 const runCode = async (hexContent, portCallback) => {
     const { data } = intelhex.parse(fs.readFileSync(hexContent));
     const progData = new Uint8Array(data);
@@ -223,6 +246,11 @@ const runCode = async (hexContent, portCallback) => {
     cpu = new avr8js.CPU(new Uint16Array(progData.buffer));
     adc = new avr8js.AVRADC(cpu, avr8js.adcConfig);
 
+    // (Re)create the ports for every run: they are bound to this run's CPU, so
+    // ports left over from a previous (reloaded) firmware must not be reused.
+    for (const portName of Object.keys(ports)) {
+        delete ports[portName];
+    }
     for (const mapping of Object.values(unoPinMappings)) {
         const portName = mapping.port;
         if (!ports[portName]) {
@@ -277,19 +305,16 @@ const runCode = async (hexContent, portCallback) => {
                 portCallback({ type: 'serialDebug', direction: 'TX', bytes: [data] });
             }
     }
-    const buff = [];
-    usart.onRxComplete = () => sendNextChar(buff, usart);
-    input.on('data', data => {
-            var bytes = Array.prototype.slice.call(data, 0);
-            for (let i = 0; i < bytes.length; i++) buff.push(bytes[i]);
-            if (!sending) {
-                sending = true;
-                sendNextChar(buff, usart);
-            }
-            if (serialDebug) {
-                portCallback({ type: 'serialDebug', direction: 'RX', bytes: bytes });
-            }
-    });
+    usart.onRxComplete = () => sendNextChar();
+    // Point the module-level serial input at this run's usart. Bytes buffered
+    // while no firmware was running (e.g. during a reload) are drained now.
+    serialState.usart = usart;
+    serialState.callback = portCallback;
+    serialState.sending = false;
+    if (serialState.buff.length > 0) {
+        serialState.sending = true;
+        sendNextChar();
+    }
 
     new avr8js.AVRTimer(cpu, avr8js.timer0Config);
     new avr8js.AVRTimer(cpu, avr8js.timer1Config);
@@ -306,7 +331,7 @@ const runCode = async (hexContent, portCallback) => {
     let syncStartCycles = cpu.cycles;
     let lastRealtimeCheck = syncStartTime;
 
-    while (true) {
+    while (!shouldStop) {
         if (!isPaused) {
             if (REALTIME) {
                 const now = performance.now();
@@ -387,12 +412,12 @@ const runCode = async (hexContent, portCallback) => {
     }
 }
 
-function sendNextChar(buff, usart) {
-    if (buff.length > 0) {
-        const ch = buff.shift();
-        usart.writeByte(ch);
+function sendNextChar() {
+    if (serialState.buff.length > 0 && serialState.usart) {
+        const ch = serialState.buff.shift();
+        serialState.usart.writeByte(ch);
     } else {
-        sending = false;
+        serialState.sending = false;
     }
 }
 
@@ -440,6 +465,8 @@ function processMessage(msg, callbackPinState) {
             isPaused = false;
         } else if (msg.action === 'pause') {
             isPaused = true;
+        } else if (msg.action === 'reload') {
+            shouldStop = true;
         }
     } else if (msg.type === 'serialDebug') {
         serialDebug = msg.state;
@@ -450,6 +477,8 @@ function processMessage(msg, callbackPinState) {
 }
 
 function main() {
+    const hexPath = args.length == 0 ? 'sketch.ino' : args[0];
+
     // const callback = (pin, state) => {};
     const wss = new ws.WebSocketServer({
         port: 8080,
@@ -520,7 +549,64 @@ function main() {
         });
     });
 
-    runCode(args.length == 0 ? 'sketch.ino' : args[0], callbackPinState);
+    let runPromise = runCode(hexPath, callbackPinState);
+    let reloading = false;
+    let reloadQueued = false;
+    let shuttingDown = false;
+
+    // Hot-reload the firmware in place: stop the running simulation loop and
+    // start a new one with the (recompiled) hex file. The process, the
+    // WebSocket server, the serial bridge and all pin subscriptions stay
+    // alive, so clients do not observe a disconnect.
+    const reload = async () => {
+        if (reloading) {
+            reloadQueued = true;
+            return;
+        }
+        reloading = true;
+        try {
+            do {
+                reloadQueued = false;
+                console.log(`Reloading firmware from ${hexPath}...`);
+                shouldStop = true;
+                await runPromise;
+                if (shuttingDown) {
+                    return;
+                }
+                shouldStop = false;
+                runPromise = runCode(hexPath, callbackPinState);
+            } while (reloadQueued && !shuttingDown);
+        } finally {
+            reloading = false;
+        }
+    };
+
+    // WATCH mode: the entrypoint recompiles into the same hex file (atomic
+    // rename), so polling its mtime is enough to pick up new firmware.
+    if (process.env.WATCH === 'true') {
+        const watchInterval = Math.max(100, (Number(process.env.WATCH_INTERVAL) || 1) * 1000);
+        fs.watchFile(hexPath, { interval: watchInterval }, (curr, prev) => {
+            if (curr.mtimeMs && curr.mtimeMs !== prev.mtimeMs) {
+                reload();
+            }
+        });
+    }
+
+    // Graceful shutdown on SIGTERM/SIGINT
+    const shutdown = () => {
+        console.log('Shutting down gracefully...');
+        shuttingDown = true;
+        fs.unwatchFile(hexPath);
+        shouldStop = true;
+        wss.close(() => {
+            process.exit(0);
+        });
+        // Force exit after timeout
+        setTimeout(() => process.exit(1), 5000);
+    };
+
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
 }
 
 if (require.main === module) {
@@ -530,5 +616,6 @@ if (require.main === module) {
 module.exports = {
     runCode,
     sendMessage,
-    resolveEepromSize
+    resolveEepromSize,
+    stop
 }

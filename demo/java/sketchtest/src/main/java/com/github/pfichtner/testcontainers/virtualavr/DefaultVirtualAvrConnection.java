@@ -3,6 +3,7 @@ package com.github.pfichtner.testcontainers.virtualavr;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -13,7 +14,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BinaryOperator;
 
 import org.java_websocket.client.WebSocketClient;
@@ -96,7 +99,13 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	private final List<VirtualAvrConnection.Listener<SerialDebug>> serialDebugListeners = new CopyOnWriteArrayList<>();
 	private final List<VirtualAvrConnection.Listener<CommandReply>> commandReplyListeners = new CopyOnWriteArrayList<>();
 	private final DefaultPinStates pinStates = new DefaultPinStates();
+	private final Map<String, PinReportMode> pinReportModes = new ConcurrentHashMap<>();
+	private final List<CompletableFuture<CommandReply>> pendingReplies = new CopyOnWriteArrayList<>();
+	private final AtomicBoolean reconnecting = new AtomicBoolean();
+	private volatile boolean closedByUser;
 	private boolean debugSerial;
+
+	private static final long RECONNECT_INTERVAL_MILLIS = 1000;
 
 	private VirtualAvrConnection sendAndWaitForReply(WithReplyId messageToSend) {
 		sendAndWaitForReplyAsync(messageToSend).join();
@@ -105,6 +114,8 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	private CompletableFuture<CommandReply> sendAndWaitForReplyAsync(WithReplyId message) {
 		CompletableFuture<CommandReply> future = createReplyFuture(message);
+		pendingReplies.add(future);
+		future.whenComplete((__r, __t) -> pendingReplies.remove(future));
 		try {
 			send(gson.toJson(message));
 		} catch (Exception ex) {
@@ -224,6 +235,24 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	@Override
 	public void onOpen(ServerHandshake handshakedata) {
+		// Crash recovery: after reconnecting to a restarted simulator process,
+		// drop the pin states of the previous firmware and restore the
+		// subscriptions the fresh process does not know about anymore. (WATCH
+		// reloads happen in place and never disconnect, so they do not come
+		// through here.)
+		pinStates.clear();
+		pinReportModes.forEach((pin, mode) -> sendQuietly(new SetPinReportMode(pin, mode)));
+		if (debugSerial) {
+			sendQuietly(new SetSerialDebug(true));
+		}
+	}
+
+	private void sendQuietly(WithReplyId message) {
+		try {
+			send(gson.toJson(message));
+		} catch (Exception e) {
+			logger.debug("WebSocket: could not send {}: {}", message.getClass().getSimpleName(), e.getMessage());
+		}
 	}
 
 	@Override
@@ -339,6 +368,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	}
 
 	public VirtualAvrConnection pinReportMode(String pin, VirtualAvrConnection.PinReportMode mode) {
+		pinReportModes.put(pin, mode);
 		return sendAndWaitForReply(new SetPinReportMode(pin, mode));
 	}
 
@@ -360,6 +390,12 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	}
 
 	@Override
+	public void close() {
+		closedByUser = true;
+		super.close();
+	}
+
+	@Override
 	public void onError(Exception ex) {
 		logger.warn("WebSocket error: {}", ex.getMessage());
 	}
@@ -367,6 +403,58 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	@Override
 	public void onClose(int code, String reason, boolean remote) {
 		logger.debug("WebSocket closed: code={}, reason={}, remote={}", code, reason, remote);
+		failPendingReplies(code, reason);
+		if (!closedByUser) {
+			scheduleReconnect();
+		}
+	}
+
+	private void failPendingReplies(int code, String reason) {
+		pendingReplies.forEach(future -> future
+				.completeExceptionally(new IOException(format("WebSocket closed: code=%s, reason=%s", code, reason))));
+	}
+
+	/**
+	 * Keeps trying to reconnect to the (restarted) simulation until the connection
+	 * is re-established or {@link #close()} was called. This is a crash-recovery
+	 * safety net; note that WATCH reloads happen in place and do not drop the
+	 * connection at all.
+	 */
+	private void scheduleReconnect() {
+		if (!reconnecting.compareAndSet(false, true)) {
+			return;
+		}
+		Thread thread = new Thread(this::reconnectLoop, "virtualavr-websocket-reconnect");
+		thread.setDaemon(true);
+		thread.start();
+	}
+
+	private void reconnectLoop() {
+		try {
+			while (!closedByUser && !isOpen()) {
+				boolean connected = false;
+				try {
+					connected = reconnectBlocking();
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				} catch (Exception e) {
+					logger.debug("WebSocket: reconnect to {} failed: {}", getURI(), e.getMessage());
+				}
+				if (connected) {
+					logger.info("WebSocket: reconnected to {}", getURI());
+					return;
+				}
+				try {
+					Thread.sleep(RECONNECT_INTERVAL_MILLIS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
+		} finally {
+			reconnecting.set(false);
+		}
 	}
 
 }
