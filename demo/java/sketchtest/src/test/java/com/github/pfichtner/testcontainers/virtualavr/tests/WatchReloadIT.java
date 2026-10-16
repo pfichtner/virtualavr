@@ -52,21 +52,21 @@ class WatchReloadIT {
 		try {
 			VirtualAvrConnection avr = virtualAvrContainer.avr();
 
-			// Initial firmware drives pin 8.
-			avr.pinReportMode("8", DIGITAL);
+			// Subscribe to both pins up front: pin 8 proves the initial firmware
+			// runs, pin 9 proves the reloaded firmware runs.
+			avr.pinReportMode("8", DIGITAL).pinReportMode("9", DIGITAL);
 			await().atMost(60, SECONDS).until(() -> Boolean.TRUE.equals(avr.pinStates().last("8")));
 
 			// Ensure the modification time changes before switching the pin.
 			Thread.sleep(1100);
 			setPin(sketchFile, 9);
 
-			// The reloaded firmware drives pin 9. Subscribe again on each attempt:
-			// the old simulator does not drive pin 9 and during the
-			// recompile/reconnect gap the connection may reject the command.
-			await().atMost(120, SECONDS).pollInterval(1, SECONDS).ignoreExceptions().untilAsserted(() -> {
-				avr.pinReportMode("9", DIGITAL);
-				assertThat(avr.pinStates().last("9")).isEqualTo(true);
-			});
+			// The connection restores its subscriptions on reconnect (see
+			// DefaultVirtualAvrConnection#onOpen), so no re-subscription is needed
+			// here. The old simulator never drives pin 9, so this can only pass
+			// once the reloaded firmware runs.
+			await().atMost(120, SECONDS).pollInterval(1, SECONDS).ignoreExceptions()
+					.untilAsserted(() -> assertThat(avr.pinStates().last("9")).isEqualTo(true));
 			assertThat(avr.isConnected()).isTrue();
 		} finally {
 			virtualAvrContainer.stop();
