@@ -13,6 +13,7 @@ is only driven by the reloaded sketch.
 import json
 import os
 import queue
+import re
 import threading
 import time
 
@@ -25,26 +26,30 @@ pytestmark = pytest.mark.timeout(360)
 DOCKER_IMAGE_TAG = os.getenv("DOCKER_IMAGE_TAG", "latest")
 IMAGE = f"pfichtner/virtualavr:{DOCKER_IMAGE_TAG}"
 
-# v1 drives pin 8, v2 drives pin 9. Observing the pin proves which firmware runs.
-SKETCH_V1 = """
-void setup() { pinMode(8, OUTPUT); }
+# The sketch drives a single pin. The pin is a #define so the test can change
+# just the define (and with it the running firmware) instead of rewriting the
+# whole sketch. Initially it drives pin 8, the reload switches it to pin 9.
+SKETCH = """
+#define PIN 8
+void setup() { pinMode(PIN, OUTPUT); }
 void loop() {
-  digitalWrite(8, HIGH);
+  digitalWrite(PIN, HIGH);
   delay(200);
-  digitalWrite(8, LOW);
+  digitalWrite(PIN, LOW);
   delay(200);
 }
 """
 
-SKETCH_V2 = """
-void setup() { pinMode(9, OUTPUT); }
-void loop() {
-  digitalWrite(9, HIGH);
-  delay(200);
-  digitalWrite(9, LOW);
-  delay(200);
-}
-"""
+PIN_DEFINE = re.compile(r"#define PIN \d+")
+
+
+def set_pin(sketch_file, pin):
+    """Change the pin the sketch drives by rewriting its #define."""
+    content = sketch_file.read_text()
+    updated, replacements = PIN_DEFINE.subn(f"#define PIN {pin}", content)
+    if replacements != 1:
+        raise AssertionError(f"Expected exactly one '#define PIN' in {sketch_file}")
+    sketch_file.write_text(updated)
 
 
 class WebSocketListener:
@@ -128,7 +133,7 @@ def watch_container(tmp_path):
     client = docker.from_env()
 
     sketch_dir = tmp_path
-    (sketch_dir / "sketch.ino").write_text(SKETCH_V1)
+    (sketch_dir / "sketch.ino").write_text(SKETCH)
 
     container = client.containers.run(
         IMAGE,
@@ -164,7 +169,7 @@ def test_sketch_change_is_recompiled_and_reloaded(watch_container):
     ws_url = watch_container["ws_url"]
     sketch_file = watch_container["sketch_file"]
 
-    # Initial firmware (v1) drives pin 8.
+    # Initial firmware drives pin 8.
     listener = WebSocketListener(ws_url)
     listener.connect(retries=120, delay=1)
     try:
@@ -175,9 +180,9 @@ def test_sketch_change_is_recompiled_and_reloaded(watch_container):
 
     # Change the sketch on the host (mounted read/write into the container).
     time.sleep(1.1)  # ensure the modification time changes
-    sketch_file.write_text(SKETCH_V2)
+    set_pin(sketch_file, 9)
 
-    # The reloaded firmware (v2) drives pin 9. Probing the not-yet-killed old
+    # The reloaded firmware drives pin 9. Probing the not-yet-killed old
     # simulator yields no pin-9 activity, so keep reconnecting until the new
     # simulator answers: the pin-9 probe is the proof of the reload.
     deadline = time.time() + 120
@@ -197,7 +202,7 @@ def test_sketch_change_is_recompiled_and_reloaded(watch_container):
 def test_watch_disabled_does_not_reload(tmp_path):
     client = docker.from_env()
 
-    (tmp_path / "sketch.ino").write_text(SKETCH_V1)
+    (tmp_path / "sketch.ino").write_text(SKETCH)
 
     container = client.containers.run(
         IMAGE,
@@ -218,14 +223,14 @@ def test_watch_disabled_does_not_reload(tmp_path):
         try:
             assert listener.probe_pin("8", timeout=30), \
                 "Initial firmware (must drive pin 8) is not running"
-            # Subscribe to v2's pin: it must never be driven high.
+            # Subscribe to the would-be reloaded pin: it must never be driven high.
             listener.send({"type": "pinMode", "pin": "9", "mode": "digital"})
 
             time.sleep(1.1)
-            (tmp_path / "sketch.ino").write_text(SKETCH_V2)
+            set_pin(tmp_path / "sketch.ino", 9)
 
             assert not listener.wait_for_pin_state("9", True, timeout=10), \
-                "WATCH=false must not reload the sketch (v2 must not run)"
+                "WATCH=false must not reload the sketch (pin 9 must not be driven)"
             assert not listener.wait_for_disconnect(0.5), \
                 "WATCH=false must not restart the simulator"
             assert listener.wait_for_pin_state("8", True, timeout=10), \

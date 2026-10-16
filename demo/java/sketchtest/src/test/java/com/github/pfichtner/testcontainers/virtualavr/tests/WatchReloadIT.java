@@ -8,7 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -25,33 +27,41 @@ import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
  */
 class WatchReloadIT {
 
-	// v1 drives pin 8, v2 drives pin 9. The driven pin proves which firmware runs.
-	private static final String SKETCH_V1 = "void setup() { pinMode(8, OUTPUT); }" //
-			+ "void loop() { digitalWrite(8, HIGH); delay(200); digitalWrite(8, LOW); delay(200); }";
+	// The sketch drives a single pin. The pin is a #define so the test can change
+	// just the define (and with it the running firmware) instead of rewriting the
+	// whole sketch. Initially it drives pin 8, the reload switches it to pin 9.
+	private static final String SKETCH = "#define PIN 8\n" //
+			+ "void setup() { pinMode(PIN, OUTPUT); }\n" //
+			+ "void loop() { digitalWrite(PIN, HIGH); delay(200); digitalWrite(PIN, LOW); delay(200); }\n";
 
-	private static final String SKETCH_V2 = "void setup() { pinMode(9, OUTPUT); }" //
-			+ "void loop() { digitalWrite(9, HIGH); delay(200); digitalWrite(9, LOW); delay(200); }";
+	private static final Pattern PIN_DEFINE = Pattern.compile("#define PIN \\d+");
+
+	private static void setPin(File sketchFile, int pin) throws IOException {
+		String content = new String(Files.readAllBytes(sketchFile.toPath()), UTF_8);
+		String updated = PIN_DEFINE.matcher(content).replaceFirst("#define PIN " + pin);
+		Files.write(sketchFile.toPath(), updated.getBytes(UTF_8));
+	}
 
 	@Test
 	void sketchChangeIsRecompiledAndReloaded(@TempDir File tmpDir) throws Exception {
 		File sketchFile = new File(tmpDir, "sketch.ino");
-		Files.write(sketchFile.toPath(), SKETCH_V1.getBytes(UTF_8));
+		Files.write(sketchFile.toPath(), SKETCH.getBytes(UTF_8));
 
 		VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(sketchFile).withWatch(true, 1);
 		virtualAvrContainer.start();
 		try {
 			VirtualAvrConnection avr = virtualAvrContainer.avr();
 
-			// Initial firmware (v1) drives pin 8.
+			// Initial firmware drives pin 8.
 			avr.pinReportMode("8", DIGITAL);
 			await().atMost(60, SECONDS).until(() -> Boolean.TRUE.equals(avr.pinStates().last("8")));
 
-			// Ensure the modification time changes before rewriting the sketch.
+			// Ensure the modification time changes before switching the pin.
 			Thread.sleep(1100);
-			Files.write(sketchFile.toPath(), SKETCH_V2.getBytes(UTF_8));
+			setPin(sketchFile, 9);
 
-			// The reloaded firmware (v2) drives pin 9. Subscribe again on each
-			// attempt: the old simulator does not drive pin 9 and during the
+			// The reloaded firmware drives pin 9. Subscribe again on each attempt:
+			// the old simulator does not drive pin 9 and during the
 			// recompile/reconnect gap the connection may reject the command.
 			await().atMost(120, SECONDS).pollInterval(1, SECONDS).ignoreExceptions().untilAsserted(() -> {
 				avr.pinReportMode("9", DIGITAL);
