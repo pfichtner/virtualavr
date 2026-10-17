@@ -45,6 +45,7 @@ Environment variables supported
 - EEPROM_SIZE optional; size of EEPROM in bytes. If unset, determined by the board (BUILD_FQBN) — e.g. ATmega328P → 1024, ATmega2560 → 4096 — and falls back to 1024 for unknown boards
 - ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager's verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
 - SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp---tcp-serial-mode)
+- SERIAL_TCP_LISTEN — Listen on a TCP port for a serial client instead of creating a PTY (no host-side socat needed), see [SERIAL_TCP_LISTEN](#serial_tcp_listen---tcp-serial-listen-mode). Mutually exclusive with SERIAL_TCP
 - WS_TOKEN if set, WebSocket clients must pass the matching token as the `token` query parameter; if unset, no authentication is required
 - WATCH if set to "true", monitors the sketch file(s) in `/sketch` for changes and automatically recompiles/reloads the firmware (default "false"). The reload happens in place: the simulator process, the serial device and all WebSocket connections (including their pin subscriptions) stay untouched — clients do not observe a disconnect
 - WATCH_INTERVAL polling interval in seconds for file change detection (default 1); after a recompile the running simulator picks up the new hex file within this interval. `cpuTime` restarts at 0 with each reload while clients keep their received pin history
@@ -91,6 +92,19 @@ Notes
 - Use ```host.docker.internal``` on Docker Desktop (macOS/Windows); on Linux, use the host machine's IP address accessible from the container.
 - The container never touches the PTY in TCP mode — it talks only via TCP
 - Host socat must be started before the container starts
+
+# SERIAL_TCP_LISTEN — TCP Serial Listen Mode
+```SERIAL_TCP_LISTEN``` makes the container listen on a TCP port instead of creating a PTY inside the container. Clients connect to the published port and speak the serial protocol directly over the TCP socket — no PTY is involved anywhere (not in the container, not on the host), so no host-side socat is needed and it works on every OS Docker supports (including macOS/Windows where host PTYs are problematic).
+
+```
+docker run -e SERIAL_TCP_LISTEN=3030 -e FILENAME=myArduinoSketch.ino -p 3030:3030 -p 8080:8080 -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr
+```
+A client can now connect to port 3030 (e.g. a Firmata driver using a TCP transport) and exchange serial data with the simulated AVR, while the WebSocket on port 8080 is used for pin control as usual.
+
+Notes
+- A single client at a time is supported (no socat ```fork```): the one connecting client talks to the one simulated AVR. When the client disconnects, socat exits and so does the container. In ```WATCH``` mode the entrypoint just starts listening again.
+- ```SERIAL_TCP_LISTEN``` and ```SERIAL_TCP``` are mutually exclusive — setting both fails the container at startup
+- The WebSocket port (8080) still needs to be published separately (```-p 8080:8080```) if pin control from the host is wanted
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 

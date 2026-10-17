@@ -153,3 +153,48 @@ fail() {
   kill "$SOCAT_PID"
   wait "$ENTRYPOINT_PID" 2>/dev/null || true
 }
+
+@test "entrypoint uses TCP listen serial mode when SERIAL_TCP_LISTEN is set" {
+  export SERIAL_TCP_LISTEN="3030"
+
+  # Prepare mock socat to capture arguments and PID
+  SOCAT_CALLED_FILE="$TEST_ROOTDIR/socat_called.txt"
+  SOCAT_PID_FILE="$TEST_ROOTDIR/socat.pid"
+  mkdir -p "$TEST_ROOTDIR/mocks"
+  echo -e '#!/usr/bin/env bash\n'\
+'echo "$*" > '"$SOCAT_CALLED_FILE"'\n'\
+'sleep 60 &\necho $! > '"$SOCAT_PID_FILE" > "$TEST_ROOTDIR/mocks/socat"
+  chmod +x "$TEST_ROOTDIR/mocks/socat"
+
+  PATH="$TEST_ROOTDIR/mocks:$PATH"
+
+  # Run entrypoint
+  bash "$TEMP_ENTRYPOINT" &
+  ENTRYPOINT_PID=$!
+  sleep 1
+
+  # Verify TCP-LISTEN and port are passed to socat
+  SOCAT_CALLED=$(cat "$SOCAT_CALLED_FILE")
+  [[ "$SOCAT_CALLED" == *"TCP-LISTEN:3030"* ]] || fail "socat did not get correct TCP-LISTEN port"
+  [[ "$SOCAT_CALLED" != *"tcp:"* ]] || fail "socat should not connect out in TCP listen mode"
+
+  # Verify no PTY device created
+  [ ! -e "$TEST_ROOTDIR/dev/virtualavr0" ] || fail "/dev/virtualavr0 should not exist in TCP listen mode"
+  TMP_DEVICE=$(find "$TEST_ROOTDIR/tmp" -name "virtualavr*" -type f)
+  [ -z "$TMP_DEVICE" ] || fail "No temporary device should be created in TCP listen mode"
+
+  # Kill socat process manually
+  SOCAT_PID=$(cat "$SOCAT_PID_FILE")
+  kill "$SOCAT_PID"
+  wait "$ENTRYPOINT_PID" 2>/dev/null || true
+}
+
+@test "entrypoint fails if SERIAL_TCP and SERIAL_TCP_LISTEN are both set" {
+  export SERIAL_TCP="host.example.com:12345"
+  export SERIAL_TCP_LISTEN="3030"
+
+  run bash "$TEMP_ENTRYPOINT"
+
+  [ "$status" -ne 0 ] || fail "Entry point did not fail as expected."
+  [[ "$output" == *"mutually exclusive"* ]] || fail "Expected mutually exclusive error message not found."
+}
