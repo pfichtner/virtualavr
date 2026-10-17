@@ -24,7 +24,6 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinStates;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -95,16 +94,13 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	private final Gson gson = new GsonBuilder().registerTypeAdapter(PinState.class, new PinStateJsonDeserializer())
 			.create();
 
-	private final List<VirtualAvrConnection.Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
-	private final List<VirtualAvrConnection.Listener<SerialDebug>> serialDebugListeners = new CopyOnWriteArrayList<>();
-	private final List<VirtualAvrConnection.Listener<CommandReply>> commandReplyListeners = new CopyOnWriteArrayList<>();
-	private final List<VirtualAvrConnection.Listener<FirmwareReload>> firmwareReloadListeners = new CopyOnWriteArrayList<>();
+	private final Map<Class<?>, List<VirtualAvrConnection.Listener<?>>> listeners = new ConcurrentHashMap<>();
 	private final DefaultPinStates pinStates = new DefaultPinStates();
 	private final Map<String, PinReportMode> pinReportModes = new ConcurrentHashMap<>();
 	private final List<CompletableFuture<CommandReply>> pendingReplies = new CopyOnWriteArrayList<>();
 	private final AtomicBoolean reconnecting = new AtomicBoolean();
 	private volatile boolean closedByUser;
-	private boolean debugSerial;
+	private volatile boolean debugSerial;
 
 	private static final long RECONNECT_INTERVAL_MILLIS = 1000;
 
@@ -142,8 +138,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		String tokenQuery = container.token() //
 				.map(token -> "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8)) //
 				.orElse("");
-		URI serverUri = URI.create(
-				format("ws://%s:%s%s", "localhost", container.getFirstMappedPort(), tokenQuery));
+		URI serverUri = URI.create(format("ws://%s:%s%s", "localhost", container.getFirstMappedPort(), tokenQuery));
 		return new DefaultVirtualAvrConnection(serverUri)
 				.addPinStateListener(p -> logger.info("Pin {} = {}", p.getPin(), p.getState()));
 	}
@@ -200,48 +195,57 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		return isOpen();
 	}
 
-	public VirtualAvrConnection addPinStateListener(VirtualAvrConnection.Listener<PinState> listener) {
-		pinStateListeners.add(listener);
+	private <T> DefaultVirtualAvrConnection addListener(Class<T> type, VirtualAvrConnection.Listener<T> listener) {
+		listeners.computeIfAbsent(type, __ -> new CopyOnWriteArrayList<Listener<?>>()).add(listener);
 		return this;
+	}
+
+	private <T> DefaultVirtualAvrConnection removeListener(Class<T> type, VirtualAvrConnection.Listener<T> listener) {
+		getListeners(type).remove(listener);
+		return this;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> List<Listener<T>> getListeners(Class<T> type) {
+		return (List<Listener<T>>) (List<?>) listeners.getOrDefault(type, List.of());
+	}
+
+	public VirtualAvrConnection addPinStateListener(VirtualAvrConnection.Listener<PinState> listener) {
+		return addListener(PinState.class, listener);
 	}
 
 	public VirtualAvrConnection removePinStateListener(VirtualAvrConnection.Listener<PinState> listener) {
-		pinStateListeners.remove(listener);
-		return this;
+		return removeListener(PinState.class, listener);
 	}
 
 	public VirtualAvrConnection addSerialDebugListener(VirtualAvrConnection.Listener<SerialDebug> listener) {
-		serialDebugListeners.add(listener);
+		addListener(SerialDebug.class, listener);
 		return serialDebugListenersChanged();
 	}
 
 	public VirtualAvrConnection removeSerialDebugListener(VirtualAvrConnection.Listener<SerialDebug> listener) {
-		serialDebugListeners.remove(listener);
+		removeListener(SerialDebug.class, listener);
 		return serialDebugListenersChanged();
 	}
 
 	private VirtualAvrConnection serialDebugListenersChanged() {
-		return debugSerial(!serialDebugListeners.isEmpty());
+		return debugSerial(!getListeners(SerialDebug.class).isEmpty());
 	}
 
 	public VirtualAvrConnection addCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener) {
-		commandReplyListeners.add(listener);
-		return this;
+		return addListener(CommandReply.class, listener);
 	}
 
 	public VirtualAvrConnection removeCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener) {
-		commandReplyListeners.remove(listener);
-		return this;
+		return removeListener(CommandReply.class, listener);
 	}
 
 	public VirtualAvrConnection addFirmwareReloadListener(VirtualAvrConnection.Listener<FirmwareReload> listener) {
-		firmwareReloadListeners.add(listener);
-		return this;
+		return addListener(FirmwareReload.class, listener);
 	}
 
 	public VirtualAvrConnection removeFirmwareReloadListener(VirtualAvrConnection.Listener<FirmwareReload> listener) {
-		firmwareReloadListeners.remove(listener);
-		return this;
+		return removeListener(FirmwareReload.class, listener);
 	}
 
 	@Override
@@ -273,15 +277,15 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 			return;
 		}
 		if (isResponse(json)) {
-			callAccept(commandReplyListeners, message, CommandReply.class);
+			callListeners(CommandReply.class, message);
 		} else {
 			String type = String.valueOf(json.get("type"));
 			if ("pinState".equals(type)) {
-				callAccept(pinStateListeners, message, PinState.class);
+				callListeners(PinState.class, message);
 			} else if ("serialDebug".equals(type)) {
-				callAccept(serialDebugListeners, message, SerialDebug.class);
+				callListeners(SerialDebug.class, message);
 			} else if ("firmwareReload".equals(type)) {
-				callAccept(firmwareReloadListeners, message, FirmwareReload.class);
+				callListeners(FirmwareReload.class, message);
 			}
 		}
 	}
@@ -298,8 +302,8 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		return values.get(name) != null;
 	}
 
-	private <T> void callAccept(List<VirtualAvrConnection.Listener<T>> listeners, String message, Class<T> clazz) {
-		callAccept(listeners, gson.fromJson(message, clazz));
+	private <T> void callListeners(Class<T> clazz, String message) {
+		callAccept(getListeners(clazz), gson.fromJson(message, clazz));
 	}
 
 	private static <T> void callAccept(List<VirtualAvrConnection.Listener<T>> listeners, T message) {
