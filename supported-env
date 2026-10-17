@@ -1,0 +1,41 @@
+# Environment variables supported by the virtualavr container.
+# One variable name per line. Lines starting with '#' are comments and empty
+# lines are ignored. Consumers (e.g. the Java testcontainers wrapper) may use
+# this list to validate that a requested feature is actually supported by the
+# image they are about to run.
+
+# Device / serial configuration
+VIRTUALDEVICE
+DEVICEUSER
+DEVICEGROUP
+DEVICEMODE
+OVERWRITE_VIRTUALDEVICE
+BAUDRATE
+VERBOSITY
+DEBUG
+SERIAL_TCP
+
+# Sketch / build configuration
+FILENAME
+BUILD_FQBN
+BUILD_EXTRA_FLAGS
+ENABLE_UNSAFE_INSTALL
+
+# Simulator configuration
+PAUSE_ON_START
+REALTIME
+INSTRUCTION_CHUNK_SIZE
+PUBLISH_MILLIS
+BATCH_MILLIS
+MIN_DIFF_TO_PUBLISH
+
+# EEPROM configuration
+EEPROM_FILE
+EEPROM_SIZE
+
+# WebSocket configuration
+WS_TOKEN
+
+# Watch (hot reload) configuration
+WATCH
+WATCH_INTERVAL

@@ -7,6 +7,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 import static org.testcontainers.containers.BindMode.READ_WRITE;
 
@@ -29,8 +30,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN,
-		WATCH, WATCH_INTERVAL
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN, WATCH,
+		WATCH_INTERVAL
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -45,6 +46,12 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	protected static final int WEBSOCKET_PORT = 8080;
 	private static final String SOCAT_VERBOSE = "-d -d -v";
 
+	/**
+	 * Path of the file baked into the image that lists the names of the environment
+	 * variables the image supports, one per line.
+	 */
+	static final String SUPPORTED_ENV_FILE = "/usr/local/share/virtualavr/supported-env";
+
 	public static final String hostDev = "/dev";
 	public static final String containerDev = "/dev";
 
@@ -54,6 +61,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private SerialConnection serialConnection;
 	private TcpSerialModeSupport tcpSerialModeSupport;
 	private final Set<String> explicitlySet = new HashSet<>();
+	private final Set<String> requiredFeatures = new HashSet<>();
+	private boolean strictFeatureCheck = true;
 
 	public VirtualAvrContainer() {
 		this(DEFAULT_IMAGE_NAME.withTag(DEFAULT_TAG));
@@ -161,7 +170,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer<?> withWatch() {
 		return withWatch(true);
 	}
-	
+
 	/**
 	 * Enables watch mode with the given polling interval for file change detection:
 	 * monitors the sketch file(s) in {@code /sketch} for changes and automatically
@@ -173,7 +182,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer<?> withWatchInterval(int seconds) {
 		return withWatch().withEnv(EnvVars.WATCH_INTERVAL, seconds);
 	}
-	
+
 	/**
 	 * Enables or disables watch mode.
 	 *
@@ -183,6 +192,24 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 */
 	public VirtualAvrContainer<?> withWatch(boolean watch) {
 		return withEnv(EnvVars.WATCH, watch);
+	}
+
+	/**
+	 * Enables or disables strict validation of the requested features against the
+	 * env vars reported as supported by the used docker image. If the image does
+	 * not report its supported env vars (e.g. an image predating the capability
+	 * list), a requested feature cannot be validated: by default this
+	 * undeterminable state fails fast by throwing an {@link IllegalStateException}
+	 * from {@link #start()}. Disabling this only logs a warning instead. A feature
+	 * the image is known to not support always fails, regardless of this setting.
+	 *
+	 * @param strict {@code true} (the default) to fail if the supported features
+	 *               cannot be determined; {@code false} to only log a warning
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withStrictFeatureCheck(boolean strict) {
+		this.strictFeatureCheck = strict;
+		return self();
 	}
 
 	/**
@@ -216,6 +243,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	@Override
 	public SELF withEnv(String key, String value) {
 		explicitlySet.add(key);
+		requiredFeatures.add(key);
 		return super.withEnv(key, value);
 	}
 
@@ -269,7 +297,82 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 				tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
 		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);
 		super.start();
+		try {
+			verifyImageFeaturesSupportsRequestedFeatures();
+		} catch (RuntimeException e) {
+			try {
+				stop();
+			} catch (RuntimeException stopFailure) {
+				e.addSuppressed(stopFailure);
+			}
+			throw e;
+		}
 		debug().filter(TRUE::equals).ifPresent(b -> debugStartOut());
+	}
+
+	/**
+	 * Verifies that the used image supports all requested features. The image
+	 * reports the env vars it supports in a file (see
+	 * {@value #SUPPORTED_ENV_FILE}). If the image does not carry such a file, the
+	 * supported features cannot be determined and strict checking
+	 * ({@link #withStrictFeatureCheck(boolean)}) is enabled by default; pass
+	 * {@code false} to only log a warning instead.
+	 *
+	 * @throws IllegalStateException if the image is known to not support a
+	 *                               requested feature, or if strict checking is
+	 *                               enabled and the supported features cannot be
+	 *                               determined
+	 */
+	void verifyImageFeaturesSupportsRequestedFeatures() {
+		Set<String> supported = imageSupportedEnvVars();
+		String missing = requiredFeatures.stream().filter(not(supported::contains)).collect(joining(", "));
+		if (!missing.isEmpty()) {
+			String message = format("Image '%s' does not support the requested feature(s): %s", getDockerImageName(),
+					missing);
+			if (strictFeatureCheck) {
+				throw new IllegalStateException(message);
+			}
+			logger.warn(message);
+		}
+	}
+
+	/**
+	 * Reads the env vars the used image reports as supported. Returns an empty set
+	 * if the image does not carry the file (e.g. an image predating it) or if it
+	 * cannot be read.
+	 *
+	 * @return the set of env var names supported by the image or empty if unknown
+	 */
+	Set<String> imageSupportedEnvVars() {
+		try {
+			ExecResult result = execInContainer("cat", SUPPORTED_ENV_FILE);
+			if (result.getExitCode() == 0) {
+				return parseSupportedEnvVars(result.getStdout());
+			}
+			logger.warn("Could not read '%s' from image '%s': %s", SUPPORTED_ENV_FILE, getDockerImageName(),
+					result.getStderr());
+			return Set.of();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	/**
+	 * Parses the content of the supported-env file. Blank lines and lines starting
+	 * with {@code #} are ignored.
+	 *
+	 * @param content the file content
+	 * @return the set of env var names contained in the content
+	 */
+	static Set<String> parseSupportedEnvVars(String content) {
+		return content.lines() //
+				.map(String::trim) //
+				.filter(not(String::isEmpty)) //
+				.filter(not(line -> line.startsWith("#"))) //
+				.collect(toSet());
 	}
 
 	private void debugStartOut() {
