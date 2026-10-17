@@ -1,13 +1,13 @@
 package com.github.pfichtner.testcontainers.virtualavr;
 
 import static java.lang.String.format;
+import static java.net.URLEncoder.encode;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toMap;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -135,12 +135,14 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 
 	@SuppressWarnings("resource")
 	public static VirtualAvrConnection connectionToVirtualAvr(VirtualAvrContainer<?> container) {
-		String tokenQuery = container.token() //
-				.map(token -> "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8)) //
-				.orElse("");
-		URI serverUri = URI.create(format("ws://%s:%s%s", "localhost", container.getWebsocketPort(), tokenQuery));
-		return new DefaultVirtualAvrConnection(serverUri)
+		String baseUri = format("ws://%s:%s", "localhost", container.getWebsocketPort());
+		logger.info("WebSocket: Connecting to {}", baseUri);
+		return new DefaultVirtualAvrConnection(URI.create(baseUri + appendToken(container)))
 				.addPinStateListener(p -> logger.info("Pin {} = {}", p.getPin(), p.getState()));
+	}
+
+	private static String appendToken(VirtualAvrContainer<?> container) {
+		return container.token().map(t -> "?token=" + encode(t, UTF_8)).orElse("");
 	}
 
 	public DefaultVirtualAvrConnection(URI serverUri) {
@@ -148,6 +150,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		addPinStateListener(pinStates::add);
 		try {
 			connectBlocking();
+			logger.info("WebSocket: Connection established: isConnected={}", isConnected());
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}

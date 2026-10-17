@@ -257,9 +257,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	public synchronized VirtualAvrConnection avr() {
 		if (avr == null) {
-			logger.info("WebSocket: Connecting to ws://localhost:{}", getWebsocketPort());
 			avr = wrapWithGracefulClose(connectionToVirtualAvr(this), VirtualAvrConnection.class);
-			logger.info("WebSocket: Connection established: isConnected={}", avr.isConnected());
 		}
 		return avr;
 	}
