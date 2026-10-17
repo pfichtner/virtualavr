@@ -3,6 +3,7 @@ package com.github.pfichtner.testcontainers.virtualavr.tests;
 import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +51,7 @@ class WatchReloadIT {
 	void sketchChangeIsRecompiledAndReloaded(@TempDir File tmpDir) throws Exception {
 		File sketchFile = new File(tmpDir, "sketch.ino");
 		Files.write(sketchFile.toPath(), SKETCH.getBytes(UTF_8));
+		long initialWriteNanos = System.nanoTime();
 
 		VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer(sketchFile).withWatchInterval(1);
 		virtualAvrContainer.start();
@@ -63,8 +65,7 @@ class WatchReloadIT {
 			avr.addFirmwareReloadListener(__r -> reloaded.set(true));
 			awaitPinGetsHigh(avr, PIN);
 
-			// Ensure the modification time changes before switching the pin.
-			Thread.sleep(1100);
+			waitRemainingMillis(initialWriteNanos);
 			// cpuTime is derived from the CPU cycle counter; a reload creates a fresh
 			// CPU, so the reloaded firmware's cpuTime must restart instead of
 			// continuing the previous firmware's one.
@@ -81,6 +82,16 @@ class WatchReloadIT {
 			assertThat(cpuTimes(avr, PIN_CHANGED, (first, __) -> first)).isLessThan(lastCpuTimeOfOldFirmware);
 		} finally {
 			virtualAvrContainer.stop();
+		}
+	}
+
+	private void waitRemainingMillis(long initialWriteNanos) throws InterruptedException {
+		// Ensure the modification time changes before switching the pin; the
+		// container startup and the wait above already consumed part of the
+		// required 1100ms, so only sleep what is left.
+		long remainingMillis = 1100 - NANOSECONDS.toMillis(System.nanoTime() - initialWriteNanos);
+		if (remainingMillis > 0) {
+			Thread.sleep(remainingMillis);
 		}
 	}
 
