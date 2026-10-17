@@ -1,5 +1,6 @@
 package com.github.pfichtner.testcontainers.virtualavr.tests;
 
+import static com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait.awaiter;
 import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSupport.virtualAvrContainer;
 import static com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection.PinReportMode.DIGITAL;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -21,6 +22,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.github.pfichtner.testcontainers.virtualavr.SerialConnection;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrConnection;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
@@ -41,10 +43,12 @@ class WatchReloadIT {
 	// The sketch drives a single pin. The pin is a #define so the test can change
 	// just the define (and with it the running firmware) instead of rewriting the
 	// whole sketch. Initially it drives pin 8, the reload switches it to pin 9.
+	// The sketch also prints the pin number so the test can verify the serial
+	// connection keeps working across the reload.
 	private static final String SKETCH = Stream.of( //
 			"#define PIN " + PIN, //
-			"void setup() { pinMode(PIN, OUTPUT); }", //
-			"void loop() { digitalWrite(PIN, HIGH); delay(200); digitalWrite(PIN, LOW); delay(200); }" //
+			"void setup() { pinMode(PIN, OUTPUT); Serial.begin(115200); }", //
+			"void loop() { digitalWrite(PIN, HIGH); Serial.println(PIN); delay(200); digitalWrite(PIN, LOW); delay(200); }" //
 	).collect(joining("\n"));
 
 	@Test
@@ -57,29 +61,39 @@ class WatchReloadIT {
 		virtualAvrContainer.start();
 		try {
 			VirtualAvrConnection avr = virtualAvrContainer.avr();
+			// Open the serial connection once, before the reload, and keep it open
+			// across the reload to verify it survives the firmware hot-swap.
+			try (SerialConnection serial = virtualAvrContainer.serialConnection()) {
 
-			// Subscribe to both pins up front: pin 8 proves the initial firmware
-			// runs, pin 9 proves the reloaded firmware runs.
-			avr.pinReportMode(PIN, DIGITAL).pinReportMode(PIN_CHANGED, DIGITAL);
-			AtomicBoolean reloaded = new AtomicBoolean();
-			avr.addFirmwareReloadListener(__r -> reloaded.set(true));
-			awaitPinGetsHigh(avr, PIN);
+				// Subscribe to both pins up front: pin 8 proves the initial firmware
+				// runs, pin 9 proves the reloaded firmware runs.
+				avr.pinReportMode(PIN, DIGITAL).pinReportMode(PIN_CHANGED, DIGITAL);
+				AtomicBoolean reloaded = new AtomicBoolean();
+				avr.addFirmwareReloadListener(__ -> reloaded.set(true));
+				awaitPinGetsHigh(avr, PIN);
+				// The initial firmware prints its pin number over serial.
+				awaiter(serial).awaitReceived(received -> received.contains(PIN));
 
-			waitRemainingMillis(initialWriteNanos);
-			// cpuTime is derived from the CPU cycle counter; a reload creates a fresh
-			// CPU, so the reloaded firmware's cpuTime must restart instead of
-			// continuing the previous firmware's one.
-			double lastCpuTimeOfOldFirmware = cpuTimes(avr, PIN, (__, last) -> last);
-			// Drop the states collected so far (including the state each subscription
-			// reported immediately) so the first pin 9 state below is produced by the
-			// reloaded firmware.
-			avr.pinStates().clear();
-			changePinDefine(sketchFile, PIN_CHANGED);
+				waitRemainingMillis(initialWriteNanos);
+				// cpuTime is derived from the CPU cycle counter; a reload creates a fresh
+				// CPU, so the reloaded firmware's cpuTime must restart instead of
+				// continuing the previous firmware's one.
+				double lastCpuTimeOfOldFirmware = cpuTimes(avr, PIN, (__, last) -> last);
+				changePinDefine(sketchFile, PIN_CHANGED);
 
-			awaitPinGetsHigh(avr, PIN_CHANGED);
-			await().atMost(60, SECONDS).untilTrue(reloaded);
-			assertThat(avr.isConnected()).isTrue();
-			assertThat(cpuTimes(avr, PIN_CHANGED, (first, __) -> first)).isLessThan(lastCpuTimeOfOldFirmware);
+				await().atMost(60, SECONDS).untilTrue(reloaded);
+				// Drop the states collected so far (including the state each subscription
+				// reported immediately) so the first pin 9 state below is produced by the
+				// reloaded firmware.
+				avr.pinStates().clear();
+
+				awaitPinGetsHigh(avr, PIN_CHANGED);
+				assertThat(avr.isConnected()).isTrue();
+				assertThat(cpuTimes(avr, PIN_CHANGED, (first, __) -> first)).isLessThan(lastCpuTimeOfOldFirmware);
+				// The same serial connection must still deliver data, now the
+				// reloaded firmware printing the new pin number.
+				awaiter(serial).awaitReceived(received -> received.contains(PIN_CHANGED));
+			}
 		} finally {
 			virtualAvrContainer.stop();
 		}
