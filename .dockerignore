@@ -4,5 +4,6 @@
 !/entrypoint.sh
 !/healthcheck.js
 !/virtualavr-compile-arduino
+!/supported-env
 !/sketch/
 

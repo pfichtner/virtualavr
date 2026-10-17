@@ -21,7 +21,7 @@ docker build . --file Dockerfile --tag pfichtner/virtualavr:$DOCKER_IMAGE_TAG
 echo "Running Java tests..."
 mvn -B -DTESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=localhost \
     -Dvirtualavr.docker.tag=$DOCKER_IMAGE_TAG \
-    -Dtest=com.github.pfichtner.testcontainers.virtualavr.tests.*IT,com.github.pfichtner.testcontainers.virtualavr.demo.*IT verify --file demo/java/sketchtest/pom.xml
+    -Dtest=com.github.pfichtner.testcontainers.virtualavr.tests.*IT,com.github.pfichtner.testcontainers.virtualavr.demo.*IT,com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainerFeatureCheckTest verify --file demo/java/sketchtest/pom.xml
 
 
 # Run Java demo

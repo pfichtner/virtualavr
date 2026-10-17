@@ -13,6 +13,7 @@ WORKDIR /sketch
 ADD /sketch /sketch/
 
 ADD entrypoint.sh virtualavr-compile-arduino /usr/local/bin/
+ADD supported-env /usr/local/share/virtualavr/supported-env
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 EXPOSE 8080

@@ -13,6 +13,7 @@ RUN npm i
 ADD virtualavr.js healthcheck.js /app/
 
 ADD entrypoint.sh /usr/local/bin
+ADD supported-env /usr/local/share/virtualavr/supported-env
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 EXPOSE 8080

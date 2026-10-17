@@ -49,6 +49,8 @@ Environment variables supported
 - WATCH if set to "true", monitors the sketch file(s) in `/sketch` for changes and automatically recompiles/reloads the firmware (default "false"). The reload happens in place: the simulator process, the serial device and all WebSocket connections (including their pin subscriptions) stay untouched — clients do not observe a disconnect
 - WATCH_INTERVAL polling interval in seconds for file change detection (default 1); after a recompile the running simulator picks up the new hex file within this interval. `cpuTime` restarts at 0 with each reload while clients keep their received pin history
 
+The environment variables supported by an image are listed in the file `/usr/local/share/virtualavr/supported-env` (one name per line, `#` starts a comment). Tooling such as the Java testcontainers module may read this file to validate that a requested feature is supported before relying on it.
+
 # Screencast of usage
 The screencast is not uptodate!!!
 - The prefered way of setting pin states is no more "fakePinState" but "pinState"
@@ -102,6 +104,7 @@ The library provides:
 - a typed VirtualAvrConnection API for interacting with the simulator
 - convenience helpers for pin states, reporting modes, and timing
 - automatic WebSocket reconnection (restoring pin subscriptions) if the simulator process goes away (crash recovery; note that WATCH reloads do not drop the connection, they happen in place)
+- feature validation: feature setters (e.g. `withEepromFile`, `withWatch`) verify that the used image actually supports the required environment variable by reading the image's capability file (`/usr/local/share/virtualavr/supported-env`). A feature the image is known to not support fails fast; if the image does not report its supported env vars (e.g. an image predating the capability file) this fails fast as well by default — use `withStrictFeatureCheck(false)` to only log a warning in that case
 
 ```
 <dependency>
