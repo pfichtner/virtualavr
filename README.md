@@ -110,7 +110,7 @@ The library provides:
 <dependency>
     <groupId>io.github.pfichtner</groupId>
     <artifactId>testcontainers-virtualavr</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.4</version>
 </dependency>
 ```
 
