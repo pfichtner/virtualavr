@@ -11,7 +11,10 @@ import static org.awaitility.Awaitility.await;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.DoubleBinaryOperator;
 import java.util.regex.Pattern;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -56,14 +59,26 @@ class WatchReloadIT {
 			// Subscribe to both pins up front: pin 8 proves the initial firmware
 			// runs, pin 9 proves the reloaded firmware runs.
 			avr.pinReportMode(PIN, DIGITAL).pinReportMode(PIN_CHANGED, DIGITAL);
+			AtomicBoolean reloaded = new AtomicBoolean();
+			avr.addFirmwareReloadListener(__r -> reloaded.set(true));
 			awaitPinGetsHigh(avr, PIN);
 
 			// Ensure the modification time changes before switching the pin.
 			Thread.sleep(1100);
+			// cpuTime is derived from the CPU cycle counter; a reload creates a fresh
+			// CPU, so the reloaded firmware's cpuTime must restart instead of
+			// continuing the previous firmware's one.
+			double lastCpuTimeOfOldFirmware = cpuTimes(avr, PIN, (__, last) -> last);
+			// Drop the states collected so far (including the state each subscription
+			// reported immediately) so the first pin 9 state below is produced by the
+			// reloaded firmware.
+			avr.pinStates().clear();
 			changePinDefine(sketchFile, PIN_CHANGED);
 
 			awaitPinGetsHigh(avr, PIN_CHANGED);
+			await().atMost(60, SECONDS).untilTrue(reloaded);
 			assertThat(avr.isConnected()).isTrue();
+			assertThat(cpuTimes(avr, PIN_CHANGED, (first, __) -> first)).isLessThan(lastCpuTimeOfOldFirmware);
 		} finally {
 			virtualAvrContainer.stop();
 		}
@@ -77,6 +92,18 @@ class WatchReloadIT {
 
 	private void awaitPinGetsHigh(VirtualAvrConnection avr, String pin) {
 		await().atMost(60, SECONDS).until(() -> Boolean.TRUE.equals(avr.pinStates().last(pin)));
+	}
+
+	private static double cpuTimes(VirtualAvrConnection avr, String pin, DoubleBinaryOperator op) {
+		return cpuTimes(avr, pin) //
+				.reduce(op) //
+				.orElseThrow(() -> new IllegalStateException("No pin state reported for pin " + pin));
+	}
+
+	private static DoubleStream cpuTimes(VirtualAvrConnection avr, String pin) {
+		return avr.pinStates().stream() //
+				.filter(p -> p.getPin().equals(pin)) //
+				.mapToDouble(p -> p.getCpuTime());
 	}
 
 }

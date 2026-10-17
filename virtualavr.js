@@ -575,6 +575,7 @@ function main() {
                 }
                 shouldStop = false;
                 runPromise = runCode(hexPath, callbackPinState);
+                callbackPinState({ type: 'firmwareReload' });
             } while (reloadQueued && !shuttingDown);
         } finally {
             reloading = false;

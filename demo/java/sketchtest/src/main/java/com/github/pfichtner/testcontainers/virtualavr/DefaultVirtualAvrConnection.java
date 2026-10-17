@@ -98,6 +98,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 	private final List<VirtualAvrConnection.Listener<PinState>> pinStateListeners = new CopyOnWriteArrayList<>();
 	private final List<VirtualAvrConnection.Listener<SerialDebug>> serialDebugListeners = new CopyOnWriteArrayList<>();
 	private final List<VirtualAvrConnection.Listener<CommandReply>> commandReplyListeners = new CopyOnWriteArrayList<>();
+	private final List<VirtualAvrConnection.Listener<FirmwareReload>> firmwareReloadListeners = new CopyOnWriteArrayList<>();
 	private final DefaultPinStates pinStates = new DefaultPinStates();
 	private final Map<String, PinReportMode> pinReportModes = new ConcurrentHashMap<>();
 	private final List<CompletableFuture<CommandReply>> pendingReplies = new CopyOnWriteArrayList<>();
@@ -233,6 +234,16 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		return this;
 	}
 
+	public VirtualAvrConnection addFirmwareReloadListener(VirtualAvrConnection.Listener<FirmwareReload> listener) {
+		firmwareReloadListeners.add(listener);
+		return this;
+	}
+
+	public VirtualAvrConnection removeFirmwareReloadListener(VirtualAvrConnection.Listener<FirmwareReload> listener) {
+		firmwareReloadListeners.remove(listener);
+		return this;
+	}
+
 	@Override
 	public void onOpen(ServerHandshake handshakedata) {
 		// Crash recovery: after reconnecting to a restarted simulator process,
@@ -269,6 +280,8 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 				callAccept(pinStateListeners, message, PinState.class);
 			} else if ("serialDebug".equals(type)) {
 				callAccept(serialDebugListeners, message, SerialDebug.class);
+			} else if ("firmwareReload".equals(type)) {
+				callAccept(firmwareReloadListeners, message, FirmwareReload.class);
 			}
 		}
 	}

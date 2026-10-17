@@ -155,6 +155,10 @@ public interface VirtualAvrConnection extends AutoCloseable {
 
 	}
 
+	public static class FirmwareReload {
+
+	}
+
 	interface Listener<T> {
 		void accept(T t);
 	}
@@ -174,6 +178,10 @@ public interface VirtualAvrConnection extends AutoCloseable {
 	VirtualAvrConnection addCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener);
 
 	VirtualAvrConnection removeCommandReplyListener(VirtualAvrConnection.Listener<CommandReply> listener);
+
+	VirtualAvrConnection addFirmwareReloadListener(VirtualAvrConnection.Listener<FirmwareReload> listener);
+
+	VirtualAvrConnection removeFirmwareReloadListener(VirtualAvrConnection.Listener<FirmwareReload> listener);
 
 	PinStates pinStates();
 
