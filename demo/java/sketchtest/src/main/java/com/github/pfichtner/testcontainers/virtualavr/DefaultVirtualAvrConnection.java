@@ -138,7 +138,7 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		String tokenQuery = container.token() //
 				.map(token -> "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8)) //
 				.orElse("");
-		URI serverUri = URI.create(format("ws://%s:%s%s", "localhost", container.getFirstMappedPort(), tokenQuery));
+		URI serverUri = URI.create(format("ws://%s:%s%s", "localhost", container.getWebsocketPort(), tokenQuery));
 		return new DefaultVirtualAvrConnection(serverUri)
 				.addPinStateListener(p -> logger.info("Pin {} = {}", p.getPin(), p.getState()));
 	}
