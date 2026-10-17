@@ -278,15 +278,15 @@ public class DefaultVirtualAvrConnection extends WebSocketClient implements Virt
 		}
 		if (isResponse(json)) {
 			callListeners(CommandReply.class, message);
-		} else {
-			String type = String.valueOf(json.get("type"));
-			if ("pinState".equals(type)) {
-				callListeners(PinState.class, message);
-			} else if ("serialDebug".equals(type)) {
-				callListeners(SerialDebug.class, message);
-			} else if ("firmwareReload".equals(type)) {
-				callListeners(FirmwareReload.class, message);
-			}
+			return;
+		}
+		String type = String.valueOf(json.get("type"));
+		if ("pinState".equals(type)) {
+			callListeners(PinState.class, message);
+		} else if ("serialDebug".equals(type)) {
+			callListeners(SerialDebug.class, message);
+		} else if ("firmwareReload".equals(type)) {
+			callListeners(FirmwareReload.class, message);
 		}
 	}
 
