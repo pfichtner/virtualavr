@@ -183,9 +183,9 @@ fail() {
   TMP_DEVICE=$(find "$TEST_ROOTDIR/tmp" -name "virtualavr*" -type f)
   [ -z "$TMP_DEVICE" ] || fail "No temporary device should be created in TCP listen mode"
 
-  # Kill socat process manually
-  SOCAT_PID=$(cat "$SOCAT_PID_FILE")
-  kill "$SOCAT_PID"
+  # Kill entrypoint; its trap stops the listen loop (mock socat exits
+  # immediately so the loop would otherwise keep it alive forever)
+  kill "$ENTRYPOINT_PID"
   wait "$ENTRYPOINT_PID" 2>/dev/null || true
 }
 

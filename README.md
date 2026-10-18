@@ -102,9 +102,9 @@ docker run -e SERIAL_TCP_LISTEN=3030 -e FILENAME=myArduinoSketch.ino -p 3030:303
 A client can now connect to port 3030 (e.g. a Firmata driver using a TCP transport) and exchange serial data with the simulated AVR, while the WebSocket on port 8080 is used for pin control as usual.
 
 Notes
-- A single client at a time is supported (no socat ```fork```): the one connecting client talks to the one simulated AVR. When the client disconnects, socat exits and so does the container. In ```WATCH``` mode the entrypoint restarts socat to listen again (the simulator restarts when the next client connects).
+- A single client at a time is supported (no socat ```fork```): the one connecting client talks to the one simulated AVR. When the client disconnects, socat exits and the entrypoint starts listening again after about a second, so the container survives reconnects (the simulator restarts when the next client connects).
 - ```SERIAL_TCP_LISTEN``` and ```SERIAL_TCP``` are mutually exclusive — setting both fails the container at startup
-- The WebSocket port (8080) still needs to be published separately (```-p 8080:8080```) if pin control from the host is wanted. The node/WebSocket server starts only when the first TCP serial client connects (no ```fork```), so Docker HEALTHCHECK may report unhealthy until a client connects.
+- The WebSocket port (8080) still needs to be published separately (```-p 8080:8080```) if pin control from the host is wanted. The node/WebSocket server starts only when the first TCP serial client connects (no ```fork```), so the built-in Docker HEALTHCHECK is skipped in this mode (it would report unhealthy until a client connects).
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 

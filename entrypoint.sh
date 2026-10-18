@@ -50,8 +50,14 @@ start_simulator() {
     if [ -n "$SERIAL_TCP_LISTEN" ]; then
         echo "Using TCP serial listen mode: listening on port $SERIAL_TCP_LISTEN"
         # No fork: a single client at a time gets the one simulator instance.
-        # When the client disconnects socat exits; WATCH mode re-listens.
-        socat ${VERBOSITY:-} TCP-LISTEN:"$SERIAL_TCP_LISTEN",reuseaddr EXEC:"node /app/virtualavr.js $HEXFILE",pty,rawer,fdin=3,fdout=4 &
+        # When the client disconnects socat exits and node with it, the loop
+        # listens again so the container survives reconnects. The simulator
+        # (and the WebSocket server) starts when the first TCP client connects.
+        # stdin from /dev/null: a closing attach-stdin must not shut socat down.
+        ( while true; do
+            socat ${VERBOSITY:-} TCP-LISTEN:"$SERIAL_TCP_LISTEN",reuseaddr EXEC:"node /app/virtualavr.js $HEXFILE",pty,rawer,fdin=3,fdout=4 </dev/null
+            sleep 1
+        done ) &
     elif [ -n "$SERIAL_TCP" ]; then
         echo "Using TCP serial mode: connecting to $SERIAL_TCP"
         socat ${VERBOSITY:-} tcp:"$SERIAL_TCP" EXEC:"node /app/virtualavr.js $HEXFILE",pty,rawer,fdin=3,fdout=4 &
