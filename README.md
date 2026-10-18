@@ -75,6 +75,17 @@ The screencast is not uptodate!!!
 - Enable/disable serial debug ```{ "type": "serialDebug", "state": true|false }```
 - Any message that has an "replyId" gets replied by virtualavr (see [Sent by virtualavr](#sent-by-virtualavr))
 
+# Serial connection modes
+virtualavr can expose the simulated serial port in three ways:
+
+| Mode | Enable via | Direction | Host prerequisites | Typical use |
+|------|------------|-----------|--------------------|-------------|
+| PTY (default) | — | container creates a PTY, host opens it | ```-v /dev:/dev``` bind mount | Linux hosts, classic serial clients (minicom, pyserial) |
+| TCP connect ([details](#serial_tcp--tcp-serial-mode)) | ```SERIAL_TCP=host:port``` | container connects out to a TCP endpoint | socat PTY↔TCP bridge running on the host, started before the container | Docker Desktop / WSL2, where host ```/dev``` cannot be bind-mounted |
+| TCP listen ([details](#serial_tcp_listen--tcp-serial-listen-mode)) | ```SERIAL_TCP_LISTEN=port``` | container listens, serial client connects in | none — just publish the port (```-p```) | Firmata drivers / any TCP serial client, all OSes |
+
+```SERIAL_TCP``` and ```SERIAL_TCP_LISTEN``` are mutually exclusive.
+
 ## SERIAL_TCP — TCP Serial Mode
 ```SERIAL_TCP``` is mostly intended for Docker Desktop / WSL2 setups, where Docker runs inside a VM and the host PTY cannot be made available via a bind mount (```-v /dev:/dev```). It can be used on Linux as well, but in that case it is usually unnecessary. 
 ```SERIAL_TCP``` makes virtualavr connect to a TCP endpoint instead of creating a PTY inside the container.
@@ -86,14 +97,14 @@ socat -d -d pty,raw,echo=0 tcp-listen:55555,reuseaddr,fork
 This creates a PTY (e.g. /dev/pts/4) and forwards all TCP traffic on port 55555 to it.
 Starting the container (no /dev mount is needed):
 ```
-docker run -e SERIAL_TCP=host.docker.internal:55555 -e FILENAME=myArduinoSketch.ino -v /dev:/dev -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr
+docker run -e SERIAL_TCP=host.docker.internal:55555 -e FILENAME=myArduinoSketch.ino -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr
 ```
 Notes
 - Use ```host.docker.internal``` on Docker Desktop (macOS/Windows); on Linux, use the host machine's IP address accessible from the container.
 - The container never touches the PTY in TCP mode — it talks only via TCP
 - Host socat must be started before the container starts
 
-# SERIAL_TCP_LISTEN — TCP Serial Listen Mode
+## SERIAL_TCP_LISTEN — TCP Serial Listen Mode
 ```SERIAL_TCP_LISTEN``` makes the container listen on a TCP port instead of creating a PTY inside the container. Clients connect to the published port and speak the serial protocol directly over the TCP socket — no PTY is involved anywhere (not in the container, not on the host), so no host-side socat is needed and it works on every OS Docker supports (including macOS/Windows where host PTYs are problematic).
 
 ```
