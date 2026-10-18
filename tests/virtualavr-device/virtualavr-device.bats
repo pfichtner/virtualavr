@@ -197,4 +197,5 @@ fail() {
 
   [ "$status" -ne 0 ] || fail "Entry point did not fail as expected."
   [[ "$output" == *"mutually exclusive"* ]] || fail "Expected mutually exclusive error message not found."
+  unset SERIAL_TCP SERIAL_TCP_LISTEN
 }
