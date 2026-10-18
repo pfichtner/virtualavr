@@ -98,26 +98,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 * test connects to it with a plain TCP socket. No host-side socat and no
 	 * {@code /dev} bind mount are needed, so this works on every OS (including
 	 * macOS/Windows with Docker Desktop). Mutually exclusive with
-	 * {@link #withTcpSerialMode()} (connect mode); calling this after connect mode
-	 * was requested (e.g. by {@link TestcontainerSupport} on non-Linux systems)
-	 * replaces it, since no host-side resources have been created yet at
-	 * configuration time.
+	 * {@link #withTcpSerialMode()} (connect mode); if both were requested, listen
+	 * mode wins and connect mode is ignored. The mode-specific container
+	 * configuration (exposed port, wait strategy, no {@code /dev} bind) is
+	 * applied in {@link #start()}.
 	 *
 	 * @return this container instance
 	 */
 	public VirtualAvrContainer<?> withTcpSerialListenMode() {
-		tcpSerialModeSupport = null;
-		withEnv(EnvVars.SERIAL_TCP_LISTEN, SERIAL_TCP_LISTEN_PORT);
-		addExposedPort(SERIAL_TCP_LISTEN_PORT);
-		// Remove the /dev bind mount since there is no PTY in this mode
-		getBinds().removeIf(b -> b.getVolume().getPath().equals(containerDev));
-		// The default wait strategy waits for the first exposed port (the
-		// WebSocket), which in this mode only comes up when the first TCP client
-		// connects (socat has no fork). Wait for the entrypoint to finish
-		// compiling instead; a TCP connect as wait probe would itself trigger
-		// and then kill the simulator.
-		waitingFor(Wait.forLogMessage(".*Starting simulator.*", 1));
-		return self();
+		return withEnv(EnvVars.SERIAL_TCP_LISTEN, SERIAL_TCP_LISTEN_PORT);
 	}
 
 	/**
@@ -339,8 +328,12 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	@Override
 	public void start() {
-		logger.info("Starting VirtualAVR container in {} mode",
-				tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
+		boolean tcpSerialListenMode = getEnv(EnvVars.SERIAL_TCP_LISTEN) != null;
+		if (tcpSerialListenMode) {
+			prepareTcpSerialListenMode();
+		}
+		logger.info("Starting VirtualAVR container in {} mode", tcpSerialListenMode ? "TCP serial listen"
+				: tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
 		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);
 		super.start();
 		try {
@@ -354,6 +347,20 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 			throw e;
 		}
 		debug().filter(TRUE::equals).ifPresent(b -> debugStartOut());
+	}
+
+	private void prepareTcpSerialListenMode() {
+		// mutually exclusive with connect mode, listen mode wins
+		tcpSerialModeSupport = null;
+		addExposedPort(SERIAL_TCP_LISTEN_PORT);
+		// Remove the /dev bind mount since there is no PTY in this mode
+		getBinds().removeIf(b -> b.getVolume().getPath().equals(containerDev));
+		// The default wait strategy waits for the first exposed port (the
+		// WebSocket), which in this mode only comes up when the first TCP client
+		// connects (socat has no fork). Wait for the entrypoint to finish
+		// compiling instead; a TCP connect as wait probe would itself trigger
+		// and then kill the simulator.
+		waitingFor(Wait.forLogMessage(".*Starting simulator.*", 1));
 	}
 
 	/**
