@@ -24,14 +24,15 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends GenericContainer<SELF> {
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN, WATCH,
-		WATCH_INTERVAL
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, SERIAL_TCP_LISTEN, REALTIME, EEPROM_FILE, EEPROM_SIZE,
+		WS_TOKEN, WATCH, WATCH_INTERVAL
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -44,6 +45,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	private static final int DEFAULT_BAUDRATE = 115_200;
 	protected static final int WEBSOCKET_PORT = 8080;
+	static final int SERIAL_TCP_LISTEN_PORT = 3030;
 	private static final String SOCAT_VERBOSE = "-d -d -v";
 
 	/**
@@ -89,6 +91,44 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public VirtualAvrContainer<?> withTcpSerialMode() {
 		tcpSerialModeSupport = new TcpSerialModeSupport(this);
 		return self();
+	}
+
+	/**
+	 * Enables TCP serial listen mode: the container listens on a TCP port and the
+	 * test connects to it with a plain TCP socket. No host-side socat and no
+	 * {@code /dev} bind mount are needed, so this works on every OS (including
+	 * macOS/Windows with Docker Desktop). Mutually exclusive with
+	 * {@link #withTcpSerialMode()} (connect mode); calling this after connect mode
+	 * was requested (e.g. by {@link TestcontainerSupport} on non-Linux systems)
+	 * replaces it, since no host-side resources have been created yet at
+	 * configuration time.
+	 *
+	 * @return this container instance
+	 */
+	public VirtualAvrContainer<?> withTcpSerialListenMode() {
+		tcpSerialModeSupport = null;
+		withEnv(EnvVars.SERIAL_TCP_LISTEN, SERIAL_TCP_LISTEN_PORT);
+		addExposedPort(SERIAL_TCP_LISTEN_PORT);
+		// Remove the /dev bind mount since there is no PTY in this mode
+		getBinds().removeIf(b -> b.getVolume().getPath().equals(containerDev));
+		// The default wait strategy waits for the first exposed port (the
+		// WebSocket), which in this mode only comes up when the first TCP client
+		// connects (socat has no fork). Wait for the entrypoint to finish
+		// compiling instead; a TCP connect as wait probe would itself trigger
+		// and then kill the simulator.
+		waitingFor(Wait.forLogMessage(".*Starting simulator.*", 1));
+		return self();
+	}
+
+	/**
+	 * Returns the host port the container's TCP serial listener is mapped to.
+	 * Only meaningful in TCP serial listen mode (see
+	 * {@link #withTcpSerialListenMode()}).
+	 *
+	 * @return the host port to connect to with a plain TCP socket
+	 */
+	public int serialTcpListenPort() {
+		return getMappedPort(SERIAL_TCP_LISTEN_PORT);
 	}
 
 	public VirtualAvrContainer<?> withDeviceName(String ttyDevice) {
@@ -275,6 +315,10 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	public String serialPortDescriptor() {
+		if (getEnv(EnvVars.SERIAL_TCP_LISTEN) != null) {
+			throw new IllegalStateException(
+					"SERIAL_TCP_LISTEN mode has no local serial device, connect with a plain TCP socket to serialTcpListenPort() instead");
+		}
 		return Optional.ofNullable(tcpSerialModeSupport) //
 				.map(TcpSerialModeSupport::devicePath) //
 				.map(Object::toString) //
