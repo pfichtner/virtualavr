@@ -69,6 +69,43 @@ class TcpSerialListenModeIT {
 		}
 	}
 
+	@Test
+	void servesOnlyOneClientAtATime() throws Exception {
+		try (Socket first = connectWhenEchoing(0)) {
+			int probeByte = 42;
+			try (Socket second = new Socket()) {
+				int receivedBySecond = -1;
+				try {
+					second.connect(new InetSocketAddress(virtualAvrContainer.getHost(),
+							virtualAvrContainer.serialTcpListenPort()), CONNECT_TIMEOUT_MILLIS);
+					second.setSoTimeout(ECHO_TIMEOUT_MILLIS);
+					second.getOutputStream().write(probeByte);
+					second.getOutputStream().flush();
+					receivedBySecond = second.getInputStream().read();
+				} catch (IOException expected) {
+					// refused or not answered: the second client is not served
+				}
+				assertThat(receivedBySecond).describedAs("second client must not be served").isNotEqualTo(probeByte);
+			}
+			first.getOutputStream().write(1);
+			first.getOutputStream().flush();
+			assertThat(first.getInputStream().read()).isEqualTo(1);
+		}
+	}
+
+	@Test
+	void websocketStartsOnlyWithFirstClientAndHealthcheckIsSkippedUntilThen() throws Exception {
+		String healthcheckCommand = virtualAvrContainer.getContainerInfo().getConfig().getHealthcheck().getTest()
+				.get(1);
+		// the built-in healthcheck must not report unhealthy while nobody connected
+		assertThat(virtualAvrContainer.execInContainer("sh", "-c", healthcheckCommand).getExitCode()).isZero();
+		// but the WebSocket server itself is not up before the first TCP client
+		assertThat(virtualAvrContainer.execInContainer("node", "/app/healthcheck.js").getExitCode()).isNotZero();
+		try (Socket socket = connectWhenEchoing(0)) {
+			assertThat(virtualAvrContainer.execInContainer("node", "/app/healthcheck.js").getExitCode()).isZero();
+		}
+	}
+
 	/**
 	 * Connects to the container's TCP serial listener and verifies the link by an
 	 * echo round-trip. The sketch is still being compiled when the container
