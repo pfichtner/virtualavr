@@ -31,7 +31,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP, SERIAL_TCP_LISTEN, REALTIME, EEPROM_FILE, EEPROM_SIZE,
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP_LISTEN, REALTIME, EEPROM_FILE, EEPROM_SIZE,
 		WS_TOKEN, WATCH, WATCH_INTERVAL
 	}
 
@@ -61,7 +61,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
-	private TcpSerialModeSupport tcpSerialModeSupport;
+	private TcpSerialBridge tcpSerialBridge;
 	private final Set<String> explicitlySet = new HashSet<>();
 	private final Set<String> requiredFeatures = new HashSet<>();
 	private boolean strictFeatureCheck = true;
@@ -81,31 +81,53 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	/**
-	 * Enables TCP serial mode for use on macOS/Windows with Docker Desktop. In this
-	 * mode, a socat process is started on the host that creates a PTY and listens
-	 * on TCP. The container connects to this TCP port instead of creating a local
-	 * PTY device.
+	 * Enables the TCP serial bridge: the container listens on a TCP port (see
+	 * {@link #withTcpSerialListenMode()}) and a socat process on the host connects
+	 * to that port and creates a PTY. That host PTY is the serial device and can
+	 * be used via {@link #serialConnection()}.
+	 * <p>
+	 * This is needed on macOS/Windows with Docker Desktop, where the host
+	 * {@code /dev} cannot be bind-mounted into the container.
+	 * <p>
+	 * The container serves one client at a time, so the bridge and a plain TCP
+	 * client cannot be used at the same time - the last of
+	 * {@link #withTcpSerialBridge()} and {@link #withTcpSerialListenMode()} wins.
 	 *
 	 * @return this container instance
 	 */
-	public VirtualAvrContainer<?> withTcpSerialMode() {
-		tcpSerialModeSupport = new TcpSerialModeSupport(this);
+	public VirtualAvrContainer<?> withTcpSerialBridge() {
+		withTcpSerialListenMode();
+		tcpSerialBridge = new TcpSerialBridge(this);
 		return self();
+	}
+
+	/**
+	 * @return this container instance
+	 * @deprecated the TCP connect mode does not exist anymore, use
+	 *             {@link #withTcpSerialBridge()} for a host side serial device or
+	 *             {@link #withTcpSerialListenMode()} for a plain TCP client
+	 */
+	@Deprecated
+	public VirtualAvrContainer<?> withTcpSerialMode() {
+		return withTcpSerialBridge();
 	}
 
 	/**
 	 * Enables TCP serial listen mode: the container listens on a TCP port and the
 	 * test connects to it with a plain TCP socket. No host-side socat and no
 	 * {@code /dev} bind mount are needed, so this works on every OS (including
-	 * macOS/Windows with Docker Desktop). Mutually exclusive with
-	 * {@link #withTcpSerialMode()} (connect mode); if both were requested, listen
-	 * mode wins and connect mode is ignored. The mode-specific container
+	 * macOS/Windows with Docker Desktop). The mode-specific container
 	 * configuration (exposed port, wait strategy, no {@code /dev} bind) is
 	 * applied in {@link #start()}.
+	 * <p>
+	 * The container serves one client at a time, so this mode cannot be combined
+	 * with {@link #withTcpSerialBridge()} (its host bridge is a client too) - the
+	 * last of both calls wins.
 	 *
 	 * @return this container instance
 	 */
 	public VirtualAvrContainer<?> withTcpSerialListenMode() {
+		tcpSerialBridge = null;
 		return withEnv(EnvVars.SERIAL_TCP_LISTEN, SERIAL_TCP_LISTEN_PORT);
 	}
 
@@ -304,14 +326,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	public String serialPortDescriptor() {
+		if (tcpSerialBridge != null) {
+			// the host bridge provides the serial device
+			return tcpSerialBridge.devicePath().toString();
+		}
 		if (getEnv(EnvVars.SERIAL_TCP_LISTEN) != null) {
 			throw new IllegalStateException(
 					"SERIAL_TCP_LISTEN mode has no local serial device, connect with a plain TCP socket to serialTcpListenPort() instead");
 		}
-		return Optional.ofNullable(tcpSerialModeSupport) //
-				.map(TcpSerialModeSupport::devicePath) //
-				.map(Object::toString) //
-				.orElseGet(() -> format("%s/%s", hostDev, ttyDevice));
+		return format("%s/%s", hostDev, ttyDevice);
 	}
 
 	protected Optional<Boolean> debug() {
@@ -332,12 +355,13 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		if (tcpSerialListenMode) {
 			prepareTcpSerialListenMode();
 		}
-		logger.info("Starting VirtualAVR container in {} mode", tcpSerialListenMode ? "TCP serial listen"
-				: tcpSerialModeSupport == null ? "standard PTY" : "TCP serial");
-		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::prepareStart);
+		logger.info("Starting VirtualAVR container in {} mode", tcpSerialListenMode ? "TCP serial listen" : "standard PTY");
 		super.start();
 		try {
 			verifyImageFeaturesSupportsRequestedFeatures();
+			// the mapped port of the container's listener is only known after the start
+			Optional.ofNullable(tcpSerialBridge) //
+					.ifPresent(s -> s.startBridge(getMappedPort(SERIAL_TCP_LISTEN_PORT)));
 		} catch (RuntimeException e) {
 			try {
 				stop();
@@ -350,8 +374,6 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	}
 
 	private void prepareTcpSerialListenMode() {
-		// mutually exclusive with connect mode, listen mode wins
-		tcpSerialModeSupport = null;
 		addExposedPort(SERIAL_TCP_LISTEN_PORT);
 		// Remove the /dev bind mount since there is no PTY in this mode
 		getBinds().removeIf(b -> b.getVolume().getPath().equals(containerDev));
@@ -455,7 +477,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	public void stop() {
 		super.stop();
 		Optional.ofNullable(avr).ifPresent(VirtualAvrConnection::close);
-		Optional.ofNullable(tcpSerialModeSupport).ifPresent(TcpSerialModeSupport::finalizeStop);
+		Optional.ofNullable(tcpSerialBridge).ifPresent(TcpSerialBridge::finalizeStop);
 		avr = null;
 		logger.info("{} container stopped", VIRTUAL_AVR);
 	}

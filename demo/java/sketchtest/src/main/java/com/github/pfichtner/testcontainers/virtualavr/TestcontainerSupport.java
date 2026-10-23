@@ -29,10 +29,10 @@ public final class TestcontainerSupport {
 
 		/**
 		 * On Linux, the standard PTY mode works because /dev can be bind-mounted. On
-		 * macOS/Windows with Docker Desktop, TCP serial mode is needed, so use TCP
-		 * serial mode on non-Linux systems (e.g. macOS/Windows with Docker Desktop)
+		 * macOS/Windows with Docker Desktop, the host PTY cannot be bind-mounted, so
+		 * the TCP serial listen mode plus a host side PTY bridge is used there
 		 */
-		return isLinux() ? container : container.withTcpSerialMode();
+		return isLinux() ? container : container.withTcpSerialBridge();
 	}
 
 	public static ImagePullPolicy onlyPullIfEnabled() {

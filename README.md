@@ -44,8 +44,7 @@ Environment variables supported
 - EEPROM_FILE path to a file where the EEPROM content is stored. If set, EEPROM data persists across restarts; otherwise it is volatile memory
 - EEPROM_SIZE optional; size of EEPROM in bytes. If unset, determined by the board (BUILD_FQBN) — e.g. ATmega328P → 1024, ATmega2560 → 4096 — and falls back to 1024 for unknown boards
 - ENABLE_UNSAFE_INSTALL if set to "true", allows installing libraries from Git URLs or ZIP files, which are considered unsafe because they bypass the library manager's verification, see https://arduino.github.io/arduino-cli/1.3/configuration/#configuration-keys
-- SERIAL_TCP — Connect via TCP instead of PTY (requires a socat TCP→PTY bridge running on the host), see [SERIAL_TCP](#serial_tcp--tcp-serial-mode)
-- SERIAL_TCP_LISTEN — Listen on a TCP port for a serial client instead of creating a PTY (no host-side socat needed), see [SERIAL_TCP_LISTEN](#serial_tcp_listen--tcp-serial-listen-mode). Mutually exclusive with SERIAL_TCP
+- SERIAL_TCP_LISTEN — Listen on a TCP port for a serial client instead of creating a PTY (no host-side socat needed), see [SERIAL_TCP_LISTEN](#serial_tcp_listen--tcp-serial-listen-mode)
 - WS_TOKEN if set, WebSocket clients must pass the matching token as the `token` query parameter; if unset, no authentication is required
 - WATCH if set to "true", monitors the sketch file(s) in `/sketch` for changes and automatically recompiles/reloads the firmware (default "false"). The reload happens in place: the simulator process, the serial device and all WebSocket connections (including their pin subscriptions) stay untouched — clients do not observe a disconnect
 - WATCH_INTERVAL polling interval in seconds for file change detection (default 1); after a recompile the running simulator picks up the new hex file within this interval. `cpuTime` restarts at 0 with each reload while clients keep their received pin history
@@ -76,33 +75,12 @@ The screencast is not uptodate!!!
 - Any message that has an "replyId" gets replied by virtualavr (see [Sent by virtualavr](#sent-by-virtualavr))
 
 # Serial connection modes
-virtualavr can expose the simulated serial port in three ways:
+virtualavr can expose the simulated serial port in two ways:
 
 | Mode | Enable via | Direction | Host prerequisites | Typical use |
 |------|------------|-----------|--------------------|-------------|
 | PTY (default) | — | container creates a PTY, host opens it | ```-v /dev:/dev``` bind mount | Linux hosts, classic serial clients (minicom, pyserial) |
-| TCP connect ([details](#serial_tcp--tcp-serial-mode)) | ```SERIAL_TCP=host:port``` | container connects out to a TCP endpoint | socat PTY↔TCP bridge running on the host, started before the container | Docker Desktop / WSL2, where host ```/dev``` cannot be bind-mounted |
 | TCP listen ([details](#serial_tcp_listen--tcp-serial-listen-mode)) | ```SERIAL_TCP_LISTEN=port``` | container listens, serial client connects in | none — just publish the port (```-p```) | Firmata drivers / any TCP serial client, all OSes |
-
-```SERIAL_TCP``` and ```SERIAL_TCP_LISTEN``` are mutually exclusive.
-
-## SERIAL_TCP — TCP Serial Mode
-```SERIAL_TCP``` is mostly intended for Docker Desktop / WSL2 setups, where Docker runs inside a VM and the host PTY cannot be made available via a bind mount (```-v /dev:/dev```). It can be used on Linux as well, but in that case it is usually unnecessary. 
-```SERIAL_TCP``` makes virtualavr connect to a TCP endpoint instead of creating a PTY inside the container.
-
-You must run socat on the host to bridge TCP to a PTY:
-```
-socat -d -d pty,raw,echo=0 tcp-listen:55555,reuseaddr,fork
-```
-This creates a PTY (e.g. /dev/pts/4) and forwards all TCP traffic on port 55555 to it.
-Starting the container (no /dev mount is needed):
-```
-docker run -e SERIAL_TCP=host.docker.internal:55555 -e FILENAME=myArduinoSketch.ino -v /path/of/the/sketch:/sketch -d pfichtner/virtualavr
-```
-Notes
-- Use ```host.docker.internal``` on Docker Desktop (macOS/Windows); on Linux, use the host machine's IP address accessible from the container.
-- The container never touches the PTY in TCP mode — it talks only via TCP
-- Host socat must be started before the container starts
 
 ## SERIAL_TCP_LISTEN — TCP Serial Listen Mode
 ```SERIAL_TCP_LISTEN``` makes the container listen on a TCP port instead of creating a PTY inside the container. Clients connect to the published port and speak the serial protocol directly over the TCP socket — no PTY is involved anywhere (not in the container, not on the host), so no host-side socat is needed and it works on every OS Docker supports (including macOS/Windows where host PTYs are problematic).
@@ -114,8 +92,15 @@ A client can now connect to port 3030 (e.g. a Firmata driver using a TCP transpo
 
 Notes
 - A single client at a time is supported (no socat ```fork```): the one connecting client talks to the one simulated AVR. When the client disconnects, socat exits and the entrypoint starts listening again after about a second, so the container survives reconnects (the simulator restarts when the next client connects).
-- ```SERIAL_TCP_LISTEN``` and ```SERIAL_TCP``` are mutually exclusive — setting both fails the container at startup
 - The WebSocket port (8080) still needs to be published separately (```-p 8080:8080```) if pin control from the host is wanted. The node/WebSocket server starts only when the first TCP serial client connects (no ```fork```), so the built-in Docker HEALTHCHECK is skipped in this mode (it would report unhealthy until a client connects).
+
+**Migrating from the removed ```SERIAL_TCP``` mode**: run the container with ```SERIAL_TCP_LISTEN=<port>``` and publish the port. If your tool needs a real serial device file, bridge it on the host with
+```
+socat pty,raw,echo=0,link=/dev/virtualavr tcp:localhost:<port>
+```
+and point your tool at ```/dev/virtualavr```.
+
+The testcontainers module for virtualavr requires an image that supports ```SERIAL_TCP_LISTEN```, so module and image have to be upgraded together. The module checks this and fails with ```Image '...' does not support the requested feature(s): SERIAL_TCP_LISTEN``` when the image is too old.
 
 # Testing your sketch within your prefered programming language
 Because virtualavr offers a websocket server to interact with you can write your tests with any language that supports websocket communication (there shouldn't be many language without). 

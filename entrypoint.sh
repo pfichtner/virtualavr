@@ -22,6 +22,17 @@ HEXFILE=${HEXFILE:-/tmp/virtualavr-current.hex}
 trap 'cleanup' EXIT
 
 # ------------------------------------------------------------
+# Reject removed modes
+# ------------------------------------------------------------
+
+# Fail fast (before any compile work) so that users of the removed mode do not
+# silently end up in a different mode.
+if [ -n "${SERIAL_TCP:-}" ]; then
+    echo "SERIAL_TCP is no longer supported, set SERIAL_TCP_LISTEN=<port> instead (see README)" >&2
+    exit 1
+fi
+
+# ------------------------------------------------------------
 # Compile sketch
 # ------------------------------------------------------------
 
@@ -39,13 +50,7 @@ compile_sketch() {
 # ------------------------------------------------------------
 
 start_simulator() {
-    SERIAL_TCP=${SERIAL_TCP:-}
     SERIAL_TCP_LISTEN=${SERIAL_TCP_LISTEN:-}
-
-    if [ -n "$SERIAL_TCP" ] && [ -n "$SERIAL_TCP_LISTEN" ]; then
-        echo "SERIAL_TCP and SERIAL_TCP_LISTEN are mutually exclusive, set only one of them" >&2
-        exit 1
-    fi
 
     if [ -n "$SERIAL_TCP_LISTEN" ]; then
         echo "Using TCP serial listen mode: listening on port $SERIAL_TCP_LISTEN"
@@ -58,9 +63,6 @@ start_simulator() {
             socat ${VERBOSITY:-} TCP-LISTEN:"$SERIAL_TCP_LISTEN",reuseaddr EXEC:"node /app/virtualavr.js $HEXFILE",pty,rawer,fdin=3,fdout=4 </dev/null
             sleep 1
         done ) &
-    elif [ -n "$SERIAL_TCP" ]; then
-        echo "Using TCP serial mode: connecting to $SERIAL_TCP"
-        socat ${VERBOSITY:-} tcp:"$SERIAL_TCP" EXEC:"node /app/virtualavr.js $HEXFILE",pty,rawer,fdin=3,fdout=4 &
     else
         # Standard PTY mode: create a local virtual serial device
         [ -z "${VIRTUALDEVICE+x}" ] && VIRTUALDEVICE="/dev/virtualavr0"
