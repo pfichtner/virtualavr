@@ -31,8 +31,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 
 	enum EnvVars {
 		VIRTUALDEVICE, DEBUG, VERBOSITY, BAUDRATE, DEVICEUSER, DEVICEGROUP, DEVICEMODE, PAUSE_ON_START,
-		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP_LISTEN, REALTIME, EEPROM_FILE, EEPROM_SIZE,
-		WS_TOKEN, WATCH, WATCH_INTERVAL
+		BUILD_EXTRA_FLAGS, FILENAME, PUBLISH_MILLIS, SERIAL_TCP_LISTEN, REALTIME, EEPROM_FILE, EEPROM_SIZE, WS_TOKEN,
+		WATCH, WATCH_INTERVAL
 	}
 
 	private static final String VIRTUAL_AVR = "VirtualAVR";
@@ -62,6 +62,7 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	private VirtualAvrConnection avr;
 	private SerialConnection serialConnection;
 	private TcpSerialBridge tcpSerialBridge;
+	private boolean tcpSerialBridgeMode;
 	private final Set<String> explicitlySet = new HashSet<>();
 	private final Set<String> requiredFeatures = new HashSet<>();
 	private boolean strictFeatureCheck = true;
@@ -83,8 +84,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	/**
 	 * Enables the TCP serial bridge: the container listens on a TCP port (see
 	 * {@link #withTcpSerialListenMode()}) and a socat process on the host connects
-	 * to that port and creates a PTY. That host PTY is the serial device and can
-	 * be used via {@link #serialConnection()}.
+	 * to that port and creates a PTY. That host PTY is the serial device and can be
+	 * used via {@link #serialConnection()}.
 	 * <p>
 	 * This is needed on macOS/Windows with Docker Desktop, where the host
 	 * {@code /dev} cannot be bind-mounted into the container.
@@ -96,8 +97,8 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 * @return this container instance
 	 */
 	public VirtualAvrContainer<?> withTcpSerialBridge() {
-		withTcpSerialListenMode();
-		tcpSerialBridge = new TcpSerialBridge(this);
+		withEnv(EnvVars.SERIAL_TCP_LISTEN, SERIAL_TCP_LISTEN_PORT);
+		tcpSerialBridgeMode = true;
 		return self();
 	}
 
@@ -116,9 +117,9 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 * Enables TCP serial listen mode: the container listens on a TCP port and the
 	 * test connects to it with a plain TCP socket. No host-side socat and no
 	 * {@code /dev} bind mount are needed, so this works on every OS (including
-	 * macOS/Windows with Docker Desktop). The mode-specific container
-	 * configuration (exposed port, wait strategy, no {@code /dev} bind) is
-	 * applied in {@link #start()}.
+	 * macOS/Windows with Docker Desktop). The mode-specific container configuration
+	 * (exposed port, wait strategy, no {@code /dev} bind) is applied in
+	 * {@link #start()}.
 	 * <p>
 	 * The container serves one client at a time, so this mode cannot be combined
 	 * with {@link #withTcpSerialBridge()} (its host bridge is a client too) - the
@@ -127,13 +128,13 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 	 * @return this container instance
 	 */
 	public VirtualAvrContainer<?> withTcpSerialListenMode() {
-		tcpSerialBridge = null;
+		tcpSerialBridgeMode = false;
 		return withEnv(EnvVars.SERIAL_TCP_LISTEN, SERIAL_TCP_LISTEN_PORT);
 	}
 
 	/**
-	 * Returns the host port the container's TCP serial listener is mapped to.
-	 * Only meaningful in TCP serial listen mode (see
+	 * Returns the host port the container's TCP serial listener is mapped to. Only
+	 * meaningful in TCP serial listen mode (see
 	 * {@link #withTcpSerialListenMode()}).
 	 *
 	 * @return the host port to connect to with a plain TCP socket
@@ -355,13 +356,15 @@ public class VirtualAvrContainer<SELF extends VirtualAvrContainer<SELF>> extends
 		if (tcpSerialListenMode) {
 			prepareTcpSerialListenMode();
 		}
-		logger.info("Starting VirtualAVR container in {} mode", tcpSerialListenMode ? "TCP serial listen" : "standard PTY");
+		logger.info("Starting VirtualAVR container in {} mode",
+				tcpSerialListenMode ? "TCP serial listen" : "standard PTY");
 		super.start();
 		try {
 			verifyImageFeaturesSupportsRequestedFeatures();
-			// the mapped port of the container's listener is only known after the start
-			Optional.ofNullable(tcpSerialBridge) //
-					.ifPresent(s -> s.startBridge(getMappedPort(SERIAL_TCP_LISTEN_PORT)));
+			if (tcpSerialBridgeMode) {
+				tcpSerialBridge = new TcpSerialBridge(this);
+				tcpSerialBridge.startBridge(getMappedPort(SERIAL_TCP_LISTEN_PORT));
+			}
 		} catch (RuntimeException e) {
 			try {
 				stop();

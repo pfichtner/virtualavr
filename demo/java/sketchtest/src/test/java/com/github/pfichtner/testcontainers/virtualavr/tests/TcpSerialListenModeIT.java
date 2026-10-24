@@ -5,6 +5,7 @@ import static com.github.pfichtner.testcontainers.virtualavr.TestcontainerSuppor
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.io.IOException;
@@ -36,6 +37,13 @@ class TcpSerialListenModeIT {
 	void startRemovesDevBind() {
 		assertThat(virtualAvrContainer.getBinds().stream().map(Object::toString))
 				.doesNotContain(VirtualAvrContainer.containerDev);
+	}
+
+	@Test
+	void serialPortDescriptorThrowsInListenMode() {
+		assertThatThrownBy(virtualAvrContainer::serialPortDescriptor) //
+				.isInstanceOf(IllegalStateException.class) //
+				.hasMessageContaining("serialTcpListenPort()");
 	}
 
 	@Test
