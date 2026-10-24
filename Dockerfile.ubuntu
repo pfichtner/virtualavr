@@ -20,4 +20,4 @@ EXPOSE 8080
 # Healthcheck opens a real WebSocket connection (including auth) using the
 # ws package that is already installed for virtualavr.js, so no extra tool
 # (e.g. websocat) is needed. See healthcheck.js for details.
-HEALTHCHECK --start-period=3s --timeout=3s CMD ["node", "/app/healthcheck.js"]
+HEALTHCHECK --start-period=3s --timeout=3s CMD sh -c 'if [ -n "${SERIAL_TCP_LISTEN:-}" ]; then exit 0; fi; exec node /app/healthcheck.js'

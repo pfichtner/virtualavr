@@ -16,8 +16,8 @@ import com.github.pfichtner.testcontainers.virtualavr.SerialConnectionAwait;
 import com.github.pfichtner.testcontainers.virtualavr.VirtualAvrContainer;
 
 @Testcontainers
-@EnabledIf("com.github.pfichtner.testcontainers.virtualavr.TcpSerialModeSupport#isSocatAvailable")
-class TcpSerialModeSupportIT {
+@EnabledIf("com.github.pfichtner.testcontainers.virtualavr.TcpSerialBridge#isSocatAvailable")
+class TcpSerialBridgeIT {
 
 	private static final String SOME_NOT_USED_TTY_NAME = "someUnusedTTYName";
 
@@ -25,16 +25,21 @@ class TcpSerialModeSupportIT {
 	VirtualAvrContainer<?> virtualAvrContainer = virtualAvrContainer( //
 			withSketchFromClasspath("/byteecho/byteecho.ino")) //
 			.withDeviceName(SOME_NOT_USED_TTY_NAME) //
-			// force tcp serial mode for test even on linux hosts
-			.withTcpSerialMode() //
-			// on linux, host.docker.internal is not available by default
-			.withExtraHost("host.docker.internal", "host-gateway") //
+			// force the host serial bridge for test even on linux hosts
+			.withTcpSerialBridge() //
 	;
 
 	@Test
 	void startRemovesDevBind() {
 		assertThat(virtualAvrContainer.getBinds().stream().map(Object::toString))
 				.doesNotContain(VirtualAvrContainer.containerDev);
+	}
+
+	@Test
+	void simulatorIsUpWhenTheContainerIsStarted() {
+		// the bridge triggers the start of the simulator, so the WebSocket must be
+		// usable right after the container was started
+		assertThat(virtualAvrContainer.avr().isConnected()).isTrue();
 	}
 
 	@Test
