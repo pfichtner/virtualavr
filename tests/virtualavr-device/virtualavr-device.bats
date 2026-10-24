@@ -120,8 +120,8 @@ fail() {
   [ -e "$TEST_ROOTDIR/$VIRTUALDEVICE" ] || fail "Device $TEST_ROOTDIR/$VIRTUALDEVICE was removed."
 }
 
-@test "entrypoint uses TCP serial mode when SERIAL_TCP is set" {
-  export SERIAL_TCP="host.example.com:12345"
+@test "entrypoint uses TCP listen serial mode when SERIAL_TCP_LISTEN is set" {
+  export SERIAL_TCP_LISTEN="3030"
 
   # Prepare mock socat to capture arguments and PID
   SOCAT_CALLED_FILE="$TEST_ROOTDIR/socat_called.txt"
@@ -139,17 +139,28 @@ fail() {
   ENTRYPOINT_PID=$!
   sleep 1
 
-  # Verify TCP host and port are passed to socat
+  # Verify TCP-LISTEN and port are passed to socat
   SOCAT_CALLED=$(cat "$SOCAT_CALLED_FILE")
-  [[ "$SOCAT_CALLED" == *"tcp:host.example.com:12345"* ]] || fail "socat did not get correct TCP host:port"
+  [[ "$SOCAT_CALLED" == *"TCP-LISTEN:3030"* ]] || fail "socat did not get correct TCP-LISTEN port"
+  [[ "$SOCAT_CALLED" != *"tcp:"* ]] || fail "socat should not connect out in TCP listen mode"
 
   # Verify no PTY device created
-  [ ! -e "$TEST_ROOTDIR/dev/virtualavr0" ] || fail "/dev/virtualavr0 should not exist in TCP mode"
+  [ ! -e "$TEST_ROOTDIR/dev/virtualavr0" ] || fail "/dev/virtualavr0 should not exist in TCP listen mode"
   TMP_DEVICE=$(find "$TEST_ROOTDIR/tmp" -name "virtualavr*" -type f)
-  [ -z "$TMP_DEVICE" ] || fail "No temporary device should be created in TCP mode"
+  [ -z "$TMP_DEVICE" ] || fail "No temporary device should be created in TCP listen mode"
 
-  # Kill socat process manually
-  SOCAT_PID=$(cat "$SOCAT_PID_FILE")
-  kill "$SOCAT_PID"
+  # Kill entrypoint; its trap stops the listen loop (mock socat exits
+  # immediately so the loop would otherwise keep it alive forever)
+  kill "$ENTRYPOINT_PID"
   wait "$ENTRYPOINT_PID" 2>/dev/null || true
+}
+
+@test "entrypoint fails if SERIAL_TCP is set" {
+  export SERIAL_TCP="host.example.com:12345"
+
+  run bash "$TEMP_ENTRYPOINT"
+
+  [ "$status" -ne 0 ] || fail "Entry point did not fail as expected."
+  [[ "$output" == *"SERIAL_TCP_LISTEN"* ]] || fail "Expected migration message not found."
+  unset SERIAL_TCP
 }
