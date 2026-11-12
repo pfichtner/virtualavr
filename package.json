@@ -9,7 +9,7 @@
     "mkdirp": "^3.0.1",
     "node-fetch": "^3.0.0",
     "tmp": "^0.2.7",
-    "ws": "^8.22.0"
+    "ws": "^8.22.2"
   },
   "devDependencies": {
     "jest": "^30.5.2",
